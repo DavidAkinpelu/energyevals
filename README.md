@@ -8,7 +8,7 @@ AI agent evaluation framework for energy analytics.
 - **MCP Servers**: RAG and Database tools via Model Context Protocol
 - **Standard Tools**: Search, GridStatus, Tariffs, Renewables, Battery optimization, Dockets
 - **Evaluation Framework**: Benchmarks, metrics, model comparison
-- **Observability**: Langfuse integration for tracing
+- **Observability**: Langfuse and JSON file tracing with full data capture
 
 ## Installation
 
@@ -25,8 +25,6 @@ source .venv/bin/activate
 # Install in development mode
 pip install -e ".[dev]"
 
-# Copy and configure environment
-cp .env.example .env
 ```
 
 ## MCP Servers
@@ -52,8 +50,6 @@ RAG_SERVER_URL=https://your-rag-server.com/sse
 DATABASE_SERVER_URL=https://your-db-server.com/sse
 ```
 
-See [`docs/MCP_CLIENT_USAGE.md`](docs/MCP_CLIENT_USAGE.md) for detailed usage and [`mcp-servers/DEPLOYMENT_GUIDE.md`](mcp-servers/DEPLOYMENT_GUIDE.md) for deployment instructions.
-
 ## Usage
 
 ```bash
@@ -64,14 +60,120 @@ python scripts/run_benchmark.py --benchmark benchmarks/datasets/energy_analysis/
 python scripts/compare_models.py --benchmark benchmarks/datasets/energy_analysis/ercot.json
 ```
 
+## Observability
+
+The framework supports multiple observability backends for tracing agent runs:
+
+- **Langfuse**: Cloud-based observability platform
+- **JSON**: Local JSON file logging
+- **Both**: Use multiple backends simultaneously
+
+### Configuration
+
+For Langfuse, set environment variables in your `.env`:
+
+```bash
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_HOST=https://cloud.langfuse.com  # optional, defaults to cloud
+```
+
+### Usage
+
+```python
+from energbench.observability import get_observer
+
+# Choose backend: "langfuse", "json", "both", or "auto"
+observer = get_observer("json", output_dir="./traces")
+
+# After running your agent
+run = await agent.run("What are ERCOT energy prices?")
+
+# Trace the run
+trace_id = observer.trace_agent_run(
+    run=run,
+    metadata={"experiment": "v1"},
+    tags=["ercot", "prices"],
+    user_id="analyst_1",
+    session_id="session_123",
+)
+
+# Flush and cleanup
+observer.flush()
+observer.shutdown()
+```
+
+### Backend Options
+
+| Backend | Description |
+|---------|-------------|
+| `langfuse` | Send traces to Langfuse cloud (requires credentials) |
+| `json` | Write traces to local JSON files |
+| `both` | Use both Langfuse and JSON simultaneously |
+| `auto` | Use Langfuse if available, otherwise JSON |
+
+### JSON Observer Features
+
+The JSON observer captures complete trace data:
+
+- All execution steps (thought, action, observation, answer, error)
+- Full tool inputs and outputs (never truncated)
+- Failed tool calls with error details
+- Token usage and latency metrics
+- Step-by-step timestamps
+
+```python
+from energbench.observability import JSONFileObserver
+
+observer = JSONFileObserver(
+    output_dir="./traces",      # Directory for trace files
+    single_file=False,          # True for JSONL, False for individual files
+    pretty_print=True,          # Format JSON with indentation
+)
+
+# Load a trace later
+trace_data = observer.load_trace(trace_id)
+print(trace_data["step_summary"])  # Summary of steps and failures
+```
+
 ## Project Structure
 
 ```
 energbench/
 ├── agent/          # ReAct agent and LLM providers
-├── mcp/            # MCP servers (RAG, Database)
-├── tools/          # Standard tools
+├── mcp/            # MCP client for remote servers
+├── tools/          # Standard tools (search, gridstatus, tariffs, etc.)
 ├── evaluation/     # Benchmarks and metrics
-├── observability/  # Langfuse integration
+├── observability/  # Tracing backends (Langfuse, JSON)
 └── utils/          # Configuration and utilities
+
+mcp-servers/
+├── rag-server/     # RAG server with vector search
+└── database-server/# Database query server
+
+scripts/
+└── agent_tests/    # Runnable benchmark scripts
+
+tests/
+├── provider_tests/     # LLM provider tests
+├── agent_tests/        # Agent and metrics tests
+├── observability_tests/# Observer tests
+├── tool_tests/         # Individual tool tests
+└── unit_tests/         # Unit tests
+```
+
+## Running Tests
+
+```bash
+# Run observability tests
+python tests/observability_tests/test_observers.py
+
+# Run provider tests (requires API keys)
+python tests/provider_tests/test_providers.py
+
+# Run agent metrics tests (requires MCP servers)
+python tests/agent_tests/test_agent_metrics.py
+
+# Run benchmark prompts with observability
+python scripts/agent_tests/run_agent_prompts.py --observe json
 ```
