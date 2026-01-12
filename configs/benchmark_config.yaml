@@ -2,12 +2,13 @@
 # Copy this file and modify as needed
 
 # Provider settings
-provider: openai                    # openai, anthropic, or deepinfra
+provider: openai                    # openai, anthropic, google, or deepinfra
 model: gpt-4o-mini                  # Model to use (see available models below)
 
 # Available models:
 #   openai: gpt-4o, gpt-4o-mini, o1, o1-mini, o3, o3-mini, o4-mini
 #   anthropic: claude-sonnet-4-20250514, claude-opus-4-20250514
+#   google: gemini-2.0-flash, gemini-1.5-pro, gemini-1.5-flash
 #   deepinfra: meta-llama/Llama-3.3-70B-Instruct-Turbo, meta-llama/Meta-Llama-3.1-405B-Instruct
 
 # Reasoning model override (optional)

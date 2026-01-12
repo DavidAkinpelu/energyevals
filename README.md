@@ -37,6 +37,7 @@ The framework requires API keys for LLM providers and various tools. Add these t
 |-----|----------|----------|
 | `OPENAI_API_KEY` | OpenAI (GPT-4o, o1, etc.) | For OpenAI models |
 | `ANTHROPIC_API_KEY` | Anthropic (Claude) | For Anthropic models |
+| `GOOGLE_API_KEY` | Google (Gemini 2.0, 1.5, etc.) | For Google models |
 | `DEEPINFRA_API_KEY` | DeepInfra (Llama, etc.) | For DeepInfra models |
 
 ### Tools (optional, enables specific functionality)

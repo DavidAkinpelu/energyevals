@@ -70,6 +70,10 @@ PROVIDERS = {
         "default_model": "claude-sonnet-4-20250514",
         "models": ["claude-sonnet-4-20250514", "claude-opus-4-20250514"],
     },
+    "google": {
+        "default_model": "gemini-2.0-flash",
+        "models": ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"],
+    },
     "deepinfra": {
         "default_model": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
         "models": [
