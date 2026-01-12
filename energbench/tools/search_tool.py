@@ -23,21 +23,6 @@ class SearchTool(BaseTool):
         api_key: Optional[str] = None,
         text_length_limit: int = 1000,
         default_num_results: int = 5,
-        text: bool = True,
-        highlights: bool = True,
-        summary: bool = False,
-        livecrawl: str = "always",
-        livecrawl_timeout: Optional[int] = None,
-        subpages: Optional[int] = None,
-        subpage_target: Optional[list[str]] = None,
-        start_crawl_date: Optional[str] = None,
-        end_crawl_date: Optional[str] = None,
-        start_published_date: Optional[str] = None,
-        end_published_date: Optional[str] = None,
-        content_type: Optional[str] = None,
-        category: Optional[str] = None,
-        include_domains: Optional[list[str]] = None,
-        exclude_domains: Optional[list[str]] = None
     ):
         """Initialize the search tool.
 
@@ -54,21 +39,6 @@ class SearchTool(BaseTool):
         self.api_key = api_key or os.getenv("EXA_API_KEY")
         self.text_length_limit = text_length_limit
         self.default_num_results = default_num_results
-        self.text = text
-        self.highlights = highlights
-        self.summary = summary
-        self.livecrawl = livecrawl
-        self.livecrawl_timeout = livecrawl_timeout
-        self.subpages = subpages
-        self.subpage_target = subpage_target
-        self.start_crawl_date = start_crawl_date
-        self.end_crawl_date = end_crawl_date
-        self.start_published_date = start_published_date
-        self.end_published_date = end_published_date
-        self.content_type = content_type
-        self.category = category
-        self.include_domains = include_domains
-        self.exclude_domains = exclude_domains
 
         if not self.api_key:
             logger.warning("EXA_API_KEY not set. Search functionality will be limited.")
@@ -97,7 +67,6 @@ class SearchTool(BaseTool):
                         "num_results": {
                             "type": "integer",
                             "description": "Number of results to return (default: 5, max: 10)",
-                            "default": 5,
                         },
                         "text": {
                             "type": "boolean",
@@ -113,31 +82,17 @@ class SearchTool(BaseTool):
                         },
                         "livecrawl": {
                             "type": "string",
+                            "enum": ["never", "fallback", "preferred", "always"],
                             "description": "Live crawl behavior (default: always)",
                         },
-                        "start_crawl_date": {
+                        "search_type": {
                             "type": "string",
-                            "description": "Filter by crawl date start (YYYY-MM-DD)",
-                        },
-                        "end_crawl_date": {
-                            "type": "string",
-                            "description": "Filter by crawl date end (YYYY-MM-DD)",
-                        },
-                        "start_published_date": {
-                            "type": "string",
-                            "description": "Filter by published date start (YYYY-MM-DD)",
-                        },
-                        "end_published_date": {
-                            "type": "string",
-                            "description": "Filter by published date end (YYYY-MM-DD)",
-                        },
-                        "type": {
-                            "type": "string",
-                            "description": "Content type filter (e.g., article, blog, video)",
+                            "enum": ["neural", "fast", "auto", "deep"],
+                            "description": "Search method: neural (embeddings-based), fast (streamlined), auto (default, combines methods), deep (comprehensive with query expansion)",
                         },
                         "category": {
                             "type": "string",
-                            "description": "Optional category to filter results",
+                            "description": "Category to filter results",
                             "enum": [
                                 "company",
                                 "research paper",
@@ -145,7 +100,26 @@ class SearchTool(BaseTool):
                                 "pdf",
                                 "github",
                                 "financial report",
+                                "tweet",
+                                "people",
+                                "personal site",
                             ],
+                        },
+                        "start_crawl_date": {
+                            "type": "string",
+                            "description": "Filter by crawl date start (ISO 8601 format, e.g., '2023-01-01T00:00:00.000Z')",
+                        },
+                        "end_crawl_date": {
+                            "type": "string",
+                            "description": "Filter by crawl date end (ISO 8601 format, e.g., '2023-12-31T00:00:00.000Z')",
+                        },
+                        "start_published_date": {
+                            "type": "string",
+                            "description": "Filter by published date start (ISO 8601 format, e.g., '2023-01-01T00:00:00.000Z')",
+                        },
+                        "end_published_date": {
+                            "type": "string",
+                            "description": "Filter by published date end (ISO 8601 format, e.g., '2023-12-31T00:00:00.000Z')",
                         },
                         "include_domains": {
                             "type": "array",
@@ -174,48 +148,44 @@ class SearchTool(BaseTool):
                         "urls": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "Array of URLs to crawl (backwards compatible with 'ids' parameter)",
+                            "description": "Array of URLs to crawl",
                         },
                         "ids": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "Deprecated - use 'urls' instead. Array of document IDs obtained from searches",
+                            "description": "Deprecated - use 'urls' instead",
                         },
                         "text": {
                             "oneOf": [
                                 {"type": "boolean"},
                                 {"type": "object"}
                             ],
-                            "description": "If true, returns full page text with default settings. If false, disables text return. Can also be an object with custom settings.",
+                            "description": "Include full page text (default: true). Can be object with custom settings.",
                         },
                         "highlights": {
                             "oneOf": [
                                 {"type": "boolean"},
                                 {"type": "object"}
                             ],
-                            "description": "Text snippets the LLM identifies as most relevant from each page. Can be a boolean or an object with configuration.",
+                            "description": "Include relevant text snippets (default: true). Can be object with config.",
                         },
                         "summary": {
                             "oneOf": [
                                 {"type": "boolean"},
                                 {"type": "object"}
                             ],
-                            "description": "Summary object for page summaries. Can be a boolean or an object with configuration.",
+                            "description": "Include page summaries (default: false). Can be object with config.",
                         },
                         "livecrawl": {
                             "type": "string",
                             "enum": ["never", "fallback", "preferred", "always"],
-                            "description": "Live crawl behavior: 'never' (cached only), 'fallback' (cache first, live if unavailable), 'preferred' (live first, cache fallback), 'always' (always live crawl). Defaults to 'fallback'.",
-                        },
-                        "livecrawlTimeout": {
-                            "type": "integer",
-                            "description": "Maximum duration in milliseconds for a live crawl attempt (e.g., 10000 for 10 seconds). Defaults to 10000.",
+                            "description": "Live crawl behavior (default: fallback)",
                         },
                         "subpages": {
                             "type": "integer",
-                            "description": "Number of subpages to crawl from the provided URLs. Defaults to 5.",
+                            "description": "Number of subpages to crawl from the provided URLs",
                         },
-                        "subpageTarget": {
+                        "subpage_target": {
                             "type": "array",
                             "items": {"type": "string"},
                             "description": "Keywords to target specific subpages (e.g., ['about', 'products'])",
@@ -229,26 +199,37 @@ class SearchTool(BaseTool):
     def search(
         self,
         query: str,
-        num_results: int = 5,
+        num_results: Optional[int] = None,
+        text: bool = True,
+        highlights: bool = True,
+        summary: bool = False,
+        livecrawl: str = "always",
+        search_type: str = "auto",
         category: Optional[str] = None,
-        text: Optional[bool] = None,
-        highlights: Optional[bool] = None,
-        summary: Optional[bool] = None,
-        livecrawl: Optional[str] = None,
         start_crawl_date: Optional[str] = None,
         end_crawl_date: Optional[str] = None,
         start_published_date: Optional[str] = None,
         end_published_date: Optional[str] = None,
-        type: Optional[str] = None,
         include_domains: Optional[list[str]] = None,
-        exclude_domains: Optional[list[str]] = None
+        exclude_domains: Optional[list[str]] = None,
     ) -> str:
         """Search the web using Exa.
 
         Args:
             query: The search query.
-            num_results: Number of results to return.
-            category: Optional category filter.
+            num_results: Number of results to return (default: uses default_num_results).
+            text: Include text content in results.
+            highlights: Include highlights in results.
+            summary: Include Exa summaries when available.
+            livecrawl: Live crawl behavior ("never", "fallback", "preferred", "always").
+            search_type: Search method ("neural", "fast", "auto", "deep"). Default: "auto".
+            category: Category filter (e.g., "company", "news", "research paper", "pdf").
+            start_crawl_date: Filter by crawl date start (ISO 8601, e.g., "2023-01-01T00:00:00.000Z").
+            end_crawl_date: Filter by crawl date end (ISO 8601, e.g., "2023-12-31T00:00:00.000Z").
+            start_published_date: Filter by published date start (ISO 8601, e.g., "2023-01-01T00:00:00.000Z").
+            end_published_date: Filter by published date end (ISO 8601, e.g., "2023-12-31T00:00:00.000Z").
+            include_domains: Restrict results to these domains.
+            exclude_domains: Exclude results from these domains.
 
         Returns:
             JSON string with search results.
@@ -263,24 +244,26 @@ class SearchTool(BaseTool):
 
             # Build search parameters
             search_kwargs = {
-                "text": self.text if text is None else text,
-                "highlights": self.highlights if highlights is None else highlights,
-                "summary": self.summary if summary is None else summary,
-                "num_results": self.default_num_results if num_results is None else num_results,
-                "livecrawl": livecrawl or self.livecrawl,
-                "start_crawl_date": start_crawl_date or self.start_crawl_date,
-                "end_crawl_date": end_crawl_date or self.end_crawl_date,
-                "start_published_date": start_published_date or self.start_published_date,
-                "end_published_date": end_published_date or self.end_published_date,
-                "type": type or self.content_type,
-                "include_domains": include_domains or self.include_domains,
-                "exclude_domains": exclude_domains or self.exclude_domains
+                "text": text,
+                "highlights": highlights,
+                "summary": summary,
+                "num_results": num_results if num_results is not None else self.default_num_results,
+                "livecrawl": livecrawl,
+                "type": search_type,
+                "category": category,
+                "start_crawl_date": start_crawl_date,
+                "end_crawl_date": end_crawl_date,
+                "start_published_date": start_published_date,
+                "end_published_date": end_published_date,
+                "include_domains": include_domains,
+                "exclude_domains": exclude_domains,
             }
 
-            if category or self.category:
-                search_kwargs["category"] = category or self.category
-
-            search_kwargs = {k: v for k, v in search_kwargs.items() if v is not None}
+            # Remove None, empty strings, and empty lists
+            search_kwargs = {
+                k: v for k, v in search_kwargs.items()
+                if v is not None and v != "" and v != []
+            }
 
             # Perform search
             results = exa.search_and_contents(query, **search_kwargs)
@@ -300,8 +283,8 @@ class SearchTool(BaseTool):
                     result_dict["published_date"] = result.published_date
 
                 if result.text:
-                    text = result.text[: self.text_length_limit]
-                    result_dict["text"] = text
+                    text_content = result.text[:self.text_length_limit]
+                    result_dict["text"] = text_content
 
                 if hasattr(result, "highlights") and result.highlights:
                     result_dict["highlights"] = result.highlights
@@ -324,15 +307,14 @@ class SearchTool(BaseTool):
 
     def get_contents(
         self,
-        urls: list[str],
+        urls: Optional[list[str]] = None,
         ids: Optional[list[str]] = None,
-        text: Optional[Union[bool, dict]] = None,
-        highlights: Optional[Union[bool, dict]] = None,
-        summary: Optional[Union[bool, dict]] = None,
-        livecrawl: Optional[str] = 'fallback',
-        livecrawlTimeout: Optional[int] = 10000,
-        subpages: Optional[int] = 5,
-        subpageTarget: Optional[list[str]] = None,
+        text: Union[bool, dict] = True,
+        highlights: Union[bool, dict] = True,
+        summary: Union[bool, dict] = False,
+        livecrawl: str = "fallback",
+        subpages: Optional[int] = None,
+        subpage_target: Optional[list[str]] = None,
     ) -> str:
         """Retrieve content from specific URLs.
 
@@ -341,20 +323,16 @@ class SearchTool(BaseTool):
         for uncached pages.
 
         Args:
-            urls: Array of URLs to crawl (backwards compatible with 'ids' parameter).
+            urls: Array of URLs to crawl.
             ids: Deprecated - use 'urls' instead. Array of document IDs obtained from searches.
-            text: If true, returns full page text with default settings. If false, disables
-                text return. Can also be an object with custom settings.
-            highlights: Text snippets the LLM identifies as most relevant from each page.
+            text: If true, returns full page text. Can also be an object with custom settings.
+            highlights: Include text snippets identified as most relevant.
                 Can be a boolean or an object with configuration.
-            summary: Summary object for page summaries. Can be a boolean or an object
-                with configuration.
+            summary: Include page summaries. Can be a boolean or an object with configuration.
             livecrawl: Live crawl behavior: 'never' (cached only), 'fallback' (cache first,
-                live if unavailable), 'preferred' (live first, cache fallback), 'always' (always live crawl). Defaults to 'fallback'.
-            livecrawlTimeout: Maximum duration in milliseconds for a live crawl attempt
-                (e.g., 10000 for 10 seconds). Defaults to 10000.
-            subpages: Number of subpages to crawl from the provided URLs. Defaults to 5.
-            subpageTarget: Keywords to target specific subpages (e.g., ['about', 'products']). Defaults to None.
+                live if unavailable), 'preferred' (live first, cache fallback), 'always'.
+            subpages: Number of subpages to crawl from the provided URLs.
+            subpage_target: Keywords to target specific subpages (e.g., ['about', 'products']).
 
         Returns:
             JSON string with page contents.
@@ -367,50 +345,24 @@ class SearchTool(BaseTool):
 
             exa = Exa(self.api_key)
 
+            # Support both urls and deprecated ids parameter
             url_list = urls if urls is not None else (ids if ids else [])
 
             params: dict = {
                 "urls": url_list,
+                "text": text,
+                "highlights": highlights,
+                "summary": summary,
+                "livecrawl": livecrawl,
+                "subpages": subpages,
+                "subpageTarget": subpage_target,
             }
 
-            if text is not None:
-                params["text"] = text
-            else:
-                params["text"] = self.text
-
-            if highlights is not None:
-                params["highlights"] = highlights
-            else:
-                params["highlights"] = self.highlights
-
-            if summary is not None:
-                params["summary"] = summary
-            else:
-                params["summary"] = self.summary
-
-            if livecrawl is not None:
-                params["livecrawl"] = livecrawl
-            elif self.livecrawl:
-                params["livecrawl"] = self.livecrawl
-
-            #NOTE: Seems livecrawlTimeout has been deprecated but it's still in the API documentation
-
-            # if livecrawlTimeout is not None:
-            #     params["livecrawlTimeout"] = livecrawlTimeout
-            # elif self.livecrawl_timeout is not None:
-            #     params["livecrawlTimeout"] = self.livecrawl_timeout
-
-            if subpages is not None:
-                params["subpages"] = subpages
-            elif self.subpages is not None:
-                params["subpages"] = self.subpages
-
-            if subpageTarget is not None:
-                params["subpageTarget"] = subpageTarget
-            elif self.subpage_target is not None:
-                params["subpageTarget"] = self.subpage_target
-
-            params = {k: v for k, v in params.items() if v is not None}
+            # Remove None, empty strings, and empty lists
+            params = {
+                k: v for k, v in params.items()
+                if v is not None and v != "" and v != []
+            }
 
             results = exa.get_contents(**params)
 
@@ -422,9 +374,7 @@ class SearchTool(BaseTool):
                     result_dict["title"] = result.title
 
                 if result.text:
-                    text_content = result.text
-                    if self.text_length_limit:
-                        text_content = text_content[: self.text_length_limit]
+                    text_content = result.text[:self.text_length_limit]
                     result_dict["text"] = text_content
 
                 if hasattr(result, "highlights") and result.highlights:

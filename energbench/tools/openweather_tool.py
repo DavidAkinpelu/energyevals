@@ -82,124 +82,140 @@ class OpenWeatherTool(BaseTool):
         result = self._geocode(location, limit)
         return json.dumps(result, indent=2)
 
-    def get_current_weather(self, location: str) -> str:
+    def get_current_weather(
+        self,
+        location: str,
+        units: Optional[str] = None,
+    ) -> str:
         """Get current weather for a location.
-        
+
         Args:
             location: The location to get weather for (e.g., "Austin, TX, USA").
-            
+            units: Units of measurement ("metric", "imperial", "standard").
+                   Defaults to instance setting.
+
         Returns:
             JSON string with current weather data.
         """
         geo_result = self._geocode(location)
-        
+
         if "error" in geo_result:
             return json.dumps(geo_result, indent=2)
-        
+
         if not geo_result:
             return json.dumps({"error": "Location not found"}, indent=2)
-        
+
         lat = geo_result[0]["lat"]
         lon = geo_result[0]["lon"]
-        
+
         params = {
             "lat": lat,
             "lon": lon,
-            "units": self.units,
+            "units": units if units is not None else self.units,
             "appid": self.api_key
         }
-        
+
         weather = self._make_request(f"{self.base_url}/weather", params)
-        
+
         if "error" not in weather:
             weather["location_name"] = geo_result[0].get("name", location)
             weather["country"] = geo_result[0].get("country", "")
-        
+
         return json.dumps(weather, indent=2)
 
-    def get_forecast(self, location: str, days: int = 5) -> str:
+    def get_forecast(
+        self,
+        location: str,
+        days: int = 5,
+        units: Optional[str] = None,
+    ) -> str:
         """Get weather forecast for a location.
-        
+
         Args:
             location: The location to get forecast for (e.g., "Austin, TX, USA").
             days: Number of days to forecast (1-5, default: 5).
-            
+            units: Units of measurement ("metric", "imperial", "standard").
+                   Defaults to instance setting.
+
         Returns:
             JSON string with forecast data.
         """
         geo_result = self._geocode(location)
-        
+
         if "error" in geo_result:
             return json.dumps(geo_result, indent=2)
-        
+
         if not geo_result:
             return json.dumps({"error": "Location not found"}, indent=2)
-        
+
         lat = geo_result[0]["lat"]
         lon = geo_result[0]["lon"]
         cnt = min(days * 8, 40)  # 5 days max = 40 entries (3-hour intervals)
-        
+
         params = {
             "lat": lat,
             "lon": lon,
-            "units": self.units,
+            "units": units if units is not None else self.units,
             "cnt": cnt,
             "appid": self.api_key
         }
-        
+
         forecast = self._make_request(f"{self.base_url}/forecast", params)
-        
+
         if "error" not in forecast:
             forecast["location_name"] = geo_result[0].get("name", location)
             forecast["country"] = geo_result[0].get("country", "")
-        
+
         return json.dumps(forecast, indent=2)
 
     def get_historical_weather(
-        self, 
-        location: str, 
-        start: int, 
-        end: int, 
-        type_inp: str = "hour"
+        self,
+        location: str,
+        start: int,
+        end: int,
+        type_inp: str = "hour",
+        units: Optional[str] = None,
     ) -> str:
         """Get historical weather data for a location.
-        
+
         Args:
             location: The location to get historical weather for.
             start: Start date (Unix timestamp, UTC), e.g., 1369728000.
             end: End date (Unix timestamp, UTC), e.g., 1369789200.
             type_inp: Type of the call, keep as "hour".
-            
+            units: Units of measurement ("metric", "imperial", "standard").
+                   Defaults to instance setting.
+
         Returns:
             JSON string with historical weather data.
         """
         geo_result = self._geocode(location)
-        
+
         if "error" in geo_result:
             return json.dumps(geo_result, indent=2)
-        
+
         if not geo_result:
             return json.dumps({"error": "Location not found"}, indent=2)
-        
+
         lat = geo_result[0]["lat"]
         lon = geo_result[0]["lon"]
-        
+
         params = {
             "lat": lat,
             "lon": lon,
-            "units": self.units,
+            "units": units if units is not None else self.units,
             "start": start,
             "end": end,
             "type": type_inp,
             "appid": self.api_key
         }
-        
+
         historical = self._make_request(f"{self.base_url}/history", params)
-        
+
         if "error" not in historical:
             historical["location_name"] = geo_result[0].get("name", location)
             historical["country"] = geo_result[0].get("country", "")
-        
+
         return json.dumps(historical, indent=2)
 
     def get_air_pollution(self, location: str) -> str:
@@ -274,6 +290,11 @@ class OpenWeatherTool(BaseTool):
                             "type": "string",
                             "description": "Location to get weather for (e.g., 'Austin, TX, USA')",
                         },
+                        "units": {
+                            "type": "string",
+                            "enum": ["metric", "imperial", "standard"],
+                            "description": "Units of measurement (default: metric)",
+                        },
                     },
                     "required": ["location"],
                 },
@@ -294,9 +315,13 @@ class OpenWeatherTool(BaseTool):
                         "days": {
                             "type": "integer",
                             "description": "Number of days to forecast (1-5, default: 5)",
-                            "default": 5,
                             "minimum": 1,
                             "maximum": 5,
+                        },
+                        "units": {
+                            "type": "string",
+                            "enum": ["metric", "imperial", "standard"],
+                            "description": "Units of measurement (default: metric)",
                         },
                     },
                     "required": ["location"],
@@ -326,7 +351,11 @@ class OpenWeatherTool(BaseTool):
                         "type_inp": {
                             "type": "string",
                             "description": "Type of call, keep as 'hour' (default)",
-                            "default": "hour",
+                        },
+                        "units": {
+                            "type": "string",
+                            "enum": ["metric", "imperial", "standard"],
+                            "description": "Units of measurement (default: metric)",
                         },
                     },
                     "required": ["location", "start", "end"],

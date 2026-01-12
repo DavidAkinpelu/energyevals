@@ -27,6 +27,51 @@ pip install -e ".[dev]"
 
 ```
 
+## API Keys
+
+The framework requires API keys for LLM providers and various tools. Add these to your `.env` file:
+
+### LLM Providers (at least one required)
+
+| Key | Provider | Required |
+|-----|----------|----------|
+| `OPENAI_API_KEY` | OpenAI (GPT-4o, o1, etc.) | For OpenAI models |
+| `ANTHROPIC_API_KEY` | Anthropic (Claude) | For Anthropic models |
+| `DEEPINFRA_API_KEY` | DeepInfra (Llama, etc.) | For DeepInfra models |
+
+### Tools (optional, enables specific functionality)
+
+| Key | Tool | Purpose |
+|-----|------|---------|
+| `EXA_API_KEY` | SearchTool | Web search via Exa API |
+| `GRIDSTATUS_API_KEY` | GridStatusAPITool | ISO grid data (ERCOT, CAISO, PJM, etc.) |
+| `OPENWEATHER_API_KEY` | OpenWeatherTool | Weather data and forecasts |
+| `OPEN_EI_API_KEY` | TariffsTool | Utility tariff data |
+| `RENEWABLES_NINJA_API_KEY` | RenewablesTool | Solar/wind generation profiles |
+
+### Observability (optional)
+
+| Key | Service | Purpose |
+|-----|---------|---------|
+| `LANGFUSE_PUBLIC_KEY` | Langfuse | Cloud tracing (public key) |
+| `LANGFUSE_SECRET_KEY` | Langfuse | Cloud tracing (secret key) |
+| `LANGFUSE_HOST` | Langfuse | Custom host (optional) |
+
+### Example `.env` file
+
+```bash
+# LLM Provider (at least one)
+OPENAI_API_KEY=sk-...
+
+# Tools
+EXA_API_KEY=...
+GRIDSTATUS_API_KEY=...
+
+# Observability (optional)
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+```
+
 ## MCP Servers
 
 The framework includes MCP (Model Context Protocol) servers for RAG and database access.
@@ -162,6 +207,78 @@ tests/
 └── unit_tests/         # Unit tests
 ```
 
+## Running Benchmarks
+
+The benchmark runner uses a YAML config file to specify provider, model, questions, and other settings.
+
+### Quick Start
+
+```bash
+# 1. Edit the config file
+nano configs/benchmark_config.yaml
+
+# 2. Run the benchmark
+python scripts/run_benchmark.py
+
+# 3. View results in benchmark_results/
+```
+
+### Config File (`configs/benchmark_config.yaml`)
+
+```yaml
+# Provider settings
+provider: openai                    # openai, anthropic, or deepinfra
+model: gpt-4o-mini                  # Model to use
+
+# Reasoning model override (optional, OpenAI only)
+# is_reasoning_model: true          # Force reasoning mode (uses reasoning_effort)
+# is_reasoning_model: false         # Force standard mode (uses temperature)
+# Omit for auto-detect based on model name (o1, o3, o4, gpt-5 prefixes)
+
+# Questions file
+questions_file: data/questions.csv
+
+# Question selection (optional)
+# questions: [1, 2, 3]              # Specific IDs
+# questions: 1-5                     # Range
+
+# Observability
+observability:
+  enabled: true
+  backend: json                      # json, langfuse, or both
+
+# MCP tools
+mcp:
+  enabled: true
+```
+
+### CLI Options
+
+```bash
+# Use default config
+python scripts/run_benchmark.py
+
+# Use custom config
+python scripts/run_benchmark.py -c configs/my_config.yaml
+
+# Override provider/model
+python scripts/run_benchmark.py --provider anthropic --model claude-sonnet-4-20250514
+
+# Run specific questions
+python scripts/run_benchmark.py --questions 1,2,3
+
+# List available questions
+python scripts/run_benchmark.py --list-questions
+
+# Disable features
+python scripts/run_benchmark.py --no-mcp --no-observe
+
+# Override reasoning model detection (for OpenAI models)
+python scripts/run_benchmark.py --reasoning-model true   # Force reasoning mode
+python scripts/run_benchmark.py --reasoning-model false  # Disable reasoning mode
+python scripts/run_benchmark.py --reasoning-model auto   # Auto-detect (default)
+```
+
 ## Running Tests
 
 ```bash
@@ -173,7 +290,4 @@ python tests/provider_tests/test_providers.py
 
 # Run agent metrics tests (requires MCP servers)
 python tests/agent_tests/test_agent_metrics.py
-
-# Run benchmark prompts with observability
-python scripts/agent_tests/run_agent_prompts.py --observe json
 ```

@@ -14,12 +14,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
+import pytest
+
 from energbench.agent.providers import get_provider
 from energbench.agent.react_agent import ReActAgent
 from energbench.tools import create_default_registry
 from energbench.observability import get_observer, JSONFileObserver
 
 
+@pytest.mark.asyncio
 async def test_agent_with_json_observer():
     """Test agent run with JSON observer captures all data."""
     print("\n" + "="*60)
@@ -126,6 +129,7 @@ async def test_agent_with_json_observer():
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
+@pytest.mark.asyncio
 async def test_agent_with_both_backends():
     """Test agent run with both Langfuse and JSON backends."""
     print("\n" + "="*60)
