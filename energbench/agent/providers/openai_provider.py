@@ -1,11 +1,14 @@
 """OpenAI provider implementation."""
 
 import json
+import logging
 import os
 import time
 from typing import Any, AsyncIterator, Literal, Optional
 
 from openai import AsyncOpenAI
+
+logger = logging.getLogger(__name__)
 
 from .base_provider import (
     BaseProvider,
@@ -55,6 +58,7 @@ class OpenAIProvider(BaseProvider):
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         reasoning_effort: Literal["low", "medium", "high"] = "medium",
+        is_reasoning_model_override: Optional[bool] = None,
         **kwargs: Any,
     ):
         """Initialize the OpenAI provider.
@@ -65,13 +69,31 @@ class OpenAIProvider(BaseProvider):
             base_url: Optional base URL for API.
             reasoning_effort: For reasoning models, controls thinking depth
                 ("low", "medium", "high"). Default is "medium".
+            is_reasoning_model_override: Explicitly set whether this model is a
+                reasoning model. If None, auto-detects based on model name prefix.
+                Use this to override the hardcoded list for new/custom models.
             **kwargs: Additional configuration.
         """
         api_key = api_key or os.getenv("OPENAI_API_KEY")
         super().__init__(model, api_key, base_url, **kwargs)
 
         self.reasoning_effort = reasoning_effort
-        self.is_reasoning_model = is_reasoning_model(model)
+        # Check auto-detection first
+        auto_detected = is_reasoning_model(model)
+
+        # Allow explicit override, otherwise use auto-detect
+        if is_reasoning_model_override is not None:
+            # Warn if user is disabling reasoning mode for a known reasoning model
+            if is_reasoning_model_override is False and auto_detected:
+                logger.warning(
+                    f"Model '{model}' is a known reasoning model (matches prefix: "
+                    f"{', '.join(REASONING_MODEL_PREFIXES)}), but is_reasoning_model "
+                    f"override is set to False. This may cause API errors. "
+                    f"Proceeding with override."
+                )
+            self.is_reasoning_model = is_reasoning_model_override
+        else:
+            self.is_reasoning_model = auto_detected
 
         self.client = AsyncOpenAI(
             api_key=self.api_key,

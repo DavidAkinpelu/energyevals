@@ -3,6 +3,7 @@
 from .anthropic_provider import AnthropicProvider
 from .base_provider import BaseProvider
 from .deepinfra_provider import DeepInfraProvider
+from .google_provider import GoogleProvider
 from .openai_provider import OpenAIProvider
 
 from energbench.agent.schema import (
@@ -23,6 +24,7 @@ __all__ = [
     "OpenAIProvider",
     "AnthropicProvider",
     "DeepInfraProvider",
+    "GoogleProvider",
 ]
 
 
@@ -34,7 +36,7 @@ def get_provider(
     """Factory function to get a provider by name.
 
     Args:
-        provider_name: Name of the provider ("openai", "anthropic", "deepinfra").
+        provider_name: Name of the provider ("openai", "anthropic", "google", "deepinfra").
         model: Optional model identifier. If not provided, uses provider default.
         **kwargs: Additional provider configuration.
 
@@ -47,6 +49,7 @@ def get_provider(
     providers = {
         "openai": OpenAIProvider,
         "anthropic": AnthropicProvider,
+        "google": GoogleProvider,
         "deepinfra": DeepInfraProvider,
     }
 

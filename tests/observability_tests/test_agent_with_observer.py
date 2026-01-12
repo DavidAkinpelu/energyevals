@@ -14,10 +14,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
-from energbench.agent import EnergyAgent
+import pytest
+
+from energbench.agent.providers import get_provider
+from energbench.agent.react_agent import ReActAgent
+from energbench.tools import create_default_registry
 from energbench.observability import get_observer, JSONFileObserver
 
 
+@pytest.mark.asyncio
 async def test_agent_with_json_observer():
     """Test agent run with JSON observer captures all data."""
     print("\n" + "="*60)
@@ -38,25 +43,38 @@ async def test_agent_with_json_observer():
         )
         print(f"  [OK] Observer initialized at {temp_dir}")
 
-        # Initialize agent with standard tools
-        agent = EnergyAgent(
-            model_name="gpt-4o-mini",
-            mcp_servers=[],  # No MCP servers for this test
-            use_standard_tools=True,
+        # Initialize provider and tools
+        provider = get_provider("openai", model="gpt-4o-mini")
+        registry = create_default_registry()
+        tools = registry.get_all_tools()
+
+        # Build tool executor
+        async def tool_executor(tool_name: str, arguments: dict) -> str:
+            result = await registry.execute(tool_name, **arguments)
+            return result.to_json()
+
+        # Create agent
+        agent = ReActAgent(
+            provider=provider,
+            tools=tools,
+            tool_executor=tool_executor,
+            max_iterations=5,
         )
-        print("  [OK] Agent initialized")
+        print(f"  [OK] Agent initialized with {len(tools)} tools")
 
         # Run a query that uses tools
-        query = "What is 2 + 2? Use the calculator tool to verify."
+        query = "What is 15 multiplied by 7? Use the calculator tool."
 
         print(f"\n  Running query: {query}")
-        run = await agent.run(query, max_iterations=5)
+        run = await agent.run(query)
 
         print(f"\n  Agent result:")
         print(f"    Success: {run.success}")
         print(f"    Iterations: {run.iterations}")
         print(f"    Tool calls: {run.tool_calls_count}")
         print(f"    Steps: {len(run.steps)}")
+        if run.final_answer:
+            print(f"    Answer: {run.final_answer[:100]}...")
 
         # Trace the run
         trace_id = observer.trace_agent_run(
@@ -98,9 +116,6 @@ async def test_agent_with_json_observer():
         for step_type, count in trace_data["step_summary"]["step_types"].items():
             print(f"    {step_type}: {count}")
 
-        # Cleanup agent
-        await agent.cleanup()
-
         print("\n  [PASS] Agent with JSON Observer Test")
         return True
 
@@ -114,6 +129,7 @@ async def test_agent_with_json_observer():
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
+@pytest.mark.asyncio
 async def test_agent_with_both_backends():
     """Test agent run with both Langfuse and JSON backends."""
     print("\n" + "="*60)
@@ -131,20 +147,30 @@ async def test_agent_with_both_backends():
         print(f"  [OK] Observer created: {type(observer).__name__}")
         print(f"      Backends: {[type(o).__name__ for o in observer.observers]}")
 
-        # Initialize agent
-        agent = EnergyAgent(
-            model_name="gpt-4o-mini",
-            mcp_servers=[],
-            use_standard_tools=True,
+        # Initialize provider and tools
+        provider = get_provider("openai", model="gpt-4o-mini")
+        registry = create_default_registry()
+        tools = registry.get_all_tools()
+
+        async def tool_executor(tool_name: str, arguments: dict) -> str:
+            result = await registry.execute(tool_name, **arguments)
+            return result.to_json()
+
+        agent = ReActAgent(
+            provider=provider,
+            tools=tools,
+            tool_executor=tool_executor,
+            max_iterations=5,
         )
-        print("  [OK] Agent initialized")
+        print(f"  [OK] Agent initialized with {len(tools)} tools")
 
         # Run query
-        query = "Calculate the square root of 144."
+        query = "Calculate the square root of 144 using the calculator."
         print(f"\n  Running query: {query}")
 
-        run = await agent.run(query, max_iterations=5)
-        print(f"  Result: {run.final_answer[:100]}..." if len(run.final_answer or "") > 100 else f"  Result: {run.final_answer}")
+        run = await agent.run(query)
+        answer = run.final_answer or ""
+        print(f"  Result: {answer[:100]}..." if len(answer) > 100 else f"  Result: {answer}")
 
         # Trace
         trace_id = observer.trace_agent_run(
@@ -164,7 +190,6 @@ async def test_agent_with_both_backends():
         # Flush and cleanup
         observer.flush()
         observer.shutdown()
-        await agent.cleanup()
 
         print("\n  [PASS] Agent with Both Backends Test")
         return True

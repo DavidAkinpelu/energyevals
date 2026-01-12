@@ -22,6 +22,7 @@ from typing import Optional
 from .base import BaseObserver
 from .langfuse_client import (
     LangfuseObserver,
+    ObserverContext,
     get_langfuse_client,
     observe_agent_run,
 )
@@ -118,4 +119,5 @@ __all__ = [
     # Langfuse utilities
     "get_langfuse_client",
     "observe_agent_run",
+    "ObserverContext",
 ]

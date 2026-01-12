@@ -20,7 +20,6 @@ from .schema import (
     StepType,
     TextContent,
     ToolExecutor,
-    ToolResult,
 )
 
 
@@ -194,9 +193,10 @@ class ReActAgent:
             f"- **{tool.name}**: {tool.description}" for tool in self.tools
         )
 
-        print(f"{self.system_prompt}\n\n## Available Tools\n{tool_descriptions}")
+        full_prompt = f"{self.system_prompt}\n\n## Available Tools\n{tool_descriptions}"
+        logger.debug(f"System prompt with {len(self.tools)} tools prepared")
 
-        return f"{self.system_prompt}\n\n## Available Tools\n{tool_descriptions}"
+        return full_prompt
 
     async def _get_response(self, messages: list[Message]) -> ProviderResponse:
         """Get a response from the provider."""

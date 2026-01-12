@@ -1,0 +1,45 @@
+# Benchmark Configuration
+# Copy this file and modify as needed
+
+# Provider settings
+provider: openai                    # openai, anthropic, google, or deepinfra
+model: gpt-4o-mini                  # Model to use (see available models below)
+
+# Available models:
+#   openai: gpt-4o, gpt-4o-mini, o1, o1-mini, o3, o3-mini, o4-mini
+#   anthropic: claude-sonnet-4-20250514, claude-opus-4-20250514
+#   google: gemini-2.0-flash, gemini-1.5-pro, gemini-1.5-flash
+#   deepinfra: meta-llama/Llama-3.3-70B-Instruct-Turbo, meta-llama/Meta-Llama-3.1-405B-Instruct
+
+# Reasoning model override (optional)
+# Set to true/false to override auto-detection, or omit for auto-detect
+# Auto-detection checks if model name starts with: o1, o3, o4, gpt-5
+# Reasoning models use reasoning_effort instead of temperature
+# is_reasoning_model: true
+
+# Questions file
+questions_file: data/AI Evals New Questions.xlsx - Q&As.csv
+
+# Question selection (optional)
+# Leave empty or comment out to run all questions
+# questions: [1, 2, 3]              # Specific question IDs
+# questions: 1-5                     # Range of questions
+
+# Observability settings
+observability:
+  enabled: true                      # Enable/disable tracing
+  backend: json                      # json, langfuse, both, or auto
+  output_dir: ./benchmark_traces     # Directory for trace files
+
+# MCP settings
+mcp:
+  enabled: true                      # Use MCP tools (requires server URLs in .env)
+
+# Agent settings
+agent:
+  max_iterations: 10                 # Maximum iterations per question
+
+# Output settings
+output:
+  results_dir: ./benchmark_results   # Directory for result files
+  save_answers: true                 # Save full answers in results

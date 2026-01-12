@@ -2,13 +2,20 @@
 """Run ReActAgent against prompts using MCP + standard tools.
 
 Requires RAG_SERVER_URL and DATABASE_SERVER_URL to point to remote MCP servers.
+
+Usage:
+    python run_agent_prompts.py                    # No observability
+    python run_agent_prompts.py --observe json     # JSON file tracing
+    python run_agent_prompts.py --observe langfuse # Langfuse tracing
+    python run_agent_prompts.py --observe both     # Both backends
 """
 from __future__ import annotations
 
+import argparse
 import asyncio
 import os
 import json
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional
 
 from dotenv import load_dotenv
 
@@ -16,6 +23,7 @@ from energbench.agent.react_agent import ReActAgent
 from energbench.agent.providers.openai_provider import OpenAIProvider
 from energbench.mcp import create_mcp_client
 from energbench.tools import create_default_registry
+from energbench.observability import get_observer, BaseObserver
 
 
 PROMPTS = [
@@ -99,10 +107,30 @@ def _print_metrics(run) -> None:
     print(f"duration_seconds: {run.duration_seconds:.2f}")
 
 
-async def main() -> None:
+def _setup_observer(observe_backend: Optional[str]) -> Optional[BaseObserver]:
+    """Set up observability if requested."""
+    if not observe_backend:
+        return None
+
+    try:
+        observer = get_observer(
+            backend=observe_backend,
+            output_dir="./observability_logs",
+        )
+        print(f"Observability enabled: {type(observer).__name__}")
+        return observer
+    except ValueError as e:
+        print(f"Warning: Could not enable observability: {e}")
+        return None
+
+
+async def main(observe_backend: Optional[str] = None) -> None:
     load_dotenv()
     _require_env("RAG_SERVER_URL")
     _require_env("DATABASE_SERVER_URL")
+
+    # Set up observability
+    observer = _setup_observer(observe_backend)
 
     provider = OpenAIProvider(model=os.getenv("OPENAI_MODEL", "gpt-4o"))
 
@@ -115,7 +143,7 @@ async def main() -> None:
     agent = ReActAgent(provider=provider, tools=tools, tool_executor=executor)
 
     try:
-        for prompt in PROMPTS:
+        for i, prompt in enumerate(PROMPTS):
             print("\n=== PROMPT ===")
             print(prompt)
             run = await agent.run(prompt)
@@ -125,9 +153,36 @@ async def main() -> None:
             else:
                 print(f"Run failed: {run.error}")
             _print_metrics(run)
+
+            # Trace the run if observability is enabled
+            if observer:
+                trace_id = observer.trace_agent_run(
+                    run=run,
+                    metadata={"prompt_index": i, "model": provider.model},
+                    tags=["benchmark", "mcp"],
+                )
+                if trace_id:
+                    print(f"Trace ID: {trace_id}")
     finally:
         await mcp_client.disconnect()
+        if observer:
+            observer.flush()
+            observer.shutdown()
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run ReActAgent against prompts with optional observability"
+    )
+    parser.add_argument(
+        "--observe",
+        choices=["json", "langfuse", "both", "auto"],
+        default=None,
+        help="Enable observability tracing (json, langfuse, both, or auto)",
+    )
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    args = parse_args()
+    asyncio.run(main(observe_backend=args.observe))

@@ -7,15 +7,20 @@ This module provides full observability of agent runs, including:
 - Token usage and latency metrics
 """
 
+from __future__ import annotations
+
 import json
 import os
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from loguru import logger
 
 from .base import BaseObserver
+
+if TYPE_CHECKING:
+    from energbench.agent.schema import AgentRun, AgentStep
 
 try:
     from langfuse import Langfuse
@@ -108,7 +113,7 @@ class LangfuseObserver(BaseObserver):
 
     def trace_agent_run(
         self,
-        run: "AgentRun",
+        run: AgentRun,
         metadata: Optional[dict[str, Any]] = None,
         tags: Optional[list[str]] = None,
         user_id: Optional[str] = None,
@@ -163,7 +168,7 @@ class LangfuseObserver(BaseObserver):
             logger.error(f"Failed to trace agent run: {e}")
             return None
 
-    def _trace_step(self, trace, step: "AgentStep", index: int) -> None:
+    def _trace_step(self, trace, step: AgentStep, index: int) -> None:
         """Trace a single agent step."""
         from energbench.agent.schema import StepType
 
@@ -333,6 +338,41 @@ class LangfuseObserver(BaseObserver):
                 logger.error(f"Failed to shutdown Langfuse: {e}")
 
 
+class ObserverContext:
+    """Context holder for observe_agent_run with pre-configured trace settings."""
+
+    def __init__(
+        self,
+        observer: LangfuseObserver,
+        metadata: Optional[dict[str, Any]] = None,
+        tags: Optional[list[str]] = None,
+        user_id: Optional[str] = None,
+        session_id: Optional[str] = None,
+    ):
+        self.observer = observer
+        self.metadata = metadata
+        self.tags = tags
+        self.user_id = user_id
+        self.session_id = session_id
+
+    def trace(self, run: "AgentRun") -> Optional[str]:
+        """Trace an agent run with pre-configured settings.
+
+        Args:
+            run: The AgentRun to trace.
+
+        Returns:
+            Trace ID if successful, None otherwise.
+        """
+        return self.observer.trace_agent_run(
+            run=run,
+            metadata=self.metadata,
+            tags=self.tags,
+            user_id=self.user_id,
+            session_id=self.session_id,
+        )
+
+
 @contextmanager
 def observe_agent_run(
     query: str,
@@ -344,9 +384,9 @@ def observe_agent_run(
     """Context manager for observing an agent run.
 
     Usage:
-        with observe_agent_run("my query", tags=["test"]) as observer:
+        with observe_agent_run("my query", tags=["test"]) as ctx:
             run = await agent.run("my query")
-            observer.trace_agent_run(run)
+            ctx.trace(run)  # Uses pre-configured metadata, tags, etc.
 
     Args:
         query: The query being processed.
@@ -356,16 +396,18 @@ def observe_agent_run(
         session_id: Session identifier.
 
     Yields:
-        LangfuseObserver instance.
+        ObserverContext with pre-configured trace settings.
     """
     observer = LangfuseObserver()
+    ctx = ObserverContext(
+        observer=observer,
+        metadata=metadata,
+        tags=tags,
+        user_id=user_id,
+        session_id=session_id,
+    )
 
     try:
-        yield observer
+        yield ctx
     finally:
         observer.flush()
-
-
-# Type hint import for documentation
-if LANGFUSE_AVAILABLE:
-    from energbench.agent.schema import AgentRun, AgentStep
