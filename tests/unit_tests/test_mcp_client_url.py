@@ -171,31 +171,29 @@ class TestMCPClientConnection:
 
     @pytest.mark.asyncio
     async def test_disconnect_cleans_up_connections(self):
-        """Test that disconnect cleans up connection contexts."""
+        """Test that disconnect cleans up sessions and tools."""
         client = MCPClient([])
-        
-        # Mock a session and connection
+
+        # Mock a session
         mock_session = MagicMock()
-        mock_session.close = AsyncMock()
-        
-        mock_context = MagicMock()
-        mock_context.__aexit__ = AsyncMock()
-        
+
+        # Mock exit stack
+        mock_exit_stack = MagicMock()
+        mock_exit_stack.aclose = AsyncMock()
+
         client._sessions["test-server"] = mock_session
-        client._connections["test-server"] = {
-            "type": "stdio",
-            "context": mock_context,
-        }
+        client._tools["test-tool"] = {"name": "test", "description": "test", "parameters": {}}
+        client._exit_stack = mock_exit_stack
         client._connected = True
-        
+
         await client.disconnect()
-        
+
         # Verify cleanup
         assert len(client._sessions) == 0
-        assert len(client._connections) == 0
+        assert len(client._tools) == 0
+        assert client._exit_stack is None
         assert not client._connected
-        mock_session.close.assert_called_once()
-        mock_context.__aexit__.assert_called_once()
+        mock_exit_stack.aclose.assert_called_once()
 
 
 class TestMCPClientProperties:
