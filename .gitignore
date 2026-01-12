@@ -45,7 +45,6 @@ htmlcov/
 
 # Results and outputs
 results/
-*.csv
 *.json.bak
 
 # Logs
