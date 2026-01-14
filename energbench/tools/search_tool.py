@@ -90,37 +90,6 @@ class SearchTool(BaseTool):
                             "enum": ["neural", "fast", "auto", "deep"],
                             "description": "Search method: neural (embeddings-based), fast (streamlined), auto (default, combines methods), deep (comprehensive with query expansion)",
                         },
-                        "category": {
-                            "type": "string",
-                            "description": "Category to filter results",
-                            "enum": [
-                                "company",
-                                "research paper",
-                                "news",
-                                "pdf",
-                                "github",
-                                "financial report",
-                                "tweet",
-                                "people",
-                                "personal site",
-                            ],
-                        },
-                        "start_crawl_date": {
-                            "type": "string",
-                            "description": "Filter by crawl date start (ISO 8601 format, e.g., '2023-01-01T00:00:00.000Z')",
-                        },
-                        "end_crawl_date": {
-                            "type": "string",
-                            "description": "Filter by crawl date end (ISO 8601 format, e.g., '2023-12-31T00:00:00.000Z')",
-                        },
-                        "start_published_date": {
-                            "type": "string",
-                            "description": "Filter by published date start (ISO 8601 format, e.g., '2023-01-01T00:00:00.000Z')",
-                        },
-                        "end_published_date": {
-                            "type": "string",
-                            "description": "Filter by published date end (ISO 8601 format, e.g., '2023-12-31T00:00:00.000Z')",
-                        },
                         "include_domains": {
                             "type": "array",
                             "items": {"type": "string"},
@@ -149,11 +118,6 @@ class SearchTool(BaseTool):
                             "type": "array",
                             "items": {"type": "string"},
                             "description": "Array of URLs to crawl",
-                        },
-                        "ids": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "Deprecated - use 'urls' instead",
                         },
                         "text": {
                             "oneOf": [
@@ -205,11 +169,6 @@ class SearchTool(BaseTool):
         summary: bool = False,
         livecrawl: str = "always",
         search_type: str = "auto",
-        category: Optional[str] = None,
-        start_crawl_date: Optional[str] = None,
-        end_crawl_date: Optional[str] = None,
-        start_published_date: Optional[str] = None,
-        end_published_date: Optional[str] = None,
         include_domains: Optional[list[str]] = None,
         exclude_domains: Optional[list[str]] = None,
     ) -> str:
@@ -223,11 +182,6 @@ class SearchTool(BaseTool):
             summary: Include Exa summaries when available.
             livecrawl: Live crawl behavior ("never", "fallback", "preferred", "always").
             search_type: Search method ("neural", "fast", "auto", "deep"). Default: "auto".
-            category: Category filter (e.g., "company", "news", "research paper", "pdf").
-            start_crawl_date: Filter by crawl date start (ISO 8601, e.g., "2023-01-01T00:00:00.000Z").
-            end_crawl_date: Filter by crawl date end (ISO 8601, e.g., "2023-12-31T00:00:00.000Z").
-            start_published_date: Filter by published date start (ISO 8601, e.g., "2023-01-01T00:00:00.000Z").
-            end_published_date: Filter by published date end (ISO 8601, e.g., "2023-12-31T00:00:00.000Z").
             include_domains: Restrict results to these domains.
             exclude_domains: Exclude results from these domains.
 
@@ -250,11 +204,6 @@ class SearchTool(BaseTool):
                 "num_results": num_results if num_results is not None else self.default_num_results,
                 "livecrawl": livecrawl,
                 "type": search_type,
-                "category": category,
-                "start_crawl_date": start_crawl_date,
-                "end_crawl_date": end_crawl_date,
-                "start_published_date": start_published_date,
-                "end_published_date": end_published_date,
                 "include_domains": include_domains,
                 "exclude_domains": exclude_domains,
             }
@@ -308,7 +257,6 @@ class SearchTool(BaseTool):
     def get_contents(
         self,
         urls: Optional[list[str]] = None,
-        ids: Optional[list[str]] = None,
         text: Union[bool, dict] = True,
         highlights: Union[bool, dict] = True,
         summary: Union[bool, dict] = False,
@@ -324,7 +272,6 @@ class SearchTool(BaseTool):
 
         Args:
             urls: Array of URLs to crawl.
-            ids: Deprecated - use 'urls' instead. Array of document IDs obtained from searches.
             text: If true, returns full page text. Can also be an object with custom settings.
             highlights: Include text snippets identified as most relevant.
                 Can be a boolean or an object with configuration.
@@ -345,11 +292,8 @@ class SearchTool(BaseTool):
 
             exa = Exa(self.api_key)
 
-            # Support both urls and deprecated ids parameter
-            url_list = urls if urls is not None else (ids if ids else [])
-
             params: dict = {
-                "urls": url_list,
+                "urls": urls or [],
                 "text": text,
                 "highlights": highlights,
                 "summary": summary,
