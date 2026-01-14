@@ -140,12 +140,14 @@ async def main(observe_backend: Optional[str] = None) -> None:
     tools = std_registry.get_all_tools() + mcp_client.list_tools()
     executor = _build_executor(std_registry, mcp_client)
 
-    agent = ReActAgent(provider=provider, tools=tools, tool_executor=executor)
-
     try:
         for i, prompt in enumerate(PROMPTS):
             print("\n=== PROMPT ===")
             print(prompt)
+
+            # Create a new agent for each prompt
+            agent = ReActAgent(provider=provider, tools=tools, tool_executor=executor)
+
             run = await agent.run(prompt)
             print("\n=== RESPONSE ===")
             if run.final_answer is not None:

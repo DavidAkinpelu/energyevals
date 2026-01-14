@@ -443,14 +443,6 @@ async def run_benchmark(config: BenchmarkConfig) -> int:
 
     executor = build_tool_executor(std_registry, mcp_client)
 
-    # Create agent
-    agent = ReActAgent(
-        provider=provider,
-        tools=tools,
-        tool_executor=executor,
-        max_iterations=config.max_iterations,
-    )
-
     # Run benchmark
     results: List[BenchmarkResult] = []
 
@@ -459,6 +451,14 @@ async def run_benchmark(config: BenchmarkConfig) -> int:
     try:
         for i, question in enumerate(questions, 1):
             print_question(question, i, len(questions))
+
+            # Create a new agent for each question
+            agent = ReActAgent(
+                provider=provider,
+                tools=tools,
+                tool_executor=executor,
+                max_iterations=config.max_iterations,
+            )
 
             result = await run_question(
                 agent=agent,
