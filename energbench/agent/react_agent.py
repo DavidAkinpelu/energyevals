@@ -36,7 +36,7 @@ class ReActAgent:
         provider: BaseProvider,
         tools: Optional[list[ToolDefinition]] = None,
         tool_executor: Optional[ToolExecutor] = None,
-        max_iterations: int = 50,
+        max_iterations: int = 25,
         system_prompt: Optional[str] = None,
         csv_threshold: int = 20,
         csv_output_dir: str = "./agent_outputs",
@@ -495,7 +495,7 @@ class AgentBuilder:
         self._provider: Optional[BaseProvider] = None
         self._tools: list[ToolDefinition] = []
         self._tool_executor: Optional[ToolExecutor] = None
-        self._max_iterations: int = 10
+        self._max_iterations: int = 25
         self._system_prompt: Optional[str] = None
         self._csv_threshold: int = 20
         self._csv_output_dir: str = "./agent_outputs"

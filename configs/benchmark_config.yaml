@@ -37,7 +37,7 @@ mcp:
 
 # Agent settings
 agent:
-  max_iterations: 10                 # Maximum iterations per question
+  max_iterations: 25                 # Maximum iterations per question
 
 # Output settings
 output:
