@@ -263,7 +263,7 @@ class AgentConfig:
         system_prompt: Custom system prompt (None uses default).
     """
 
-    max_iterations: int = 10
+    max_iterations: int = 25
     csv_threshold: int = 20
     csv_output_dir: str = "./agent_outputs"
     system_prompt: Optional[str] = None

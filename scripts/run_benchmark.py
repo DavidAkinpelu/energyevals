@@ -52,7 +52,7 @@ DEFAULT_CONFIG = {
         "enabled": True,
     },
     "agent": {
-        "max_iterations": 10,
+        "max_iterations": 25,
     },
     "output": {
         "results_dir": "./benchmark_results",
