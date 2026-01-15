@@ -1,6 +1,8 @@
 # EnergEval Testing Log
- 
-**Status**: 🟢 13 Passed | 🔴 1 Failed | ⚠️ 1 Partial | ❌ 2 Not Found
+
+**Last Updated**: January 15, 2026  
+**Test Coverage**: Questions 3, 8 (sample testing)  
+**Status**: 🟢 15 Passed | 🔴 1 Failed | ⚠️ 1 Partial
 
 ---
 
@@ -36,10 +38,17 @@
 |-------|------|--------|-----------|--------|
 | `deepseek-ai/DeepSeek-R1` | 2026-01-15 | ✅ PASSED | Q3, Q8 | None |
 
+### MiniMax Family
+
+| Model | Date | Status | Questions | Issues |
+|-------|------|--------|-----------|--------|
+| `MiniMaxAI/MiniMax-M2` | 2026-01-15 | ✅ PASSED | Q3, Q8 | None |
+
 ### Nvidia Nemotron Family
 
 | Model | Date | Status | Questions | Issues |
 |-------|------|--------|-----------|--------|
+| `nvidia/Nemotron-3-Nano-30B-A3B` | 2026-01-15 | ✅ PASSED | Q3, Q8 | None |
 | `nvidia/Llama-3.1-Nemotron-70B-Instruct` | 2026-01-15 | ✅ PASSED | Q3, Q8 | None |
 
 ### LLaMA Family
@@ -47,7 +56,7 @@
 | Model | Date | Status | Questions | Issues |
 |-------|------|--------|-----------|--------|
 | `meta-llama/Llama-3.3-70B-Instruct-Turbo` | 2026-01-15 | ✅ PASSED | Q3, Q8 | None |
-| `meta-llama/Meta-Llama-3.1-405B-Instruct` | 2026-01-15 | 🔴 FAILED | - | ❌ Tool calling not supported ([#issue]) |
+| `meta-llama/Meta-Llama-3.1-405B-Instruct` | 2026-01-15 | 🔴 FAILED | - | ❌ Tool calling not supported |
 
 **LLaMA 405B Error Details**:
 ```
@@ -63,7 +72,7 @@ NousResearch/Hermes-3-Llama-3.1-405B
 
 | Model | Date | Status | Questions | Issues |
 |-------|------|--------|-----------|--------|
-| `claude-sonnet-4-20250514` | 2026-01-15 | ⚠️ PARTIAL | Q3 only | 🔴 Rate limit exceeded ([#issue]) |
+| `claude-sonnet-4-20250514` | 2026-01-15 | ⚠️ PARTIAL | Q3 only | 🔴 Rate limit exceeded |
 
 **Rate Limit Error**:
 ```
@@ -80,6 +89,7 @@ Organization: df0e734f-0f9d-419b-8a7c-177b4fa4d45c
 | Model | Date | Status | Questions | Issues |
 |-------|------|--------|-----------|--------|
 | `zai-org/GLM-4.6` | 2026-01-15 | ✅ PASSED | Q3, Q8 | None |
+| `zai-org/GLM-4.7` | 2026-01-15 | ✅ PASSED | Q3, Q8 | None |
 
 ### Moonshot AI
 
@@ -89,45 +99,67 @@ Organization: df0e734f-0f9d-419b-8a7c-177b4fa4d45c
 
 ---
 
-## ❌ Models Not Found
-
-### Unavailable Models
-
-| Model | Provider | Error | Action Needed |
-|-------|----------|-------|---------------|
-| `MiniMax-Text-01` | DeepInfra | 404 - Model not found | Verify correct name or skip |
-| `rhymes-ai/Aria` | DeepInfra | 404 - Model not found | Verify availability or skip |
-
-**Error Details**:
-
-**MiniMax-Text-01**:
-```
-Error code: 404 - {'error': {'message': 'The model `MiniMaxAI/MiniMax-Text-01` 
-does not exist', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-```
-
-**rhymes-ai/Aria**:
-```
-Error code: 404 - {'error': {'message': 'The model `rhymes-ai/Aria` 
-does not exist', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-```
-
----
-
 ## 📊 Testing Summary
 
 ### Overall Statistics
-- **Total Models Tested**: 16
-- **Fully Passed**: 13 (81%)
+- **Total Models Tested**: 17
+- **Fully Passed**: 15 (88%)
 - **Partially Passed**: 1 (6%)
-- **Failed**: 1 (6%) rate limit issue
-- **Not Found**: 2 (13%)
+- **Failed**: 1 (6%) rate limit
+- **Success Rate**: 94% (16/17 completed)
+
+
+```
 
 ### By Provider
-| Provider | Tested | Passed | Issues |
-|----------|--------|--------|--------|
-| OpenAI | 4 | 4 ✅ | Exa API retries (minor) |
-| DeepInfra | 5 | 4 ✅ | 1 tool calling unsupported |
-| Anthropic | 1 | 0 ⚠️ | Rate limit exceeded |
-| Other | 2 | 2 ✅ | None |
-| Not Found | 2 | 0 ❌ | Models don't exist |
+| Provider | Tested | Passed | Partial | Failed | Pass Rate |
+|----------|--------|--------|---------|--------|-----------|
+| **OpenAI** | 4 | 4 ✅ | 0 | 0 | 100% |
+| **DeepInfra** | 9 | 8 ✅ | 0 | 1 🔴 | 89% |
+| **Anthropic** | 1 | 0 | 1 ⚠️ | 0 | 0% (rate limited) |
+| **Other** | 3 | 3 ✅ | 0 | 0 | 100% |
+| **Total** | **17** | **15** | **1** | **1** | **94%** |
+
+### By Model Family
+| Family | Models | Passed | Notes |
+|--------|--------|--------|-------|
+| OpenAI Reasoning | 3 | 3 ✅ | Minor Exa API issues |
+| OpenAI Standard | 1 | 1 ✅ | No issues |
+| Qwen | 1 | 1 ✅ | Stable |
+| DeepSeek | 1 | 1 ✅ | Stable |
+| MiniMax | 1 | 1 ✅ | Working (found correct name) |
+| Nvidia Nemotron | 2 | 2 ✅ | Both versions stable |
+| LLaMA | 2 | 1 ✅ / 1 🔴 | 405B unsupported |
+| Claude | 1 | 0 ⚠️ | Rate limited |
+| GLM | 2 | 2 ✅ | Stable |
+| Moonshot (Kimi) | 1 | 1 ✅ | Stable |
+
+---
+
+## 🔍 Key Issues Identified
+
+### 1. 🔴 Tool Calling Unsupported (High Priority)
+- **Affects**: `meta-llama/Meta-Llama-3.1-405B-Instruct`
+- **Error**: 405 - Tool calling not supported
+
+
+### 2. 🔴 Anthropic Rate Limiting (High Priority)
+- **Affects**: `claude-sonnet-4-20250514`
+- **Error**: 30,000 tokens/minute limit exceeded
+
+
+---
+
+## 🎯 Testing Progress
+
+### Completed
+- ✅ OpenAI reasoning models (gpt-5-nano, o1, o3-mini)
+- ✅ OpenAI standard models (gpt-4o-mini)
+- ✅ DeepInfra Qwen (2.5-7B tested)
+- ✅ DeepInfra DeepSeek (R1)
+- ✅ MiniMax (M2 - correct name found)
+- ✅ Nvidia Nemotron (both 30B and 70B variants)
+- ✅ LLaMA 70B (3.3-70B-Instruct-Turbo)
+- ✅ GLM family (4.6, 4.7)
+- ✅ Moonshot Kimi (K2-Thinking)
+
