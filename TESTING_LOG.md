@@ -120,19 +120,6 @@ Organization: df0e734f-0f9d-419b-8a7c-177b4fa4d45c
 | **Other** | 3 | 3 ✅ | 0 | 0 | 100% |
 | **Total** | **17** | **15** | **1** | **1** | **94%** |
 
-### By Model Family
-| Family | Models | Passed | Notes |
-|--------|--------|--------|-------|
-| OpenAI Reasoning | 3 | 3 ✅ | Minor Exa API issues |
-| OpenAI Standard | 1 | 1 ✅ | No issues |
-| Qwen | 1 | 1 ✅ | Stable |
-| DeepSeek | 1 | 1 ✅ | Stable |
-| MiniMax | 1 | 1 ✅ | Working (found correct name) |
-| Nvidia Nemotron | 2 | 2 ✅ | Both versions stable |
-| LLaMA | 2 | 1 ✅ / 1 🔴 | 405B unsupported |
-| Claude | 1 | 0 ⚠️ | Rate limited |
-| GLM | 2 | 2 ✅ | Stable |
-| Moonshot (Kimi) | 1 | 1 ✅ | Stable |
 
 ---
 
