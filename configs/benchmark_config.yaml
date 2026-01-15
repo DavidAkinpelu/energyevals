@@ -2,8 +2,13 @@
 # Copy this file and modify as needed
 
 # Provider settings
+<<<<<<< Updated upstream
 provider: openai                    # openai, anthropic, google, or deepinfra
 model: gpt-4o-mini                  # Model to use (see available models below)
+=======
+provider: openai                    # openai, anthropic, or deepinfra
+model: Qwen2.5-7B-Instruct                 # Model to use (see available models below)
+>>>>>>> Stashed changes
 
 # Available models:
 #   openai: gpt-4o, gpt-4o-mini, o1, o1-mini, o3, o3-mini, o4-mini
