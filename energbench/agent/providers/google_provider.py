@@ -16,7 +16,7 @@ from .base_provider import (
 class GoogleProvider(BaseProvider):
     """Google Gemini API provider implementation.
 
-    Supports Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 2.0, and other Gemini models.
+    Supports  Gemini models.
     """
 
     def __init__(
@@ -52,7 +52,6 @@ class GoogleProvider(BaseProvider):
         messages: list[Message],
         tools: Optional[list[ToolDefinition]] = None,
         temperature: float = 0.0,
-        max_tokens: int = 4096,
         **kwargs: Any,
     ) -> ProviderResponse:
         """Generate a completion using Google's Gemini API."""
@@ -73,7 +72,6 @@ class GoogleProvider(BaseProvider):
         # Build generation config
         generation_config = self.genai.GenerationConfig(
             temperature=temperature,
-            max_output_tokens=max_tokens,
         )
 
         # Format tools if provided
@@ -107,7 +105,7 @@ class GoogleProvider(BaseProvider):
                         ToolCall(
                             id=f"call_{len(tool_calls)}",
                             name=fc.name,
-                            arguments=dict(fc.args) if fc.args else {},
+                            arguments=self._convert_proto_to_dict(fc.args) if fc.args else {},
                         )
                     )
 
@@ -142,7 +140,6 @@ class GoogleProvider(BaseProvider):
         messages: list[Message],
         tools: Optional[list[ToolDefinition]] = None,
         temperature: float = 0.0,
-        max_tokens: int = 4096,
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         """Stream a completion from Google Gemini."""
@@ -158,7 +155,6 @@ class GoogleProvider(BaseProvider):
 
         generation_config = self.genai.GenerationConfig(
             temperature=temperature,
-            max_output_tokens=max_tokens,
         )
 
         gemini_tools = None
@@ -176,8 +172,35 @@ class GoogleProvider(BaseProvider):
             if chunk.text:
                 yield chunk.text
 
-    def _format_tools(self, tools: list[ToolDefinition]) -> list[Any]:
+    def _convert_proto_to_dict(self, proto_obj: Any) -> dict:
+        """Convert protobuf MapComposite/RepeatedComposite to native Python dict.
+
+        Gemini's function call args are protobuf objects that need deep conversion.
+        """
+        if proto_obj is None:
+            return {}
+
+        def convert_value(value: Any) -> Any:
+            # Handle protobuf MapComposite (dict-like)
+            if hasattr(value, "keys") and hasattr(value, "values"):
+                return {k: convert_value(v) for k, v in value.items()}
+            # Handle protobuf RepeatedComposite (list-like)
+            elif hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
+                try:
+                    return [convert_value(item) for item in value]
+                except TypeError:
+                    return value
+            else:
+                return value
+
+        return convert_value(proto_obj)
+
+    def format_tools(self, tools: list[ToolDefinition]) -> list[Any]:
         """Format tools for Google Gemini's function calling format."""
+        return self._format_tools(tools)
+
+    def _format_tools(self, tools: list[ToolDefinition]) -> list[Any]:
+        """Internal method to format tools for Google Gemini's function calling format."""
         function_declarations = []
 
         for tool in tools:

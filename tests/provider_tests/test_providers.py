@@ -353,6 +353,7 @@ async def run_all_tests(
         "openai": ("OPENAI_API_KEY", bool(os.getenv("OPENAI_API_KEY"))),
         "anthropic": ("ANTHROPIC_API_KEY", bool(os.getenv("ANTHROPIC_API_KEY"))),
         "deepinfra": ("DEEPINFRA_API_KEY", bool(os.getenv("DEEPINFRA_API_KEY"))),
+        "google": ("GOOGLE_API_KEY", bool(os.getenv("GOOGLE_API_KEY"))),
     }
 
     for provider_name, (env_var, exists) in api_keys.items():
@@ -415,7 +416,7 @@ async def main():
         "--provider",
         "-p",
         type=str,
-        choices=["openai", "anthropic", "deepinfra"],
+        choices=["openai", "anthropic", "deepinfra", "google"],
         help="Test only a specific provider",
     )
     parser.add_argument(
