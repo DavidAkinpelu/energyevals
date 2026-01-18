@@ -79,7 +79,17 @@ NousResearch/Hermes-3-Llama-3.1-405B
 Error code: 429 - Rate limit: 30,000 input tokens per minute exceeded
 Organization: df0e734f-0f9d-419b-8a7c-177b4fa4d45c
 ```
+---
 
+## Google Models
+
+### Gemini family 
+
+| Model | Date | Status | Questions | Issues |
+|-------|------|--------|-----------|--------|
+| `gemini-2.0-flash` | 2026-01-18 | ✅ PASSED  | Q3, Q8 | None |
+| `gemini-1.5-flash` | 2026-01-18 | 🔴 FAILED   | Q3, Q8 | Unsupported API Version |
+| `gemini-1.5-pro` | 2026-01-18 | 🔴 FAILED   | Q3, Q8 | Unsupported API Version |
 ---
 
 ## ✅ Other Model Families
@@ -102,11 +112,11 @@ Organization: df0e734f-0f9d-419b-8a7c-177b4fa4d45c
 ## 📊 Testing Summary
 
 ### Overall Statistics
-- **Total Models Tested**: 17
-- **Fully Passed**: 15 (88%)
-- **Partially Passed**: 1 (6%)
-- **Failed**: 1 (6%) rate limit
-- **Success Rate**: 94% (16/17 completed)
+- **Total Models Tested**: 20
+- **Fully Passed**: 16 (80%)
+- **Partially Passed**: 1 (5%)
+- **Failed**: 3 (15%) rate limit
+- **Success Rate**: 80% (16/20 completed)
 
 
 ```
@@ -117,6 +127,7 @@ Organization: df0e734f-0f9d-419b-8a7c-177b4fa4d45c
 | **OpenAI** | 4 | 4 ✅ | 0 | 0 | 100% |
 | **DeepInfra** | 9 | 8 ✅ | 0 | 1 🔴 | 89% |
 | **Anthropic** | 1 | 0 | 1 ⚠️ | 0 | 0% (rate limited) |
+| **Google gemini** | 3 | 1 | 0  | 2 🔴 | 33%|
 | **Other** | 3 | 3 ✅ | 0 | 0 | 100% |
 | **Total** | **17** | **15** | **1** | **1** | **94%** |
 
@@ -129,8 +140,11 @@ Organization: df0e734f-0f9d-419b-8a7c-177b4fa4d45c
 - **Affects**: `meta-llama/Meta-Llama-3.1-405B-Instruct`
 - **Error**: 405 - Tool calling not supported
 
+### 2. 🔴 Gemini Unsupported API version issue
+- **Affects**: `gemini-1.5-pro` and `gemini-1.5-flash`
+- **Error**: 405 - Agent run failed: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
 
-### 2. 🔴 Anthropic Rate Limiting (High Priority)
+### 3. 🔴 Anthropic Rate Limiting (High Priority)
 - **Affects**: `claude-sonnet-4-20250514`
 - **Error**: 30,000 tokens/minute limit exceeded
 
@@ -150,3 +164,6 @@ Organization: df0e734f-0f9d-419b-8a7c-177b4fa4d45c
 - ✅ GLM family (4.6, 4.7)
 - ✅ Moonshot Kimi (K2-Thinking)
 
+
+
+- Agent run failed: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
