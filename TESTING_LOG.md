@@ -88,8 +88,14 @@ Organization: df0e734f-0f9d-419b-8a7c-177b4fa4d45c
 | Model | Date | Status | Questions | Issues |
 |-------|------|--------|-----------|--------|
 | `gemini-2.0-flash` | 2026-01-18 | ✅ PASSED  | Q3, Q8 | None |
-| `gemini-1.5-flash` | 2026-01-18 | 🔴 FAILED   | Q3, Q8 | Unsupported API Version |
-| `gemini-1.5-pro` | 2026-01-18 | 🔴 FAILED   | Q3, Q8 | Unsupported API Version |
+| `gemini-2.0-flash-lite` | 2026-01-18 | ✅ PASSED   | Q3, Q8 | None |
+| `gemini-2.5-pro` | 2026-01-18 | ✅ PASSED   | Q3, Q8 | None |
+| `gemini-2.5-flash` | 2026-01-18 | ✅ PASSED   | Q3, Q8 | None |
+| `gemini-2.5-flash-lite` | 2026-01-18 | ✅ PASSED   | Q3, Q8 | None |
+| `gemini-3-pro-preview` | 2026-01-18 | 🔴 FAILED   | Q3, Q8 | "400 Function call is missing a thought_signature in functionCall parts. |
+| `gemini-3-flash-preview` | 2026-01-18 | 🔴 FAILED  | Q3, Q8 | "400 Function call is missing a thought_signature in functionCall parts. |
+
+
 ---
 
 ## ✅ Other Model Families
@@ -112,11 +118,11 @@ Organization: df0e734f-0f9d-419b-8a7c-177b4fa4d45c
 ## 📊 Testing Summary
 
 ### Overall Statistics
-- **Total Models Tested**: 20
-- **Fully Passed**: 16 (80%)
-- **Partially Passed**: 1 (5%)
-- **Failed**: 3 (15%) rate limit
-- **Success Rate**: 80% (16/20 completed)
+- **Total Models Tested**: 22
+- **Fully Passed**: 19 (86%)
+- **Partially Passed**: 4.5 (6%)
+- **Failed**: 2 (9.5%) rate limit
+- **Success Rate**: 86% (19/22 completed)
 
 
 ```
@@ -127,7 +133,6 @@ Organization: df0e734f-0f9d-419b-8a7c-177b4fa4d45c
 | **OpenAI** | 4 | 4 ✅ | 0 | 0 | 100% |
 | **DeepInfra** | 9 | 8 ✅ | 0 | 1 🔴 | 89% |
 | **Anthropic** | 1 | 0 | 1 ⚠️ | 0 | 0% (rate limited) |
-| **Google gemini** | 3 | 1 | 0  | 2 🔴 | 33%|
 | **Other** | 3 | 3 ✅ | 0 | 0 | 100% |
 | **Total** | **17** | **15** | **1** | **1** | **94%** |
 
@@ -140,11 +145,8 @@ Organization: df0e734f-0f9d-419b-8a7c-177b4fa4d45c
 - **Affects**: `meta-llama/Meta-Llama-3.1-405B-Instruct`
 - **Error**: 405 - Tool calling not supported
 
-### 2. 🔴 Gemini Unsupported API version issue
-- **Affects**: `gemini-1.5-pro` and `gemini-1.5-flash`
-- **Error**: 405 - Agent run failed: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
 
-### 3. 🔴 Anthropic Rate Limiting (High Priority)
+### 2. 🔴 Anthropic Rate Limiting (High Priority)
 - **Affects**: `claude-sonnet-4-20250514`
 - **Error**: 30,000 tokens/minute limit exceeded
 
@@ -158,12 +160,9 @@ Organization: df0e734f-0f9d-419b-8a7c-177b4fa4d45c
 - ✅ OpenAI standard models (gpt-4o-mini)
 - ✅ DeepInfra Qwen (2.5-7B tested)
 - ✅ DeepInfra DeepSeek (R1)
+- ✅ Gemini family (2.0, 2.5)
 - ✅ MiniMax (M2 - correct name found)
 - ✅ Nvidia Nemotron (both 30B and 70B variants)
 - ✅ LLaMA 70B (3.3-70B-Instruct-Turbo)
 - ✅ GLM family (4.6, 4.7)
 - ✅ Moonshot Kimi (K2-Thinking)
-
-
-
-- Agent run failed: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
