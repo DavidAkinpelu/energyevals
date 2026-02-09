@@ -4,291 +4,209 @@ AI agent evaluation framework for energy analytics.
 
 ## Features
 
-- **Custom ReAct Agent**: Multi-provider support (OpenAI, Anthropic, DeepInfra)
-- **MCP Servers**: RAG and Database tools via Model Context Protocol
-- **Standard Tools**: Search, GridStatus, Tariffs, Renewables, Battery optimization, Dockets
-- **Evaluation Framework**: Benchmarks, metrics, model comparison
-- **Observability**: Langfuse and JSON file tracing with full data capture
+- **ReAct Agent**: Multi-provider LLM support (OpenAI, Anthropic, Google, DeepInfra)
+- **Energy Tools**: GridStatus, Tariffs, Renewables, Battery optimization, Dockets, Weather, Search
+- **MCP Integration**: External RAG and database tools via Model Context Protocol
+- **Benchmark Framework**: Evaluate agents across questions with metrics and comparison
+- **Observability**: Langfuse and JSON tracing with full execution data
 
-## Installation
-
-For Debian/Ubuntu, install the Ipopt solver and system deps first (builds Ipopt + required third-party solvers from source). The install script skips Ipopt's Java test harness to avoid JDK native library issues on some systems.
+## Quick Start
 
 ```bash
-# Install system dependencies (Ipopt + build tooling)
+# Install system dependencies (Ipopt solver for battery optimization)
 sudo ./install.sh
 
 # Create virtual environment
 python -m venv .venv
 source .venv/bin/activate
 
-# Install in development mode
-pip install -e ".[dev]"
+# Install dependencies
+pip install -r requirements.txt
 
+# Configure API keys
+cp .env.example .env
+# Edit .env with your keys
+
+# Run a benchmark
+python scripts/run_benchmark.py
 ```
 
-## API Keys
+## Installation
 
-The framework requires API keys for LLM providers and various tools. Add these to your `.env` file:
+### System Dependencies
 
-### LLM Providers (at least one required)
-
-| Key | Provider | Required |
-|-----|----------|----------|
-| `OPENAI_API_KEY` | OpenAI (GPT-4o, o1, etc.) | For OpenAI models |
-| `ANTHROPIC_API_KEY` | Anthropic (Claude) | For Anthropic models |
-| `GOOGLE_API_KEY` | Google (Gemini 2.0, 1.5, etc.) | For Google models |
-| `DEEPINFRA_API_KEY` | DeepInfra (Llama, etc.) | For DeepInfra models |
-
-### Tools (optional, enables specific functionality)
-
-| Key | Tool | Purpose |
-|-----|------|---------|
-| `EXA_API_KEY` | SearchTool | Web search via Exa API |
-| `GRIDSTATUS_API_KEY` | GridStatusAPITool | ISO grid data (ERCOT, CAISO, PJM, etc.) |
-| `OPENWEATHER_API_KEY` | OpenWeatherTool | Weather data and forecasts |
-| `OPEN_EI_API_KEY` | TariffsTool | Utility tariff data |
-| `RENEWABLES_NINJA_API_KEY` | RenewablesTool | Solar/wind generation profiles |
-
-### Observability (optional)
-
-| Key | Service | Purpose |
-|-----|---------|---------|
-| `LANGFUSE_PUBLIC_KEY` | Langfuse | Cloud tracing (public key) |
-| `LANGFUSE_SECRET_KEY` | Langfuse | Cloud tracing (secret key) |
-| `LANGFUSE_HOST` | Langfuse | Custom host (optional) |
-
-### Example `.env` file
+For battery optimization tools, install Ipopt solver:
 
 ```bash
-# LLM Provider (at least one)
-OPENAI_API_KEY=sk-...
+# Debian/Ubuntu
+sudo ./install.sh
+```
 
-# Tools
-EXA_API_KEY=...
-GRIDSTATUS_API_KEY=...
+The install script builds Ipopt and required third-party solvers from source, skipping Java test harness to avoid JDK issues.
+
+### Python Dependencies
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+For development (includes testing and linting tools):
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+## Configuration
+
+### API Keys
+
+Create a `.env` file with your credentials:
+
+```bash
+# LLM Providers (at least one required)
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_API_KEY=...
+DEEPINFRA_API_KEY=...
 
 # Observability (optional)
 LANGFUSE_PUBLIC_KEY=pk-lf-...
 LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_HOST=https://cloud.langfuse.com
+
+# Tools (optional - enables specific functionality)
+EXA_API_KEY=...                      # SearchTool
+GRIDSTATUS_API_KEY=...               # GridStatusAPITool
+OPENWEATHER_API_KEY=...              # OpenWeatherTool
+OPEN_EI_API_KEY=...                  # TariffsTool
+RENEWABLES_NINJA_API_KEY=...         # RenewablesTool
 ```
 
-## MCP Servers
+Copy `.env.example` for a template.
 
-The framework includes MCP (Model Context Protocol) servers for RAG and database access.
+### MCP Servers
 
-### Local Servers (Default)
+MCP servers provide RAG and database access. They run locally by default.
+
+**Local Setup:**
 
 ```bash
-# Install MCP servers
+# Install servers
 pip install ./mcp-servers/rag-server
 pip install ./mcp-servers/database-server
 
-# They'll be used automatically by the agent
+# Configure credentials in mcp-servers/*/.env
+# Servers are auto-discovered by the agent
 ```
 
-### Remote Servers (Production)
+**Remote Setup:**
 
-To use deployed MCP servers, set environment variables in your `.env`:
+To use deployed servers, add URLs to your `.env`:
 
 ```bash
 RAG_SERVER_URL=https://your-rag-server.com/sse
 DATABASE_SERVER_URL=https://your-db-server.com/sse
 ```
 
+MCP servers are maintained in a separate repository. See `mcp-servers/DEPLOYMENT_GUIDE.md` for deployment instructions.
+
 ## Usage
 
-```bash
-# Run a benchmark
-python scripts/run_benchmark.py --benchmark benchmarks/datasets/energy_analysis/ercot.json --provider openai --model gpt-4o
+### Ask a Question (Interactive)
 
-# Compare models
-python scripts/compare_models.py --benchmark benchmarks/datasets/energy_analysis/ercot.json
-```
-
-## Observability
-
-The framework supports multiple observability backends for tracing agent runs:
-
-- **Langfuse**: Cloud-based observability platform
-- **JSON**: Local JSON file logging
-- **Both**: Use multiple backends simultaneously
-
-### Configuration
-
-For Langfuse, set environment variables in your `.env`:
+The quickest way to use energBench is the interactive agent script. Type a question, get an answer:
 
 ```bash
-LANGFUSE_PUBLIC_KEY=pk-lf-...
-LANGFUSE_SECRET_KEY=sk-lf-...
-LANGFUSE_HOST=https://cloud.langfuse.com  # optional, defaults to cloud
+# Start interactive mode (defaults to openai / gpt-4o-mini)
+python scripts/run_agent.py
+
+# Choose a provider
+python scripts/run_agent.py -p anthropic
+python scripts/run_agent.py -p google
+
+# Pick a specific model
+python scripts/run_agent.py -p openai -m gpt-4o
+
+# Enable MCP tools (RAG + database)
+python scripts/run_agent.py --mcp
+
+# Run without tools (pure LLM)
+python scripts/run_agent.py --no-tools
+
+# Ask a single question (no interactive loop)
+python scripts/run_agent.py -q "What are current ERCOT energy prices?"
 ```
 
-### Usage
+Inside the interactive session, type your question at the `>` prompt. The agent will use its tools to research and answer. Type `quit` to exit.
 
-```python
-from energbench.observability import get_observer
+### Running Benchmarks
 
-# Choose backend: "langfuse", "json", "both", or "auto"
-observer = get_observer("json", output_dir="./traces")
+For detailed benchmark configuration, custom questions, evaluation, and multi-model comparison, see the [Benchmark Guide](docs/BENCHMARK_GUIDE.md).
 
-# After running your agent
-run = await agent.run("What are ERCOT energy prices?")
+## Architecture
 
-# Trace the run
-trace_id = observer.trace_agent_run(
-    run=run,
-    metadata={"experiment": "v1"},
-    tags=["ercot", "prices"],
-    user_id="analyst_1",
-    session_id="session_123",
-)
+### ReAct Agent Loop
 
-# Flush and cleanup
-observer.flush()
-observer.shutdown()
-```
+The agent uses a Reasoning-Acting loop:
 
-### Backend Options
+1. **Thought**: Analyze the question and plan next action
+2. **Action**: Select and execute a tool
+3. **Observation**: Process tool output
+4. **Repeat**: Continue until answer is complete
 
-| Backend | Description |
-|---------|-------------|
-| `langfuse` | Send traces to Langfuse cloud (requires credentials) |
-| `json` | Write traces to local JSON files |
-| `both` | Use both Langfuse and JSON simultaneously |
-| `auto` | Use Langfuse if available, otherwise JSON |
+Maximum iterations default to 25 (configurable).
 
-### JSON Observer Features
+### Provider Abstraction
 
-The JSON observer captures complete trace data:
+Unified interface for multiple LLM providers:
 
-- All execution steps (thought, action, observation, answer, error)
-- Full tool inputs and outputs (never truncated)
-- Failed tool calls with error details
-- Token usage and latency metrics
-- Step-by-step timestamps
+- **OpenAI**: GPT-4o, GPT-4o-mini, o1, o3 (reasoning models)
+- **Anthropic**: Claude Sonnet 4, Opus 4
+- **Google**: Gemini 2.0 Flash, 1.5 Pro/Flash
+- **DeepInfra**: Llama 3.3 70B, 3.1 405B
 
-```python
-from energbench.observability import JSONFileObserver
+Providers implement a common `BaseProvider` protocol with tool calling and streaming support.
 
-observer = JSONFileObserver(
-    output_dir="./traces",      # Directory for trace files
-    single_file=False,          # True for JSONL, False for individual files
-    pretty_print=True,          # Format JSON with indentation
-)
+### Tool System
 
-# Load a trace later
-trace_data = observer.load_trace(trace_id)
-print(trace_data["step_summary"])  # Summary of steps and failures
-```
+Tools are registered via the default tool registry in `create_default_registry()`:
+1. **Direct registration**: Tools instantiated and registered in code
+2. **MCP servers**: External tools via Model Context Protocol
 
-## Project Structure
+Each tool provides:
+- JSON schema for LLM tool calling
+- Async execution
+- Error handling with structured results
 
-```
-energbench/
-├── agent/          # ReAct agent and LLM providers
-├── mcp/            # MCP client for remote servers
-├── tools/          # Standard tools (search, gridstatus, tariffs, etc.)
-├── evaluation/     # Benchmarks and metrics
-├── observability/  # Tracing backends (Langfuse, JSON)
-└── utils/          # Configuration and utilities
+### Observability
 
-mcp-servers/
-├── rag-server/     # RAG server with vector search
-└── database-server/# Database query server
+Traces capture full execution:
+- All ReAct steps (thought, action, observation)
+- Tool inputs/outputs
+- Token usage and latency
+- Failed calls with errors
 
-scripts/
-└── agent_tests/    # Runnable benchmark scripts
+Backends:
+- **Langfuse**: Cloud platform with UI
+- **JSON**: Local JSONL or individual files
+- **Both**: Use multiple observers simultaneously
 
-tests/
-├── provider_tests/     # LLM provider tests
-├── agent_tests/        # Agent and metrics tests
-├── observability_tests/# Observer tests
-├── tool_tests/         # Individual tool tests
-└── unit_tests/         # Unit tests
-```
 
-## Running Benchmarks
+## Development
 
-The benchmark runner uses a YAML config file to specify provider, model, questions, and other settings.
-
-### Quick Start
+Run tests:
 
 ```bash
-# 1. Edit the config file
-nano configs/benchmark_config.yaml
-
-# 2. Run the benchmark
-python scripts/run_benchmark.py
-
-# 3. View results in benchmark_results/
+pytest
 ```
 
-### Config File (`configs/benchmark_config.yaml`)
-
-```yaml
-# Provider settings
-provider: openai                    # openai, anthropic, or deepinfra
-model: gpt-4o-mini                  # Model to use
-
-# Reasoning model override (optional, OpenAI only)
-# is_reasoning_model: true          # Force reasoning mode (uses reasoning_effort)
-# is_reasoning_model: false         # Force standard mode (uses temperature)
-# Omit for auto-detect based on model name (o1, o3, o4, gpt-5 prefixes)
-
-# Questions file
-questions_file: data/questions.csv
-
-# Question selection (optional)
-# questions: [1, 2, 3]              # Specific IDs
-# questions: 1-5                     # Range
-
-# Observability
-observability:
-  enabled: true
-  backend: json                      # json, langfuse, or both
-
-# MCP tools
-mcp:
-  enabled: true
-```
-
-### CLI Options
+Lint and type check:
 
 ```bash
-# Use default config
-python scripts/run_benchmark.py
-
-# Use custom config
-python scripts/run_benchmark.py -c configs/my_config.yaml
-
-# Override provider/model
-python scripts/run_benchmark.py --provider anthropic --model claude-sonnet-4-20250514
-
-# Run specific questions
-python scripts/run_benchmark.py --questions 1,2,3
-
-# List available questions
-python scripts/run_benchmark.py --list-questions
-
-# Disable features
-python scripts/run_benchmark.py --no-mcp --no-observe
-
-# Override reasoning model detection (for OpenAI models)
-python scripts/run_benchmark.py --reasoning-model true   # Force reasoning mode
-python scripts/run_benchmark.py --reasoning-model false  # Disable reasoning mode
-python scripts/run_benchmark.py --reasoning-model auto   # Auto-detect (default)
+ruff check .
+mypy energbench
 ```
 
-## Running Tests
-
-```bash
-# Run observability tests
-python tests/observability_tests/test_observers.py
-
-# Run provider tests (requires API keys)
-python tests/provider_tests/test_providers.py
-
-# Run agent metrics tests (requires MCP servers)
-python tests/agent_tests/test_agent_metrics.py
-```
+## Documentation

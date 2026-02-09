@@ -1,8 +1,15 @@
-"""Standard tools for energBench."""
-
 from .base_tool import BaseTool, ToolRegistry, ToolResult
 from .battery_tool import BatteryOptimizationTool
-from .docket_tools import DocketTools
+from .dockets import (
+    DCDocketTool,
+    FERCDocketTool,
+    MarylandDocketTool,
+    NewYorkDocketTool,
+    NorthCarolinaDocketTool,
+    SouthCarolinaDocketTool,
+    TexasDocketTool,
+    VirginiaDocketTool,
+)
 from .gridstatus_tool import GridStatusAPITool
 from .openweather_tool import OpenWeatherTool
 from .renewables_tool import RenewablesTool
@@ -15,15 +22,21 @@ __all__ = [
     "BaseTool",
     "ToolRegistry",
     "ToolResult",
-    # Tools
     "SearchTool",
     "GridStatusAPITool",
     "TariffsTool",
     "RenewablesTool",
     "BatteryOptimizationTool",
-    "DocketTools",
     "OpenWeatherTool",
     "SystemTool",
+    "DCDocketTool",
+    "FERCDocketTool",
+    "MarylandDocketTool",
+    "NewYorkDocketTool",
+    "NorthCarolinaDocketTool",
+    "SouthCarolinaDocketTool",
+    "TexasDocketTool",
+    "VirginiaDocketTool",
 ]
 
 
@@ -35,14 +48,21 @@ def create_default_registry() -> ToolRegistry:
     """
     registry = ToolRegistry()
 
-    # Register all tools
     registry.register(SearchTool())
     registry.register(GridStatusAPITool())
     registry.register(TariffsTool())
     registry.register(RenewablesTool())
     registry.register(BatteryOptimizationTool())
-    registry.register(DocketTools())
     registry.register(OpenWeatherTool())
     registry.register(SystemTool())
+
+    registry.register(FERCDocketTool())
+    registry.register(MarylandDocketTool())
+    registry.register(TexasDocketTool())
+    registry.register(NewYorkDocketTool())
+    registry.register(NorthCarolinaDocketTool())
+    registry.register(SouthCarolinaDocketTool())
+    registry.register(VirginiaDocketTool())
+    registry.register(DCDocketTool())
 
     return registry

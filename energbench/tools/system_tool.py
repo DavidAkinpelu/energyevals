@@ -1,22 +1,19 @@
-"""Local system utility tool."""
-
 from __future__ import annotations
 
 import io
 import json
-import os
 import re
 import shlex
 import subprocess
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
-from typing import Optional
 
 from loguru import logger
 
 from energbench.agent.providers import ToolDefinition
 
 from .base_tool import BaseTool
+from .constants import SYSTEM_COMMAND_TIMEOUT, SYSTEM_MAX_RESULTS
 
 
 class SystemTool(BaseTool):
@@ -42,7 +39,7 @@ class SystemTool(BaseTool):
                     "properties": {
                         "path": {"type": "string", "description": "Path to list files from"},
                         "recursive": {"type": "boolean", "default": False},
-                        "max_results": {"type": "integer", "default": 200},
+                        "max_results": {"type": "integer", "default": SYSTEM_MAX_RESULTS},
                     },
                 },
             ),
@@ -56,7 +53,7 @@ class SystemTool(BaseTool):
                         "path": {"type": "string", "description": "Path to search"},
                         "glob": {"type": "string", "description": "Optional glob filter (e.g., '*.py')"},
                         "case_insensitive": {"type": "boolean", "default": False},
-                        "max_results": {"type": "integer", "default": 200},
+                        "max_results": {"type": "integer", "default": SYSTEM_MAX_RESULTS},
                     },
                     "required": ["pattern"],
                 },
@@ -80,7 +77,7 @@ class SystemTool(BaseTool):
                     "properties": {
                         "command": {"type": "string", "description": "Shell command to run"},
                         "cwd": {"type": "string", "description": "Working directory"},
-                        "timeout": {"type": "integer", "default": 60},
+                        "timeout": {"type": "integer", "default": SYSTEM_COMMAND_TIMEOUT},
                     },
                     "required": ["command"],
                 },
@@ -91,7 +88,7 @@ class SystemTool(BaseTool):
         self,
         path: str = ".",
         recursive: bool = False,
-        max_results: int = 200,
+        max_results: int = SYSTEM_MAX_RESULTS,
     ) -> str:
         try:
             base = Path(path).expanduser()
@@ -119,9 +116,9 @@ class SystemTool(BaseTool):
         self,
         pattern: str,
         path: str = ".",
-        glob: Optional[str] = None,
+        glob: str | None = None,
         case_insensitive: bool = False,
-        max_results: int = 200,
+        max_results: int = SYSTEM_MAX_RESULTS,
     ) -> str:
         base = Path(path).expanduser()
         if not base.exists():
@@ -203,8 +200,8 @@ class SystemTool(BaseTool):
     def run_shell_command(
         self,
         command: str,
-        cwd: Optional[str] = None,
-        timeout: int = 60,
+        cwd: str | None = None,
+        timeout: int = SYSTEM_COMMAND_TIMEOUT,
     ) -> str:
         try:
             args = shlex.split(command)

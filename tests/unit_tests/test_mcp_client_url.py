@@ -1,5 +1,3 @@
-"""Unit tests for MCP Client URL support."""
-
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -53,22 +51,12 @@ class TestMCPServerConfig:
 class TestGetDefaultMCPServers:
     """Tests for get_default_mcp_servers function."""
 
-    def test_default_local_servers(self):
-        """Test default configuration uses local servers."""
+    def test_default_no_servers_without_env_vars(self):
+        """Test that no servers are returned without env vars."""
         with patch.dict(os.environ, {}, clear=True):
             servers = get_default_mcp_servers()
-            
-            assert len(servers) == 2
-            
-            rag_server = next(s for s in servers if s.name == "energy-rag")
-            assert rag_server.command == "energy-rag-server"
-            assert rag_server.url is None
-            assert "local" in rag_server.description.lower()
-            
-            db_server = next(s for s in servers if s.name == "energy-database")
-            assert db_server.command == "energy-database-server"
-            assert db_server.url is None
-            assert "local" in db_server.description.lower()
+
+            assert len(servers) == 0
 
     def test_remote_servers_from_env_vars(self):
         """Test configuration uses URLs from environment variables."""
@@ -76,40 +64,37 @@ class TestGetDefaultMCPServers:
             "RAG_SERVER_URL": "https://rag-server.com/sse",
             "DATABASE_SERVER_URL": "https://db-server.com/sse",
         }
-        
+
         with patch.dict(os.environ, env_vars, clear=True):
             servers = get_default_mcp_servers()
-            
+
             assert len(servers) == 2
-            
+
             rag_server = next(s for s in servers if s.name == "energy-rag")
             assert rag_server.url == "https://rag-server.com/sse"
             assert rag_server.command is None
             assert "remote" in rag_server.description.lower()
-            
+
             db_server = next(s for s in servers if s.name == "energy-database")
             assert db_server.url == "https://db-server.com/sse"
             assert db_server.command is None
             assert "remote" in db_server.description.lower()
 
-    def test_mixed_local_and_remote_servers(self):
-        """Test configuration with one local and one remote server."""
+    def test_single_remote_server(self):
+        """Test configuration with only RAG server URL set."""
         env_vars = {
             "RAG_SERVER_URL": "https://rag-server.com/sse",
         }
-        
+
         with patch.dict(os.environ, env_vars, clear=True):
             servers = get_default_mcp_servers()
-            
-            assert len(servers) == 2
-            
-            rag_server = next(s for s in servers if s.name == "energy-rag")
+
+            assert len(servers) == 1
+
+            rag_server = servers[0]
+            assert rag_server.name == "energy-rag"
             assert rag_server.url == "https://rag-server.com/sse"
             assert "remote" in rag_server.description.lower()
-            
-            db_server = next(s for s in servers if s.name == "energy-database")
-            assert db_server.command == "energy-database-server"
-            assert "local" in db_server.description.lower()
 
 
 class TestMCPClientConnection:
@@ -122,22 +107,22 @@ class TestMCPClientConnection:
             name="test-server",
             command="test-command",
         )
-        
+
         client = MCPClient([config])
-        
+
         # Mock the _connect_stdio method
         client._connect_stdio = AsyncMock()
         client._connect_sse = AsyncMock()
-        
+
         # Mock session and tools
         mock_session = MagicMock()
         mock_tools_result = MagicMock()
         mock_tools_result.tools = []
         mock_session.list_tools = AsyncMock(return_value=mock_tools_result)
         client._sessions["test-server"] = mock_session
-        
+
         await client.connect()
-        
+
         # Verify stdio was called, not SSE
         client._connect_stdio.assert_called_once()
         client._connect_sse.assert_not_called()
@@ -149,22 +134,22 @@ class TestMCPClientConnection:
             name="test-server",
             url="https://example.com/sse",
         )
-        
+
         client = MCPClient([config])
-        
+
         # Mock the connection methods
         client._connect_stdio = AsyncMock()
         client._connect_sse = AsyncMock()
-        
+
         # Mock session and tools
         mock_session = MagicMock()
         mock_tools_result = MagicMock()
         mock_tools_result.tools = []
         mock_session.list_tools = AsyncMock(return_value=mock_tools_result)
         client._sessions["test-server"] = mock_session
-        
+
         await client.connect()
-        
+
         # Verify SSE was called, not stdio
         client._connect_sse.assert_called_once()
         client._connect_stdio.assert_not_called()

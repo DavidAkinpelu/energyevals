@@ -1,38 +1,20 @@
-"""Observability module for energBench.
-
-Supports multiple observability backends:
-- Langfuse: Cloud-based observability platform
-- JSON: Local JSON file logging
-- Composite: Use multiple backends simultaneously
-
-Usage:
-    # Get a single observer
-    observer = get_observer("langfuse")  # or "json" or "both"
-
-    # Trace an agent run
-    trace_id = observer.trace_agent_run(run, tags=["test"])
-
-    # Custom configuration
-    from energbench.observability import LangfuseObserver, JSONFileObserver
-    observer = JSONFileObserver(output_dir="./my_traces", pretty_print=True)
-"""
-
 from typing import Optional
 
 from .base import BaseObserver
+from .composite_observer import CompositeObserver
+from .json_observer import JSONFileObserver
 from .langfuse_client import (
     LangfuseObserver,
     ObserverContext,
     get_langfuse_client,
     observe_agent_run,
 )
-from .json_observer import JSONFileObserver
-from .composite_observer import CompositeObserver
 
 
 def get_observer(
     backend: str = "auto",
     output_dir: str = "./observability_logs",
+    run_name: Optional[str] = None,
     single_file: bool = False,
 ) -> BaseObserver:
     """Get an observer instance based on the specified backend.
@@ -43,7 +25,9 @@ def get_observer(
             - "json": Use local JSON file logging
             - "both": Use both Langfuse and JSON (composite)
             - "auto": Use Langfuse if available, otherwise JSON
-        output_dir: Directory for JSON file output (used with "json" or "both").
+        output_dir: Base directory for JSON file output (used with "json" or "both").
+        run_name: Optional subdirectory for organizing runs (e.g., "no_tools", "with_tools").
+                 When provided, traces are saved to: {output_dir}/{run_name}/{model}/
         single_file: If True, append all JSON traces to one JSONL file.
 
     Returns:
@@ -53,7 +37,7 @@ def get_observer(
         ValueError: If backend is not recognized.
 
     Example:
-        >>> observer = get_observer("json", output_dir="./traces")
+        >>> observer = get_observer("json", output_dir="./traces", run_name="no_tools")
         >>> observer.trace_agent_run(run, tags=["experiment"])
     """
     backend = backend.lower()
@@ -70,11 +54,12 @@ def get_observer(
     elif backend == "json":
         return JSONFileObserver(
             output_dir=output_dir,
+            run_name=run_name,
             single_file=single_file,
         )
 
     elif backend == "both":
-        observers = []
+        observers: list[BaseObserver] = []
 
         # Try Langfuse
         langfuse_obs = LangfuseObserver()
@@ -84,6 +69,7 @@ def get_observer(
         # Always add JSON
         json_obs = JSONFileObserver(
             output_dir=output_dir,
+            run_name=run_name,
             single_file=single_file,
         )
         observers.append(json_obs)
@@ -97,6 +83,7 @@ def get_observer(
             return langfuse_obs
         return JSONFileObserver(
             output_dir=output_dir,
+            run_name=run_name,
             single_file=single_file,
         )
 

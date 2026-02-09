@@ -1,5 +1,3 @@
-"""Base observer interface for observability backends."""
-
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
@@ -33,6 +31,57 @@ class BaseObserver(ABC):
 
         Returns:
             Trace ID if successful, None otherwise.
+        """
+        pass
+
+    def trace_llm_call(
+        self,
+        trace_id: str,
+        model: str,
+        messages: list[dict],
+        response: str,
+        input_tokens: int = 0,
+        output_tokens: int = 0,
+        latency_ms: float = 0.0,
+        tool_calls: Optional[list[dict]] = None,
+    ) -> None:
+        """Trace an individual LLM API call (optional method).
+
+        Some observers (like Langfuse) support tracing individual LLM calls
+        separately from full agent runs. Others may not need this.
+
+        Args:
+            trace_id: Parent trace ID to attach this call to.
+            model: Model name/identifier.
+            messages: Full message history sent to the LLM.
+            response: Full LLM response content.
+            input_tokens: Number of input tokens used.
+            output_tokens: Number of output tokens used.
+            latency_ms: Call latency in milliseconds.
+            tool_calls: Any tool calls returned by the LLM.
+        """
+        pass
+
+    def trace_tool_execution(
+        self,
+        trace_id: str,
+        tool_name: str,
+        arguments: dict[str, Any],
+        result: str,
+        latency_ms: float = 0.0,
+        error: Optional[str] = None,
+    ) -> None:
+        """Trace a tool execution (optional method).
+
+        Some observers support tracing individual tool calls separately.
+
+        Args:
+            trace_id: Parent trace ID to attach this execution to.
+            tool_name: Name of the tool executed.
+            arguments: Full tool input arguments.
+            result: Full tool result (not truncated).
+            latency_ms: Execution latency in milliseconds.
+            error: Error message if the tool call failed.
         """
         pass
 

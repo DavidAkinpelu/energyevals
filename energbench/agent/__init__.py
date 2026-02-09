@@ -1,5 +1,3 @@
-"""Agent module for energBench."""
-
 from .prompts import get_system_prompt
 from .providers import (
     AnthropicProvider,

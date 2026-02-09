@@ -1,10 +1,6 @@
-"""LLM Provider implementations for energBench."""
+from __future__ import annotations
 
-from .anthropic_provider import AnthropicProvider
-from .base_provider import BaseProvider
-from .deepinfra_provider import DeepInfraProvider
-from .google_provider import GoogleProvider
-from .openai_provider import OpenAIProvider
+from typing import Any
 
 from energbench.agent.schema import (
     Message,
@@ -12,6 +8,12 @@ from energbench.agent.schema import (
     ToolCall,
     ToolDefinition,
 )
+
+from .anthropic_provider import AnthropicProvider
+from .base_provider import BaseProvider
+from .deepinfra_provider import DeepInfraProvider
+from .google_provider import GoogleProvider
+from .openai_provider import OpenAIProvider
 
 __all__ = [
     # Base classes
@@ -31,7 +33,7 @@ __all__ = [
 def get_provider(
     provider_name: str,
     model: str | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> BaseProvider:
     """Factory function to get a provider by name.
 
@@ -46,7 +48,7 @@ def get_provider(
     Raises:
         ValueError: If provider_name is not recognized.
     """
-    providers = {
+    providers: dict[str, type[BaseProvider]] = {
         "openai": OpenAIProvider,
         "anthropic": AnthropicProvider,
         "google": GoogleProvider,

@@ -1,0 +1,10 @@
+# Ruff configuration for energBench
+# Extracted from pyproject.toml for standalone usage
+
+line-length = 100
+target-version = "py39"
+exclude = ["mcp-servers"]
+
+[lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]

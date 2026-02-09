@@ -1,10 +1,11 @@
-"""Anthropic Claude provider implementation."""
-
 import os
 import time
-from typing import Any, AsyncIterator, Optional
+from collections.abc import AsyncIterator
+from typing import Any, Optional
 
 from anthropic import AsyncAnthropic
+
+from energbench.agent.constants import MAX_TOKENS
 
 from .base_provider import (
     BaseProvider,
@@ -19,8 +20,6 @@ from .base_provider import (
 
 class AnthropicProvider(BaseProvider):
     """Anthropic Claude API provider implementation.
-
-    Supports Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku, and other Claude models.
     """
 
     def __init__(
@@ -55,13 +54,12 @@ class AnthropicProvider(BaseProvider):
         messages: list[Message],
         tools: Optional[list[ToolDefinition]] = None,
         temperature: float = 0.0,
-        max_tokens: int = 4096,
+        max_tokens: Optional[int] = MAX_TOKENS,
         **kwargs: Any,
     ) -> ProviderResponse:
         """Generate a completion using Anthropic's API."""
         start_time = time.time()
 
-        # Separate system message from conversation
         system_msg, formatted_messages = self._separate_system_message(messages)
 
         request_kwargs: dict[str, Any] = {
@@ -70,7 +68,6 @@ class AnthropicProvider(BaseProvider):
             "max_tokens": max_tokens,
         }
 
-        # Temperature 0 means use default for Claude
         if temperature > 0:
             request_kwargs["temperature"] = temperature
 
@@ -84,7 +81,6 @@ class AnthropicProvider(BaseProvider):
 
         latency_ms = (time.time() - start_time) * 1000
 
-        # Extract content and tool use blocks
         content = ""
         tool_calls = None
 
@@ -121,7 +117,7 @@ class AnthropicProvider(BaseProvider):
         messages: list[Message],
         tools: Optional[list[ToolDefinition]] = None,
         temperature: float = 0.0,
-        max_tokens: int = 4096,
+        max_tokens: Optional[int] = MAX_TOKENS,
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         """Stream a completion from Anthropic."""
@@ -165,18 +161,15 @@ class AnthropicProvider(BaseProvider):
         formatted = []
         for msg in messages:
             if msg.role == "system":
-                # System messages handled separately
                 continue
 
-            # Map roles
             role = msg.role
             if role == "tool":
-                role = "user"  # Tool results come as user messages in Anthropic
+                role = "user"
 
             formatted_msg: dict[str, Any] = {"role": role}
 
             if msg.role == "tool" and msg.tool_call_id:
-                # Tool result format for Anthropic - may include images
                 tool_content = self._format_tool_result_content(msg)
                 formatted_msg["content"] = [
                     {
@@ -186,7 +179,6 @@ class AnthropicProvider(BaseProvider):
                     }
                 ]
             elif msg.tool_calls:
-                # Assistant message with tool calls
                 content_blocks = []
                 if msg.content:
                     content_blocks.append({"type": "text", "text": msg.content})
@@ -201,7 +193,6 @@ class AnthropicProvider(BaseProvider):
                     )
                 formatted_msg["content"] = content_blocks
             elif msg.content_parts and msg.has_images:
-                # Multi-modal content
                 formatted_msg["content"] = self._format_multimodal_content(msg)
             else:
                 formatted_msg["content"] = msg.content
@@ -212,7 +203,7 @@ class AnthropicProvider(BaseProvider):
 
     def _format_multimodal_content(self, msg: Message) -> list[dict[str, Any]]:
         """Format multi-modal content (text + images) for Anthropic."""
-        content_blocks = []
+        content_blocks: list[dict[str, Any]] = []
 
         for part in msg.content_parts or []:
             if isinstance(part, TextContent):
@@ -249,16 +240,14 @@ class AnthropicProvider(BaseProvider):
 
     def _format_tool_result_content(self, msg: Message) -> list[dict[str, Any]]:
         """Format tool result content, handling images from RAG results."""
-        content_blocks = []
+        content_blocks: list[dict[str, Any]] = []
 
-        # Add text content
         if msg.content:
             content_blocks.append({
                 "type": "text",
                 "text": msg.content,
             })
 
-        # Add images if present
         if msg.content_parts:
             for part in msg.content_parts:
                 if isinstance(part, ImageContent):
@@ -280,9 +269,8 @@ class AnthropicProvider(BaseProvider):
                         },
                     })
 
-        # If no content blocks, return text only
         if not content_blocks:
-            return msg.content
+            return [{"type": "text", "text": msg.content or ""}]
 
         return content_blocks
 
