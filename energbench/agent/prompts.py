@@ -1,23 +1,20 @@
-"""System prompts for the ReAct agent."""
+from __future__ import annotations
 
-SYSTEM_PROMPT = """You are a Senior Energy Analyst. 
+SYSTEM_PROMPT = """You are a Senior Energy Analyst.
 """
 
 
 def get_system_prompt(
-    role: str = "default",
     custom_instructions: str | None = None,
 ) -> str:
-    """Get the appropriate system prompt for a given role.
+    """Get the system prompt with optional custom instructions.
 
     Args:
-        role: The role/specialization ("default", "analyst", "battery", "regulatory").
         custom_instructions: Optional additional instructions to append.
 
     Returns:
         The formatted system prompt.
     """
-  
     prompt = SYSTEM_PROMPT
 
     if custom_instructions:

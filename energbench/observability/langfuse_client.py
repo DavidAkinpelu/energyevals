@@ -1,43 +1,29 @@
-"""Langfuse observability integration for energBench.
-
-This module provides full observability of agent runs, including:
-- Complete traces of agent execution
-- LLM calls with full input/output (no truncation)
-- Tool executions with full results
-- Token usage and latency metrics
-"""
-
 from __future__ import annotations
 
-import json
 import os
+from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any
 
 from loguru import logger
 
+from energbench.agent.schema import AgentRun, AgentStep, StepType
+
 from .base import BaseObserver
 
-if TYPE_CHECKING:
-    from energbench.agent.schema import AgentRun, AgentStep
-
 try:
-    from langfuse import Langfuse
-    from langfuse.decorators import langfuse_context, observe
+    from langfuse import Langfuse as _Langfuse
     LANGFUSE_AVAILABLE = True
 except ImportError:
+    _Langfuse = None
     LANGFUSE_AVAILABLE = False
-    Langfuse = None
-    langfuse_context = None
-    observe = None
 
 
 def get_langfuse_client(
-    public_key: Optional[str] = None,
-    secret_key: Optional[str] = None,
-    host: Optional[str] = None,
-) -> Optional["Langfuse"]:
+    public_key: str | None = None,
+    secret_key: str | None = None,
+    host: str | None = None,
+) -> Any:
     """Get a Langfuse client instance.
 
     Args:
@@ -61,7 +47,7 @@ def get_langfuse_client(
         return None
 
     try:
-        return Langfuse(
+        return _Langfuse(
             public_key=public_key,
             secret_key=secret_key,
             host=host,
@@ -87,7 +73,7 @@ class LangfuseObserver(BaseObserver):
 
     def __init__(
         self,
-        client: Optional["Langfuse"] = None,
+        client: Any = None,
         enabled: bool = True,
     ):
         """Initialize the observer.
@@ -98,7 +84,6 @@ class LangfuseObserver(BaseObserver):
         """
         self._enabled = enabled and LANGFUSE_AVAILABLE
         self.client = client or (get_langfuse_client() if self._enabled else None)
-        self._current_trace = None
 
         if self._enabled and not self.client:
             logger.warning("Langfuse observer disabled - client not available")
@@ -108,17 +93,16 @@ class LangfuseObserver(BaseObserver):
 
     @property
     def is_enabled(self) -> bool:
-        """Check if the observer is enabled."""
         return self._enabled
 
     def trace_agent_run(
         self,
         run: AgentRun,
-        metadata: Optional[dict[str, Any]] = None,
-        tags: Optional[list[str]] = None,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-    ) -> Optional[str]:
+        metadata: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+    ) -> str | None:
         """Trace a complete agent run to Langfuse.
 
         Args:
@@ -135,7 +119,6 @@ class LangfuseObserver(BaseObserver):
             return None
 
         try:
-            # Create the main trace
             trace = self.client.trace(
                 name="agent_run",
                 input={"query": run.query},
@@ -145,6 +128,7 @@ class LangfuseObserver(BaseObserver):
                     "iterations": run.iterations,
                     "tool_calls_count": run.tool_calls_count,
                     "total_tokens": run.total_tokens,
+                    "total_reasoning_tokens": run.total_reasoning_tokens,
                     "duration_seconds": run.duration_seconds,
                     "error": run.error,
                     **(metadata or {}),
@@ -154,28 +138,22 @@ class LangfuseObserver(BaseObserver):
                 session_id=session_id,
             )
 
-            # Add each step as a span or generation
             for i, step in enumerate(run.steps):
                 self._trace_step(trace, step, i)
 
-            # Flush to ensure all data is sent
             self.client.flush()
 
             logger.debug(f"Traced agent run to Langfuse: {trace.id}")
-            return trace.id
+            return str(trace.id)
 
         except Exception as e:
             logger.error(f"Failed to trace agent run: {e}")
             return None
 
-    def _trace_step(self, trace, step: AgentStep, index: int) -> None:
-        """Trace a single agent step."""
-        from energbench.agent.schema import StepType
-
+    def _trace_step(self, trace: Any, step: AgentStep, index: int) -> None:
         step_name = f"{index:02d}_{step.step_type.value}"
 
         if step.step_type == StepType.ACTION:
-            # Tool call - create a span
             trace.span(
                 name=step_name,
                 input={
@@ -189,11 +167,10 @@ class LangfuseObserver(BaseObserver):
             )
 
         elif step.step_type == StepType.OBSERVATION:
-            # Tool result - create a span with full output (no truncation)
             trace.span(
                 name=step_name,
                 input={"tool": step.tool_name},
-                output=step.tool_output,  # Full output, not truncated
+                output=step.tool_output,
                 metadata={
                     "step_type": step.step_type.value,
                     "latency_ms": step.latency_ms,
@@ -202,7 +179,6 @@ class LangfuseObserver(BaseObserver):
             )
 
         elif step.step_type == StepType.ANSWER:
-            # Final answer
             trace.span(
                 name=step_name,
                 output=step.content,
@@ -214,7 +190,6 @@ class LangfuseObserver(BaseObserver):
             )
 
         elif step.step_type == StepType.ERROR:
-            # Error step
             trace.span(
                 name=step_name,
                 output=step.content,
@@ -226,7 +201,6 @@ class LangfuseObserver(BaseObserver):
             )
 
         else:
-            # Thought or other steps
             trace.span(
                 name=step_name,
                 output=step.content,
@@ -241,12 +215,12 @@ class LangfuseObserver(BaseObserver):
         self,
         trace_id: str,
         model: str,
-        messages: list[dict],
+        messages: list[dict[str, Any]],
         response: str,
         input_tokens: int = 0,
         output_tokens: int = 0,
         latency_ms: float = 0.0,
-        tool_calls: Optional[list[dict]] = None,
+        tool_calls: list[dict[str, Any]] | None = None,
     ) -> None:
         """Trace an individual LLM call.
 
@@ -268,8 +242,8 @@ class LangfuseObserver(BaseObserver):
                 trace_id=trace_id,
                 name="llm_call",
                 model=model,
-                input=messages,  # Full messages, not truncated
-                output=response,  # Full response, not truncated
+                input=messages,
+                output=response,
                 usage={
                     "input": input_tokens,
                     "output": output_tokens,
@@ -290,7 +264,7 @@ class LangfuseObserver(BaseObserver):
         arguments: dict[str, Any],
         result: str,
         latency_ms: float = 0.0,
-        error: Optional[str] = None,
+        error: str | None = None,
     ) -> None:
         """Trace a tool execution.
 
@@ -310,7 +284,7 @@ class LangfuseObserver(BaseObserver):
                 trace_id=trace_id,
                 name=f"tool_{tool_name}",
                 input=arguments,
-                output=result,  # Full result, not truncated
+                output=result,
                 metadata={
                     "latency_ms": latency_ms,
                     "error": error,
@@ -322,7 +296,6 @@ class LangfuseObserver(BaseObserver):
             logger.error(f"Failed to trace tool execution: {e}")
 
     def flush(self) -> None:
-        """Flush any pending traces to Langfuse."""
         if self.client:
             try:
                 self.client.flush()
@@ -330,7 +303,6 @@ class LangfuseObserver(BaseObserver):
                 logger.error(f"Failed to flush Langfuse: {e}")
 
     def shutdown(self) -> None:
-        """Shutdown the Langfuse client."""
         if self.client:
             try:
                 self.client.shutdown()
@@ -343,11 +315,11 @@ class ObserverContext:
 
     def __init__(
         self,
-        observer: LangfuseObserver,
-        metadata: Optional[dict[str, Any]] = None,
-        tags: Optional[list[str]] = None,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
+        observer: BaseObserver,
+        metadata: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
     ):
         self.observer = observer
         self.metadata = metadata
@@ -355,7 +327,7 @@ class ObserverContext:
         self.user_id = user_id
         self.session_id = session_id
 
-    def trace(self, run: "AgentRun") -> Optional[str]:
+    def trace(self, run: AgentRun) -> str | None:
         """Trace an agent run with pre-configured settings.
 
         Args:
@@ -375,32 +347,32 @@ class ObserverContext:
 
 @contextmanager
 def observe_agent_run(
-    query: str,
-    metadata: Optional[dict[str, Any]] = None,
-    tags: Optional[list[str]] = None,
-    user_id: Optional[str] = None,
-    session_id: Optional[str] = None,
-):
+    metadata: dict[str, Any] | None = None,
+    tags: list[str] | None = None,
+    user_id: str | None = None,
+    session_id: str | None = None,
+    observer: BaseObserver | None = None,
+) -> Iterator[ObserverContext]:
     """Context manager for observing an agent run.
 
     Usage:
-        with observe_agent_run("my query", tags=["test"]) as ctx:
+        with observe_agent_run(tags=["test"]) as ctx:
             run = await agent.run("my query")
             ctx.trace(run)  # Uses pre-configured metadata, tags, etc.
 
     Args:
-        query: The query being processed.
         metadata: Additional metadata.
         tags: Tags for the trace.
         user_id: User identifier.
         session_id: Session identifier.
+        observer: Observer to use. Defaults to LangfuseObserver().
 
     Yields:
         ObserverContext with pre-configured trace settings.
     """
-    observer = LangfuseObserver()
+    obs = observer or LangfuseObserver()
     ctx = ObserverContext(
-        observer=observer,
+        observer=obs,
         metadata=metadata,
         tags=tags,
         user_id=user_id,
@@ -410,4 +382,4 @@ def observe_agent_run(
     try:
         yield ctx
     finally:
-        observer.flush()
+        obs.flush()

@@ -1,14 +1,13 @@
-"""OpenAI provider implementation."""
+from __future__ import annotations
 
 import json
 import logging
 import os
 import time
-from typing import Any, AsyncIterator, Literal, Optional
+from collections.abc import AsyncIterator
+from typing import Any, Literal
 
 from openai import AsyncOpenAI
-
-logger = logging.getLogger(__name__)
 
 from .base_provider import (
     BaseProvider,
@@ -20,9 +19,8 @@ from .base_provider import (
     ToolDefinition,
 )
 
-# Models that use reasoning_effort instead of temperature (o-series and gpt-5 series)
-# These models do NOT support: temperature, top_p, presence_penalty, frequency_penalty,
-# logprobs, top_logprobs, logit_bias, max_tokens
+logger = logging.getLogger(__name__)
+
 REASONING_MODEL_PREFIXES = (
     "o1",
     "o3",
@@ -34,31 +32,31 @@ REASONING_MODEL_PREFIXES = (
 def is_reasoning_model(model: str) -> bool:
     """Check if a model is a reasoning model (o1/o3/o4/gpt-5 series).
 
-    Reasoning models use reasoning_effort instead of temperature and
-    max_completion_tokens instead of max_tokens.
+    Reasoning models use reasoning_effort instead of temperature.
     """
     model_lower = model.lower()
     return any(model_lower.startswith(prefix) for prefix in REASONING_MODEL_PREFIXES)
 
 
 class OpenAIProvider(BaseProvider):
-    """OpenAI API provider implementation.
+    """OpenAI API provider implementation using responses.create endpoint.
 
-    Supports GPT-4, GPT-4o, GPT-4o-mini, and reasoning models (o1, o3, o4, gpt-5 series).
+    Supports all OpenAI models through the unified responses.create API:
+    - GPT-4, GPT-4o, GPT-4o-mini
+    - Reasoning models (o1, o3, o4, gpt-5 series)
 
     For reasoning models (o1, o3, o4, gpt-5):
-    - Uses `reasoning_effort` instead of `temperature`
-    - Uses `max_completion_tokens` instead of `max_tokens`
-    - System messages are converted to developer messages
+    - Uses `reasoning.effort` instead of `temperature`
+    - System messages are passed as instructions
     """
 
     def __init__(
         self,
         model: str = "gpt-4o-mini",
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
+        api_key: str | None = None,
+        base_url: str | None = None,
         reasoning_effort: Literal["low", "medium", "high"] = "medium",
-        is_reasoning_model_override: Optional[bool] = None,
+        is_reasoning_model_override: bool | None = None,
         **kwargs: Any,
     ):
         """Initialize the OpenAI provider.
@@ -78,12 +76,8 @@ class OpenAIProvider(BaseProvider):
         super().__init__(model, api_key, base_url, **kwargs)
 
         self.reasoning_effort = reasoning_effort
-        # Check auto-detection first
         auto_detected = is_reasoning_model(model)
-
-        # Allow explicit override, otherwise use auto-detect
         if is_reasoning_model_override is not None:
-            # Warn if user is disabling reasoning mode for a known reasoning model
             if is_reasoning_model_override is False and auto_detected:
                 logger.warning(
                     f"Model '{model}' is a known reasoning model (matches prefix: "
@@ -107,10 +101,10 @@ class OpenAIProvider(BaseProvider):
     async def complete(
         self,
         messages: list[Message],
-        tools: Optional[list[ToolDefinition]] = None,
+        tools: list[ToolDefinition] | None = None,
         temperature: float = 0.0,
-        max_tokens: Optional[int] = None,
-        reasoning_effort: Optional[Literal["low", "medium", "high"]] = None,
+        max_tokens: int | None = None,
+        reasoning_effort: Literal["low", "medium", "high"] | None = None,
         **kwargs: Any,
     ) -> ProviderResponse:
         """Generate a completion using OpenAI's API.
@@ -160,19 +154,24 @@ class OpenAIProvider(BaseProvider):
                 continue
 
             role = msg.role if msg.role in {"user", "assistant", "developer"} else "assistant"
+            is_assistant = role == "assistant"
+            text_type = "output_text" if is_assistant else "input_text"
             content_items: list[dict[str, Any]] = []
 
-            parts = msg.content_parts if msg.content_parts else [msg.content]
-            for item in parts:
+            msg_parts: list[TextContent | ImageContent] = (
+                msg.content_parts if msg.content_parts else [TextContent(text=msg.content or "")]
+            )
+            for item in msg_parts:
                 if isinstance(item, TextContent):
-                    content_items.append({"type": "input_text", "text": item.text})
+                    content_items.append({"type": text_type, "text": item.text})
                 elif isinstance(item, ImageContent):
-                    content_items.append({"type": "input_image", "image_url": item.image_url})
-                elif isinstance(item, str):
-                    if item:
-                        content_items.append({"type": "input_text", "text": item})
+                    if item.image_url:
+                        content_items.append({"type": "input_image", "image_url": item.image_url})
+                    elif item.image_base64:
+                        data_url = f"data:{item.media_type};base64,{item.image_base64}"
+                        content_items.append({"type": "input_image", "image_url": data_url})
                 else:
-                    content_items.append({"type": "input_text", "text": str(item)})
+                    content_items.append({"type": text_type, "text": str(item)})
 
             if content_items:
                 input_items.append({"role": role, "content": content_items})
@@ -197,15 +196,11 @@ class OpenAIProvider(BaseProvider):
             "input": input_items,
         }
 
-        # Handle reasoning models differently
         if self.is_reasoning_model:
-            # Reasoning models use reasoning_effort instead of temperature
             effort = reasoning_effort or self.reasoning_effort
             request_kwargs["reasoning"] = {"effort": effort}
-            # Use max_completion_tokens instead of max_tokens
             request_kwargs["max_output_tokens"] = max_tokens
         else:
-            # Standard models use temperature and max_tokens
             request_kwargs["temperature"] = temperature
             request_kwargs["max_output_tokens"] = max_tokens
 
@@ -224,7 +219,6 @@ class OpenAIProvider(BaseProvider):
             ]
             request_kwargs["tool_choice"] = kwargs.get("tool_choice", "auto")
 
-        # Merge any additional kwargs (except ones we handle specially)
         excluded_keys = {"tool_choice", "reasoning_effort"}
         request_kwargs.update({k: v for k, v in kwargs.items() if k not in request_kwargs and k not in excluded_keys})
 
@@ -232,7 +226,6 @@ class OpenAIProvider(BaseProvider):
 
         latency_ms = (time.time() - start_time) * 1000
 
-        # Extract tool calls if present
         tool_calls = None
         content = ""
         if hasattr(response, "output_text") and response.output_text:
@@ -260,12 +253,16 @@ class OpenAIProvider(BaseProvider):
         cached_tokens = 0
         input_tokens = 0
         output_tokens = 0
+        reasoning_tokens = 0
         if response.usage:
             input_tokens = getattr(response.usage, "input_tokens", 0) or 0
             output_tokens = getattr(response.usage, "output_tokens", 0) or 0
             details = getattr(response.usage, "input_tokens_details", None)
             if details is not None:
                 cached_tokens = getattr(details, "cached_tokens", 0) or 0
+            output_details = getattr(response.usage, "output_tokens_details", None)
+            if output_details is not None:
+                reasoning_tokens = getattr(output_details, "reasoning_tokens", 0) or 0
 
         return ProviderResponse(
             content=content,
@@ -273,6 +270,7 @@ class OpenAIProvider(BaseProvider):
             input_tokens=input_tokens,
             cached_tokens=cached_tokens,
             output_tokens=output_tokens,
+            reasoning_tokens=reasoning_tokens,
             latency_ms=latency_ms,
             model=response.model,
             finish_reason=getattr(response, "status", None),
@@ -282,134 +280,128 @@ class OpenAIProvider(BaseProvider):
     async def stream(
         self,
         messages: list[Message],
-        tools: Optional[list[ToolDefinition]] = None,
+        tools: list[ToolDefinition] | None = None,
         temperature: float = 0.0,
-        max_tokens: Optional[int] = None,
-        reasoning_effort: Optional[Literal["low", "medium", "high"]] = None,
+        max_tokens: int | None = None,
+        reasoning_effort: Literal["low", "medium", "high"] | None = None,
         **kwargs: Any,
     ) -> AsyncIterator[str]:
-        """Stream a completion from OpenAI.
+        """Stream a completion from OpenAI using responses.create.
 
         Note: Reasoning models (o1/o3/o4/gpt-5) have limited streaming support.
         The full response may be returned at once after reasoning completes.
         """
-        formatted_messages = self.format_messages(messages)
+        system_text = None
+        input_items: list[dict[str, Any]] = []
+        for msg in messages:
+            if msg.role == "system":
+                content_text = ""
+                if msg.content:
+                    first = msg.content[0] if isinstance(msg.content, list) else msg.content
+                    if isinstance(first, TextContent):
+                        content_text = first.text
+                    else:
+                        content_text = str(first)
+                if system_text:
+                    system_text = f"{system_text}\n\n{content_text}"
+                else:
+                    system_text = content_text
+                continue
+
+            if msg.role == "tool":
+                if not msg.tool_call_id:
+                    continue
+                tool_output = msg.text_content or msg.content or ""
+                input_items.append(
+                    {
+                        "type": "function_call_output",
+                        "call_id": msg.tool_call_id,
+                        "output": tool_output,
+                    }
+                )
+                continue
+
+            role = msg.role if msg.role in {"user", "assistant", "developer"} else "assistant"
+            is_assistant = role == "assistant"
+            text_type = "output_text" if is_assistant else "input_text"
+            content_items: list[dict[str, Any]] = []
+
+            stream_parts: list[TextContent | ImageContent] = (
+                msg.content_parts if msg.content_parts else [TextContent(text=msg.content or "")]
+            )
+            for item in stream_parts:
+                if isinstance(item, TextContent):
+                    content_items.append({"type": text_type, "text": item.text})
+                elif isinstance(item, ImageContent):
+                    if item.image_url:
+                        content_items.append({"type": "input_image", "image_url": item.image_url})
+                    elif item.image_base64:
+                        data_url = f"data:{item.media_type};base64,{item.image_base64}"
+                        content_items.append({"type": "input_image", "image_url": data_url})
+                else:
+                    content_items.append({"type": text_type, "text": str(item)})
+
+            if content_items:
+                input_items.append({"role": role, "content": content_items})
+
+            if msg.tool_calls:
+                for tool_call in msg.tool_calls:
+                    call_id = tool_call.get("id") if isinstance(tool_call, dict) else None
+                    name = tool_call.get("name") if isinstance(tool_call, dict) else None
+                    arguments = tool_call.get("arguments") if isinstance(tool_call, dict) else {}
+                    if call_id and name:
+                        input_items.append(
+                            {
+                                "type": "function_call",
+                                "call_id": call_id,
+                                "name": name,
+                                "arguments": json.dumps(arguments),
+                            }
+                        )
 
         request_kwargs: dict[str, Any] = {
             "model": self.model,
-            "messages": formatted_messages,
-            "stream": True,
+            "input": input_items,
         }
 
-        # Handle reasoning models differently
         if self.is_reasoning_model:
             effort = reasoning_effort or self.reasoning_effort
-            request_kwargs["reasoning_effort"] = effort
-            request_kwargs["max_completion_tokens"] = max_tokens
+            request_kwargs["reasoning"] = {"effort": effort}
+            request_kwargs["max_output_tokens"] = max_tokens
         else:
             request_kwargs["temperature"] = temperature
-            request_kwargs["max_tokens"] = max_tokens
+            request_kwargs["max_output_tokens"] = max_tokens
+
+        if system_text:
+            request_kwargs["instructions"] = system_text
 
         if tools:
-            request_kwargs["tools"] = self.format_tools(tools)
-            request_kwargs["tool_choice"] = kwargs.get("tool_choice", "auto")
-
-        response = await self.client.chat.completions.create(**request_kwargs)
-
-        async for chunk in response:
-            if chunk.choices and chunk.choices[0].delta.content:
-                yield chunk.choices[0].delta.content
-
-    def format_tools(self, tools: list[ToolDefinition]) -> list[dict[str, Any]]:
-        """Format tools for OpenAI's function calling format."""
-        return [
-            {
-                "type": "function",
-                "function": {
+            request_kwargs["tools"] = [
+                {
+                    "type": "function",
                     "name": tool.name,
                     "description": tool.description,
                     "parameters": tool.parameters,
-                },
+                }
+                for tool in tools
+            ]
+            request_kwargs["tool_choice"] = kwargs.get("tool_choice", "auto")
+
+        async with self.client.responses.stream(**request_kwargs) as stream:
+            async for event in stream:
+                if getattr(event, "type", None) == "response.output_text.delta":
+                    delta: str = getattr(event, "delta", "")
+                    if delta:
+                        yield delta
+
+    def format_tools(self, tools: list[ToolDefinition]) -> list[dict[str, Any]]:
+        """Format tools for OpenAI's responses.create API."""
+        return [
+            {
+                "type": "function",
+                "name": tool.name,
+                "description": tool.description,
+                "parameters": tool.parameters,
             }
             for tool in tools
         ]
-
-    def format_messages(self, messages: list[Message]) -> list[dict[str, Any]]:
-        """Format messages for OpenAI's API.
-
-        For reasoning models (o1/o3/o4/gpt-5), system messages are converted
-        to developer messages as required by the API.
-
-        Handles multi-modal content (text + images).
-        """
-        formatted = []
-        for msg in messages:
-            role = msg.role
-
-            # For reasoning models, convert system messages to developer messages
-            if self.is_reasoning_model and role == "system":
-                role = "developer"
-
-            formatted_msg: dict[str, Any] = {"role": role}
-
-            # Handle multi-modal content
-            if msg.content_parts and msg.has_images:
-                content_parts = []
-                for part in msg.content_parts:
-                    if isinstance(part, TextContent):
-                        content_parts.append({
-                            "type": "text",
-                            "text": part.text,
-                        })
-                    elif isinstance(part, ImageContent):
-                        # OpenAI uses image_url with base64 data URL
-                        content_parts.append({
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{part.media_type};base64,{part.image_base64}",
-                            },
-                        })
-                    elif isinstance(part, dict):
-                        if part.get("type") == "text":
-                            content_parts.append({
-                                "type": "text",
-                                "text": part.get("text", ""),
-                            })
-                        elif part.get("type") == "image":
-                            media_type = part.get("media_type", "image/jpeg")
-                            content_parts.append({
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:{media_type};base64,{part.get('image_base64', '')}",
-                                },
-                            })
-                formatted_msg["content"] = content_parts
-            else:
-                # Simple text content
-                formatted_msg["content"] = msg.content
-
-            # Handle tool calls in assistant messages
-            if msg.tool_calls:
-                formatted_msg["tool_calls"] = [
-                    {
-                        "id": tc["id"],
-                        "type": "function",
-                        "function": {
-                            "name": tc["name"],
-                            "arguments": (
-                                json.dumps(tc["arguments"])
-                                if isinstance(tc["arguments"], dict)
-                                else tc["arguments"]
-                            ),
-                        },
-                    }
-                    for tc in msg.tool_calls
-                ]
-
-            # Handle tool response messages
-            if msg.role == "tool" and msg.tool_call_id:
-                formatted_msg["tool_call_id"] = msg.tool_call_id
-
-            formatted.append(formatted_msg)
-
-        return formatted

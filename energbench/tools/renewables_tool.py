@@ -1,15 +1,17 @@
-"""Solar and wind profile tool using Renewables.ninja API."""
-
 import json
 import os
-from typing import Optional
-from datetime import datetime
+from io import StringIO
+from typing import Any, Optional
+
+import pandas as pd
 import requests
 from loguru import logger
 
 from energbench.agent.providers import ToolDefinition
+from energbench.tools.base_tool import BaseTool
+from energbench.utils import generate_timestamp
 
-from .base_tool import BaseTool
+from .constants import CSV_PREVIEW_ROWS, DATA_PREVIEW_SIZE, HTTP_TIMEOUT_LONG
 
 
 class RenewablesTool(BaseTool):
@@ -151,7 +153,7 @@ class RenewablesTool(BaseTool):
                             "type": "string",
                             "description": "End date (YYYY-MM-DD)",
                         },
-                        
+
                         "capacity": {
                             "type": "number",
                             "description": "Turbine capacity in kW (default: 1.0)",
@@ -178,7 +180,7 @@ class RenewablesTool(BaseTool):
             ),
         ]
 
-    def _make_request(self, endpoint: str, params: dict) -> dict:
+    def _make_request(self, endpoint: str, params: dict[str, Any]) -> Any:
         """Make a request to the Renewables.ninja API."""
         if not self.api_key:
             return {"error": "RENEWABLES_NINJA_API_KEY not configured"}
@@ -190,7 +192,7 @@ class RenewablesTool(BaseTool):
         url = f"{self.BASE_URL}/{endpoint}"
 
         try:
-            response = requests.get(url, headers=headers, params=params, timeout=120)
+            response = requests.get(url, headers=headers, params=params, timeout=HTTP_TIMEOUT_LONG)
             response.raise_for_status()
             if params.get("format") == "csv":
                 return response.text
@@ -222,7 +224,7 @@ class RenewablesTool(BaseTool):
             capacity: System capacity in kW (default: 1.0).
             tilt: Panel tilt angle in degrees (defaults to latitude).
             azimuth: Panel azimuth in degrees (default: 180 for south).
-            system_loss: System losses as decimal (default: 0.1 for 10%). 
+            system_loss: System losses as decimal (default: 0.1 for 10%).
             tracking: Tracking mode (0 none, 1 azimuth, 2 tilt+azimuth).
             format: Response format (json or csv).
         """
@@ -241,7 +243,7 @@ class RenewablesTool(BaseTool):
         }
 
         result = self._make_request("data/pv", params)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = generate_timestamp()
         save_csv_path = f"solar_profile_{timestamp}.csv"
 
         if "error" in result:
@@ -249,9 +251,6 @@ class RenewablesTool(BaseTool):
 
         if format.lower() == "csv":
             try:
-                import pandas as pd
-                from io import StringIO
-
                 data = result if isinstance(result, str) else result.get("data", "")
                 df = pd.read_csv(StringIO(data))
                 if save_csv_path:
@@ -260,7 +259,7 @@ class RenewablesTool(BaseTool):
                     {
                         "location": {"lat": lat, "lon": lon},
                         "rows": len(df),
-                        "data_preview": df.head(5).to_dict(orient="records"),
+                        "data_preview": df.head(CSV_PREVIEW_ROWS).to_dict(orient="records"),
                         "saved_csv": save_csv_path,
                     },
                     indent=2,
@@ -278,13 +277,11 @@ class RenewablesTool(BaseTool):
             "peak_output": max(values) if values else 0,
             "annual_generation_kwh": sum(values) * capacity,
             "num_hours": len(values),
-            "sample_data": dict(list(data.items())[:10]) if isinstance(data, dict) else values[:10],
+            "sample_data": dict(list(data.items())[:DATA_PREVIEW_SIZE]) if isinstance(data, dict) else values[:DATA_PREVIEW_SIZE],
         }
 
         if save_csv_path and isinstance(data, dict):
             try:
-                import pandas as pd
-
                 df = pd.DataFrame(list(data.items()), columns=["timestamp", "value"])
                 df.to_csv(save_csv_path, index=False)
                 summary["saved_csv"] = save_csv_path
@@ -336,14 +333,11 @@ class RenewablesTool(BaseTool):
         if "error" in result:
             return json.dumps(result)
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = generate_timestamp()
         save_csv_path = f"wind_profile_{timestamp}.csv"
 
         if format.lower() == "csv":
             try:
-                import pandas as pd
-                from io import StringIO
-
                 data = result if isinstance(result, str) else result.get("data", "")
                 df = pd.read_csv(StringIO(data))
                 if save_csv_path:
@@ -352,7 +346,7 @@ class RenewablesTool(BaseTool):
                     {
                         "location": {"lat": lat, "lon": lon},
                         "rows": len(df),
-                        "data_preview": df.head(5).to_dict(orient="records"),
+                        "data_preview": df.head(CSV_PREVIEW_ROWS).to_dict(orient="records"),
                         "saved_csv": save_csv_path,
                     },
                     indent=2,
@@ -371,13 +365,11 @@ class RenewablesTool(BaseTool):
             "peak_output": max(values) if values else 0,
             "annual_generation_kwh": sum(values) * capacity,
             "num_hours": len(values),
-            "sample_data": dict(list(data.items())[:10]) if isinstance(data, dict) else values[:10],
+            "sample_data": dict(list(data.items())[:DATA_PREVIEW_SIZE]) if isinstance(data, dict) else values[:DATA_PREVIEW_SIZE],
         }
 
         if save_csv_path and isinstance(data, dict):
             try:
-                import pandas as pd
-
                 df = pd.DataFrame(list(data.items()), columns=["timestamp", "value"])
                 df.to_csv(save_csv_path, index=False)
                 summary["saved_csv"] = save_csv_path

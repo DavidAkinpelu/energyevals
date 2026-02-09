@@ -1,14 +1,4 @@
-"""energBench - AI agent evaluation framework for energy analytics.
-
-This package provides:
-- Custom ReAct agent with multi-provider support (OpenAI, Anthropic, DeepInfra)
-- MCP servers for RAG and Database access
-- Standard tools for energy analytics (search, grid status, tariffs, etc.)
-- Evaluation framework with benchmarks and metrics
-- Langfuse observability integration
-"""
-
-__version__ = "0.1.0"
+from typing import Any  # noqa: E402
 
 from .agent import (
     AgentBuilder,
@@ -22,19 +12,35 @@ from .agent import (
     ToolDefinition,
     get_provider,
 )
+from .core import (
+    APIError,
+    ConfigurationError,
+    EnergBenchError,
+    PathLike,
+    ProviderError,
+    ToolError,
+    ensure_path,
+)
 from .tools import (
     BatteryOptimizationTool,
-    DocketTools,
+    DCDocketTool,
+    FERCDocketTool,
     GridStatusAPITool,
+    MarylandDocketTool,
+    NewYorkDocketTool,
+    NorthCarolinaDocketTool,
     RenewablesTool,
     SearchTool,
+    SouthCarolinaDocketTool,
     TariffsTool,
+    TexasDocketTool,
     ToolRegistry,
+    VirginiaDocketTool,
     create_default_registry,
 )
 
-# Lazy imports for optional modules
-def __getattr__(name):
+
+def __getattr__(name: str) -> Any:
     """Lazy import for optional modules."""
     if name == "mcp":
         from . import mcp
@@ -45,25 +51,33 @@ def __getattr__(name):
     if name == "LangfuseObserver":
         from .observability import LangfuseObserver
         return LangfuseObserver
+    if name == "utils":
+        from . import utils
+        return utils
+    if name == "benchmark":
+        from . import benchmark
+        return benchmark
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
+
 __all__ = [
-    # Version
-    "__version__",
-    # Agent
+    "EnergBenchError",
+    "ToolError",
+    "APIError",
+    "ProviderError",
+    "ConfigurationError",
+    "PathLike",
+    "ensure_path",
     "ReActAgent",
     "AgentBuilder",
     "AgentRun",
-    # Providers
     "BaseProvider",
     "OpenAIProvider",
     "AnthropicProvider",
     "DeepInfraProvider",
     "get_provider",
-    # Types
     "Message",
     "ToolDefinition",
-    # Tools
     "ToolRegistry",
     "create_default_registry",
     "SearchTool",
@@ -71,9 +85,17 @@ __all__ = [
     "TariffsTool",
     "RenewablesTool",
     "BatteryOptimizationTool",
-    "DocketTools",
-    # Submodules (lazy loaded)
+    "DCDocketTool",
+    "FERCDocketTool",
+    "MarylandDocketTool",
+    "NewYorkDocketTool",
+    "NorthCarolinaDocketTool",
+    "SouthCarolinaDocketTool",
+    "TexasDocketTool",
+    "VirginiaDocketTool",
     "mcp",
     "observability",
     "LangfuseObserver",
+    "utils",
+    "benchmark",
 ]

@@ -1,14 +1,9 @@
-"""Composite observer that combines multiple observability backends.
-
-This module allows using multiple observers simultaneously, such as
-sending traces to both Langfuse (cloud) and local JSON files.
-"""
-
 from typing import Any, Optional
 
 from loguru import logger
 
 from energbench.agent.schema import AgentRun
+
 from .base import BaseObserver
 
 
@@ -91,6 +86,56 @@ class CompositeObserver(BaseObserver):
             return trace_ids[0][1]  # Return first successful trace ID
 
         return None
+
+    def trace_llm_call(
+        self,
+        trace_id: str,
+        model: str,
+        messages: list[dict],
+        response: str,
+        input_tokens: int = 0,
+        output_tokens: int = 0,
+        latency_ms: float = 0.0,
+        tool_calls: Optional[list[dict]] = None,
+    ) -> None:
+        """Delegate LLM call tracing to all observers."""
+        for observer in self.observers:
+            try:
+                observer.trace_llm_call(
+                    trace_id=trace_id,
+                    model=model,
+                    messages=messages,
+                    response=response,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    latency_ms=latency_ms,
+                    tool_calls=tool_calls,
+                )
+            except Exception as e:
+                logger.error(f"Observer {type(observer).__name__} trace_llm_call failed: {e}")
+
+    def trace_tool_execution(
+        self,
+        trace_id: str,
+        tool_name: str,
+        arguments: dict[str, Any],
+        result: str,
+        latency_ms: float = 0.0,
+        error: Optional[str] = None,
+    ) -> None:
+        """Delegate tool execution tracing to all observers."""
+        for observer in self.observers:
+            try:
+                observer.trace_tool_execution(
+                    trace_id=trace_id,
+                    tool_name=tool_name,
+                    arguments=arguments,
+                    result=result,
+                    latency_ms=latency_ms,
+                    error=error,
+                )
+            except Exception as e:
+                logger.error(f"Observer {type(observer).__name__} trace_tool_execution failed: {e}")
 
     def flush(self) -> None:
         """Flush all observers."""

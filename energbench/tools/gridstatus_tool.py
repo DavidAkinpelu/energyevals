@@ -1,20 +1,21 @@
-"""Grid Status API tool for electricity market data."""
-
 import json
 import os
-from typing import Optional, List
+from typing import Any, Optional
 
+import pandas as pd
 import requests
 from loguru import logger
 
 from energbench.agent.providers import ToolDefinition
+from energbench.utils import generate_timestamp
 
 from .base_tool import BaseTool
+from .constants import GRID_STATUS_PAGE_SIZE, HTTP_TIMEOUT_EXTENDED
 
 
 class GridStatusAPITool(BaseTool):
     """Tool for getting data from the GridStatus API.
-    
+
     Provides access to real-time and historical data from various
     ISOs/RTOs including ERCOT, PJM, NYISO, CAISO, and more.
     """
@@ -37,14 +38,13 @@ class GridStatusAPITool(BaseTool):
         if not self.api_key:
             logger.warning("GRIDSTATUS_API_KEY not set. Tool will not function.")
 
-        # Register methods
         self.register_method("list_gridstatus_datasets", self.list_gridstatus_datasets)
         self.register_method("inspect_gridstatus_dataset", self.inspect_gridstatus_dataset)
         self.register_method("query_gridstatus_dataset", self.query_gridstatus_dataset)
 
     def _make_request(
-        self, endpoint: str, params: Optional[dict] = None
-    ) -> dict:
+        self, endpoint: str, params: Optional[dict[str, Any]] = None
+    ) -> dict[str, Any]:
         """Make a request to the Grid Status API."""
         if not self.api_key:
             return {"error": "GRIDSTATUS_API_KEY not configured"}
@@ -53,22 +53,20 @@ class GridStatusAPITool(BaseTool):
         url = f"{self.BASE_URL}/{endpoint}"
 
         try:
-            response = requests.get(url, headers=headers, params=params, timeout=60)
+            response = requests.get(url, headers=headers, params=params, timeout=HTTP_TIMEOUT_EXTENDED)
             response.raise_for_status()
-            return response.json()
+            result: dict[str, Any] = response.json()
+            return result
         except requests.exceptions.RequestException as e:
             logger.error(f"Grid Status API request failed: {e}")
             return {"error": str(e)}
-        
-    def set_api_key(self, api_key):
+
+    def set_api_key(self, api_key: str) -> None:
         """Set the API key for Grid Status API."""
         self.api_key = api_key
-        
+
     def list_gridstatus_datasets(self) -> str:
-        """
-        Prints a JSON string of dictionaries with id, name, and description
-        for each dataset available with the provided API key.
-        """
+        """Returns JSON list of available datasets with id, name, and description."""
         result = self._make_request("datasets")
 
         if "error" in result:
@@ -98,12 +96,12 @@ class GridStatusAPITool(BaseTool):
         return json.dumps(result, indent=2, default=str)
 
     def query_gridstatus_dataset(
-        self,    
+        self,
         dataset_id: str,
         filter_column: Optional[str] = None,
         filter_value: Optional[str] = None,
         limit: Optional[int] = None,
-        columns: Optional[List[str]] = None,
+        columns: Optional[list[str]] = None,
         start_time: Optional[str] = None,
         end_time: Optional[str] = None,
         time: Optional[str] = None,
@@ -120,7 +118,7 @@ class GridStatusAPITool(BaseTool):
         On error, prints full JSON response.
         filter operator is fixed to '=' and cannot be changed
         time comparison is fixed to '=' and cannot be changed
-        
+
         Args:
         dataset_id (str): The ID of the dataset to query.
         filter_column (str): Column name to filter results by. Default is None
@@ -136,21 +134,21 @@ class GridStatusAPITool(BaseTool):
         resample_frequency (str): e.g. '1 minute', '5 minutes', '1 hour', etc. Default is None
         resample_by (str): Columns to group by before resampling. Default is None
         resample_function (str): Should be one of the following options - 'mean', 'sum', 'min', 'max', 'count', 'stddev', 'variance'. Default is 'mean'
-        
+
         time cannot be used with start_time or end_time
         time_comparison can only be used when time is used
         for time related filters, NEVER use filter_column & filter_value. Use either time or start_time and end_time
-        
+
         """
-        
+
         page = 1
-        page_size = 50000
+        page_size = GRID_STATUS_PAGE_SIZE
         order = "asc"
         return_format = "json"
         timezone = "market"
         filter_operator = "="
         time_comparison = "="
-        
+
         params = {
             "order": order,
             "return_format": return_format,
@@ -195,19 +193,14 @@ class GridStatusAPITool(BaseTool):
 
         data = result.get("data", [])
 
-        # Save to CSV if data exists
         if data:
             try:
-                import pandas as pd
-                import datetime
-                import os
-
                 df = pd.DataFrame(data)
-                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                timestamp = generate_timestamp()
                 filename = f"{dataset_id}_{timestamp}.csv"
                 filepath = os.path.abspath(filename)
                 df.to_csv(filepath, index=False)
-                
+
                 output = {
                     "preview": df.head().to_dict("records"),
                     "filepath": filepath,

@@ -1,8 +1,6 @@
-"""OpenWeather API tool for weather data."""
-
 import json
 import os
-from typing import Optional
+from typing import Any, Optional
 
 import requests
 from loguru import logger
@@ -14,7 +12,7 @@ from .base_tool import BaseTool
 
 class OpenWeatherTool(BaseTool):
     """Tool for accessing OpenWeather API data.
-    
+
     Provides access to current weather, forecasts, historical weather,
     air pollution data, and geocoding services.
     """
@@ -40,14 +38,13 @@ class OpenWeatherTool(BaseTool):
         self.base_url = "https://api.openweathermap.org/data/2.5"
         self.geo_url = "https://api.openweathermap.org/geo/1.0"
 
-        # Register methods
         self.register_method("geocode_location", self.geocode_location)
         self.register_method("get_current_weather", self.get_current_weather)
         self.register_method("get_forecast", self.get_forecast)
         self.register_method("get_historical_weather", self.get_historical_weather)
         self.register_method("get_air_pollution", self.get_air_pollution)
 
-    def _make_request(self, url: str, params: dict) -> dict:
+    def _make_request(self, url: str, params: dict[str, Any]) -> dict[str, Any]:
         """Make a request to the OpenWeather API."""
         if not self.api_key:
             return {"error": "OPENWEATHER_API_KEY not configured"}
@@ -55,12 +52,13 @@ class OpenWeatherTool(BaseTool):
         try:
             response = requests.get(url, params=params, timeout=30)
             response.raise_for_status()
-            return response.json()
+            result: dict[str, Any] = response.json()
+            return result
         except requests.exceptions.RequestException as e:
             logger.error(f"OpenWeather API request failed: {e}")
             return {"error": str(e)}
 
-    def _geocode(self, location: str, limit: int = 1) -> dict:
+    def _geocode(self, location: str, limit: int = 1) -> Any:
         """Helper to geocode a location."""
         params = {
             "q": location,
@@ -71,11 +69,11 @@ class OpenWeatherTool(BaseTool):
 
     def geocode_location(self, location: str, limit: int = 1) -> str:
         """Convert location name to coordinates.
-        
+
         Args:
             location: The location to geocode (e.g., "Austin, TX, USA").
             limit: The number of results to return (default: 1).
-            
+
         Returns:
             JSON string with geocoding results.
         """
@@ -220,36 +218,36 @@ class OpenWeatherTool(BaseTool):
 
     def get_air_pollution(self, location: str) -> str:
         """Get current air pollution data for a location.
-        
+
         Args:
             location: The location to get air pollution for.
-            
+
         Returns:
             JSON string with air pollution data.
         """
         geo_result = self._geocode(location)
-        
+
         if "error" in geo_result:
             return json.dumps(geo_result, indent=2)
-        
+
         if not geo_result:
             return json.dumps({"error": "Location not found"}, indent=2)
-        
+
         lat = geo_result[0]["lat"]
         lon = geo_result[0]["lon"]
-        
+
         params = {
             "lat": lat,
             "lon": lon,
             "appid": self.api_key
         }
-        
+
         pollution = self._make_request(f"{self.base_url}/air_pollution", params)
-        
+
         if "error" not in pollution:
             pollution["location_name"] = geo_result[0].get("name", location)
             pollution["country"] = geo_result[0].get("country", "")
-        
+
         return json.dumps(pollution, indent=2)
 
     def get_tools(self) -> list[ToolDefinition]:

@@ -1,0 +1,158 @@
+import json
+from datetime import datetime
+from typing import Optional
+from urllib.parse import urlencode
+
+import requests
+from loguru import logger
+
+from energbench.agent.providers import ToolDefinition
+from energbench.utils import generate_timestamp
+
+from ._base import DocketBaseTool
+
+
+class VirginiaDocketTool(DocketBaseTool):
+    """Search Virginia SCC daily filings by date range."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            name="virginia_dockets",
+            description="Search Virginia SCC daily filings by date range",
+        )
+        self.register_method("search_virginia_dockets", self.search_virginia)
+
+    def get_tools(self) -> list[ToolDefinition]:
+        return [
+            ToolDefinition(
+                name="search_virginia_dockets",
+                description="Search Virginia SCC daily filings by date range.",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "start_date": {
+                            "type": "string",
+                            "description": (
+                                "Start date for the search in YYYY-MM-DD format (inclusive)."
+                            ),
+                        },
+                        "end_date": {
+                            "type": "string",
+                            "description": (
+                                "End date for the search in YYYY-MM-DD format (inclusive)."
+                            ),
+                        },
+                        "docname_contains": {
+                            "type": "string",
+                            "description": "Keyword to search within document names",
+                        },
+                        "case_contains": {
+                            "type": "string",
+                            "description": "Keyword to search within case numbers",
+                        },
+                        "timeout": {
+                            "type": "integer",
+                            "default": 30,
+                            "description": "Timeout in seconds. Defaults to 30.",
+                        },
+                    },
+                    "required": ["start_date", "end_date"],
+                },
+            ),
+        ]
+
+    def search_virginia(
+        self,
+        start_date: str,
+        end_date: str,
+        docname_contains: Optional[str] = None,
+        case_contains: Optional[str] = None,
+        timeout: int = 30,
+    ) -> str:
+        """Search Virginia SCC daily filings by date range.
+
+        Args:
+            start_date: Start date in YYYY-MM-DD format (inclusive).
+            end_date: End date in YYYY-MM-DD format (inclusive).
+            docname_contains: Keyword to search within document names.
+            case_contains: Keyword to search within case numbers.
+            timeout: Timeout in seconds. Defaults to 30.
+
+        Returns:
+            JSON string with the search results.
+        """
+        try:
+            base = (
+                "https://www.scc.virginia.gov/docketsearchapi"
+                "/breeze/dailyfilings/getalldailyfilings"
+            )
+            doc_base = "https://www.scc.virginia.gov/docketsearch/DOCS/"
+            timestamp = generate_timestamp()
+            save_csv_path = f"virginia_dockets_{timestamp}.csv"
+
+            start = datetime.fromisoformat(start_date).date()
+            end = datetime.fromisoformat(end_date).date()
+            end_plus = end.toordinal() + 1
+            end = datetime.fromordinal(end_plus).date()
+
+            start_utc = f"{start.isoformat()}T05:00:00.000Z"
+            end_utc = f"{end.isoformat()}T05:00:00.000Z"
+
+            filt = (
+                f"(DateFiled ge datetime'{start_utc}') and "
+                f"(DateFiled lt datetime'{end_utc}')"
+            )
+            params = {
+                "$filter": filt,
+                "$orderby": "Month,Day",
+                "$select": "CaseNumber,DocName,Month,Day,Year,DocID,FileName",
+            }
+            url = f"{base}?{urlencode(params)}"
+
+            resp = requests.get(url, timeout=timeout)
+            resp.raise_for_status()
+            data = resp.json() or []
+
+            results = []
+            for row in data:
+                if docname_contains and docname_contains.lower() not in (
+                    row.get("DocName") or ""
+                ).lower():
+                    continue
+                if case_contains and case_contains.lower() not in (
+                    row.get("CaseNumber") or ""
+                ).lower():
+                    continue
+                y, m, d = row.get("Year"), row.get("Month"), row.get("Day")
+                filed_date = None
+                try:
+                    filed_date = datetime(int(y), int(m), int(d)).date().isoformat()
+                except Exception:
+                    filed_date = None
+                filename = row.get("FileName")
+                doc_url = f"{doc_base}{filename}" if filename else None
+                results.append(
+                    {
+                        "case_number": row.get("CaseNumber"),
+                        "doc_name": row.get("DocName"),
+                        "year": y,
+                        "month": m,
+                        "day": d,
+                        "filed_date": filed_date,
+                        "doc_id": row.get("DocID"),
+                        "document_url": doc_url,
+                    }
+                )
+
+            saved_csv = self._save_csv(results, save_csv_path)
+            return json.dumps(
+                {
+                    "results": results,
+                    "num_results": len(results),
+                    "saved_csv": saved_csv,
+                },
+                indent=2,
+            )
+        except Exception as e:
+            logger.error(f"Virginia SCC search failed: {e}")
+            return json.dumps({"error": str(e), "source": "Virginia SCC"})

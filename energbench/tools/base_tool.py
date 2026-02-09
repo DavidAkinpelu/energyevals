@@ -1,13 +1,14 @@
-"""Base tool class for energBench standard tools."""
-
 import json
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from importlib.metadata import entry_points
+from typing import Any, Optional
 
 from loguru import logger
 
 from energbench.agent.providers import ToolDefinition
+from energbench.core.errors import APIError, ToolError
 
 
 @dataclass
@@ -20,7 +21,6 @@ class ToolResult:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_json(self) -> str:
-        """Convert result to JSON string."""
         return json.dumps(
             {
                 "success": self.success,
@@ -48,7 +48,7 @@ class BaseTool(ABC):
         """
         self.name = name
         self.description = description
-        self._methods: dict[str, Callable] = {}
+        self._methods: dict[str, Callable[..., Any]] = {}
 
     @abstractmethod
     def get_tools(self) -> list[ToolDefinition]:
@@ -58,7 +58,7 @@ class BaseTool(ABC):
         """
         pass
 
-    def register_method(self, name: str, method: Callable):
+    def register_method(self, name: str, method: Callable[..., Any]) -> None:
         """Register a method as a callable tool.
 
         Args:
@@ -68,7 +68,7 @@ class BaseTool(ABC):
         self._methods[name] = method
         logger.debug(f"Registered tool method: {name}")
 
-    async def execute(self, method_name: str, **kwargs) -> ToolResult:
+    async def execute(self, method_name: str, **kwargs: Any) -> ToolResult:
         """Execute a tool method.
 
         Args:
@@ -90,7 +90,6 @@ class BaseTool(ABC):
         try:
             result = method(**kwargs)
 
-            # Handle async methods
             if hasattr(result, "__await__"):
                 result = await result
 
@@ -100,40 +99,92 @@ class BaseTool(ABC):
                 metadata={"method": method_name},
             )
 
-        except Exception as e:
-            logger.error(f"Tool execution failed: {method_name} - {e}")
+        except ToolError as e:
+            logger.warning(f"Tool error in {method_name}: {e}")
             return ToolResult(
                 success=False,
                 data=None,
                 error=str(e),
-                metadata={"method": method_name},
+                metadata={"method": method_name, "tool_name": e.tool_name, "recoverable": e.recoverable},
+            )
+
+        except APIError as e:
+            logger.warning(f"API error in {method_name}: {e}")
+            return ToolResult(
+                success=False,
+                data=None,
+                error=str(e),
+                metadata={
+                    "method": method_name,
+                    "tool_name": e.tool_name,
+                    "status_code": e.status_code,
+                    "recoverable": e.recoverable,
+                },
+            )
+
+        except Exception as e:
+            logger.error(f"Unexpected error in {method_name}: {type(e).__name__}: {e}")
+            return ToolResult(
+                success=False,
+                data=None,
+                error=f"Unexpected error: {type(e).__name__}: {str(e)}",
+                metadata={"method": method_name, "error_type": type(e).__name__},
             )
 
 
 class ToolRegistry:
     """Registry for managing multiple tools."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._tools: dict[str, BaseTool] = {}
         self._method_to_tool: dict[str, str] = {}
 
     def register(self, tool: BaseTool) -> None:
-        """Register a tool with the registry."""
         self._tools[tool.name] = tool
 
         for tool_def in tool.get_tools():
             self._method_to_tool[tool_def.name] = tool.name
 
-        logger.info(f"Registered tool: {tool.name}")
+        logger.debug(f"Registered tool: {tool.name}")
+
+    @classmethod
+    def discover_tools(cls) -> "ToolRegistry":
+        """Auto-discover and register tools from entry points.
+
+        Discovers tools registered via setuptools entry points under the
+        'energbench.tools' group.
+
+        Returns:
+            ToolRegistry with all discovered tools registered
+        """
+
+
+        registry = cls()
+
+        try:
+            discovered: Any = entry_points(group="energbench.tools")  # type: ignore[call-arg]
+        except TypeError:
+            all_eps: Any = entry_points()
+            discovered = all_eps.get("energbench.tools", []) if isinstance(all_eps, dict) else []
+
+        for ep in discovered:
+            try:
+                tool_cls = ep.load()
+                tool = tool_cls()
+                registry.register(tool)
+                logger.info(f"Discovered and registered tool: {ep.name}")
+            except Exception as e:
+                logger.warning(f"Failed to load tool '{ep.name}': {e}")
+
+        return registry
 
     def get_all_tools(self) -> list[ToolDefinition]:
-        """Get all tool definitions from all registered tools."""
         all_tools = []
         for tool in self._tools.values():
             all_tools.extend(tool.get_tools())
         return all_tools
 
-    async def execute(self, tool_name: str, **kwargs) -> ToolResult:
+    async def execute(self, tool_name: str, **kwargs: Any) -> ToolResult:
         """Execute a tool by name.
 
         Args:
@@ -155,7 +206,7 @@ class ToolRegistry:
 
         return await tool.execute(tool_name, **kwargs)
 
-    def get_executor(self) -> Callable:
+    def get_executor(self) -> Callable[..., Any]:
         """Get a tool executor function for use with ReActAgent."""
 
         async def executor(tool_name: str, arguments: dict[str, Any]) -> str:

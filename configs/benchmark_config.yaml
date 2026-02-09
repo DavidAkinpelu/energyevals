@@ -1,14 +1,29 @@
 # Benchmark Configuration
 # Copy this file and modify as needed
 
-# Provider settings
-<<<<<<< Updated upstream
-provider: openai                    # openai, anthropic, google, or deepinfra
-model: gpt-4o-mini                  # Model to use (see available models below)
-=======
-provider: openai                    # openai, anthropic, or deepinfra
-model: Qwen2.5-7B-Instruct                 # Model to use (see available models below)
->>>>>>> Stashed changes
+# =============================================================================
+# Model Configuration
+# =============================================================================
+
+# Multi-model format (recommended for comparing models):
+# Uncomment additional models to run benchmarks across multiple providers
+models:
+  - provider: openai
+    model: gpt-4o-mini
+  - provider: openai
+    model: gpt-4o
+  - provider: anthropic
+    model: claude-sonnet-4-20250514
+  # - provider: google
+  #   model: gemini-2.0-flash
+  # - provider: deepinfra
+  #   model: meta-llama/Llama-3.3-70B-Instruct-Turbo
+
+# Per-model options (optional):
+# models:
+#   - provider: openai
+#     model: o3-mini
+#     is_reasoning_model: true    # Override reasoning model auto-detection
 
 # Available models:
 #   openai: gpt-4o, gpt-4o-mini, o1, o1-mini, o3, o3-mini, o4-mini
@@ -16,11 +31,9 @@ model: Qwen2.5-7B-Instruct                 # Model to use (see available models 
 #   google: gemini-2.0-flash, gemini-1.5-pro, gemini-1.5-flash
 #   deepinfra: meta-llama/Llama-3.3-70B-Instruct-Turbo, meta-llama/Meta-Llama-3.1-405B-Instruct
 
-# Reasoning model override (optional)
-# Set to true/false to override auto-detection, or omit for auto-detect
-# Auto-detection checks if model name starts with: o1, o3, o4, gpt-5
-# Reasoning models use reasoning_effort instead of temperature
-# is_reasoning_model: true
+# =============================================================================
+# Questions Configuration
+# =============================================================================
 
 # Questions file
 questions_file: data/AI Evals New Questions.xlsx - Q&As.csv
@@ -30,21 +43,70 @@ questions_file: data/AI Evals New Questions.xlsx - Q&As.csv
 # questions: [1, 2, 3]              # Specific question IDs
 # questions: 1-5                     # Range of questions
 
-# Observability settings
+# =============================================================================
+# Observability Settings
+# =============================================================================
+
 observability:
   enabled: true                      # Enable/disable tracing
   backend: json                      # json, langfuse, both, or auto
-  output_dir: ./benchmark_traces     # Directory for trace files
+  output_dir: ./benchmark_traces     # Base directory for trace files
+  # run_name: with_tools             # Optional: subdirectory for organizing runs
+                                     # e.g., "no_tools", "with_tools", "experiment_1"
+                                     # Traces saved to: {output_dir}/{run_name}/{model}/
 
-# MCP settings
+# =============================================================================
+# MCP Settings
+# =============================================================================
+
 mcp:
   enabled: true                      # Use MCP tools (requires server URLs in .env)
 
-# Agent settings
+# =============================================================================
+# Agent Settings
+# =============================================================================
+
 agent:
   max_iterations: 25                 # Maximum iterations per question
 
-# Output settings
+# =============================================================================
+# Tools Configuration
+# =============================================================================
+
+# Note: When running multiple models, each model will use the same tool configuration.
+# To run different tool configurations per model, run separate benchmark runs.
+
+# Tools Configuration - Choose ONE of these patterns:
+
+# Pattern 1: Run all tools (default - currently active)
+tools:
+  enabled: true
+  include: []                        # Empty = all tools
+  exclude: []
+
+# Pattern 2: Run only specific tools (recommended for faster benchmarks)
+# tools:
+#   enabled: true
+#   include: [search, gridstatus, battery]
+#   exclude: []
+
+# Pattern 3: Run all tools except specific ones
+# tools:
+#   enabled: true
+#   include: []
+#   exclude: [docket, openweather]
+
+# Pattern 4: Disable all tools (agent uses only reasoning)
+# tools:
+#   enabled: false
+
+# Available tools:
+#   battery, docket, gridstatus, openweather, renewables, search, system, tariffs
+
+# =============================================================================
+# Output Settings
+# =============================================================================
+
 output:
   results_dir: ./benchmark_results   # Directory for result files
   save_answers: true                 # Save full answers in results

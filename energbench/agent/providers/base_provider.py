@@ -1,8 +1,8 @@
-"""Base provider abstraction for LLM providers."""
-
 from abc import ABC, abstractmethod
-from typing import Any, AsyncIterator, Optional
+from collections.abc import AsyncIterator
+from typing import Any, Optional
 
+from energbench.agent.constants import MAX_TOKENS
 from energbench.agent.schema import (
     ImageContent,
     Message,
@@ -11,6 +11,16 @@ from energbench.agent.schema import (
     ToolCall,
     ToolDefinition,
 )
+
+__all__ = [
+    "BaseProvider",
+    "ImageContent",
+    "Message",
+    "ProviderResponse",
+    "TextContent",
+    "ToolCall",
+    "ToolDefinition",
+]
 
 
 class BaseProvider(ABC):
@@ -52,7 +62,7 @@ class BaseProvider(ABC):
         messages: list[Message],
         tools: Optional[list[ToolDefinition]] = None,
         temperature: float = 0.0,
-        max_tokens: int = 4096,
+        max_tokens: Optional[int] = MAX_TOKENS,
         **kwargs: Any,
     ) -> ProviderResponse:
         """Generate a completion from the model.
@@ -75,7 +85,7 @@ class BaseProvider(ABC):
         messages: list[Message],
         tools: Optional[list[ToolDefinition]] = None,
         temperature: float = 0.0,
-        max_tokens: int = 4096,
+        max_tokens: Optional[int] = MAX_TOKENS,
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         """Stream a completion from the model.
@@ -90,7 +100,8 @@ class BaseProvider(ABC):
         Yields:
             String chunks as they are generated.
         """
-        pass
+        yield ""  
+        raise NotImplementedError
 
     @abstractmethod
     def format_tools(self, tools: list[ToolDefinition]) -> list[dict[str, Any]]:

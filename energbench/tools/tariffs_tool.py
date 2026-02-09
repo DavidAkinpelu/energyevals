@@ -1,9 +1,9 @@
-"""Utility tariffs tool using OpenEI API."""
+from __future__ import annotations
 
 import json
 import os
 import re
-from typing import Optional
+from typing import Any
 
 import requests
 from loguru import logger
@@ -22,7 +22,7 @@ class TariffsTool(BaseTool):
 
     BASE_URL = "https://api.openei.org/utility_rates"
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         """Initialize the tariffs tool.
 
         Args:
@@ -38,7 +38,7 @@ class TariffsTool(BaseTool):
         if not self.api_key:
             logger.warning("OPEN_EI_API_KEY not set. Tool will not function.")
 
-        self.register_method("get_utility_tariffs", self.get_utility_tarriffs)
+        self.register_method("get_utility_tariffs", self.get_utility_tariffs)
 
     def get_tools(self) -> list[ToolDefinition]:
         """Return tool definitions for the tariffs tool."""
@@ -88,7 +88,7 @@ class TariffsTool(BaseTool):
             ),
         ]
 
-    def get_utility_tarriffs(
+    def get_utility_tariffs(
         self,
         address: str,
         sector: str,
@@ -113,7 +113,7 @@ class TariffsTool(BaseTool):
         if not self.api_key:
             return json.dumps({"error": "OPEN_EI_API_KEY not configured"})
 
-        params = {
+        params: dict[str, str | int] = {
             "version": version,
             "format": return_format,
             "api_key": self.api_key,
@@ -129,7 +129,7 @@ class TariffsTool(BaseTool):
                 raw = response.text
                 cleaned_text = re.sub(r'[\x00-\x1F\x7F]', '', raw)
                 data = json.loads(cleaned_text)
-                final_response = []
+                final_response: Any = []
 
                 if len(data.get("items", [])) > 0:  # check if tariffs exist for the address and customer type
                     if active_only:
@@ -143,14 +143,11 @@ class TariffsTool(BaseTool):
                     else:
                         final_response = data["items"]
                 else:
-                    final_response = "Tariffs not found for this location at this time"
+                    final_response = {"error": "Tariffs not found for this location at this time"}
             else:
-                final_response = f"Error: {response.status_code} - {response.text}"
+                final_response = {"error": f"Status {response.status_code}: {response.text}"}
 
-            if isinstance(final_response, str):
-                return final_response
-            else:
-                return json.dumps(final_response, indent=4)
+            return json.dumps(final_response, indent=4)
 
         except Exception as e:
             logger.error(f"Tariff lookup failed: {e}")

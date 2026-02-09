@@ -1,37 +1,15 @@
-"""MCP Client for connecting to MCP servers."""
-
-import asyncio
 import json
 import os
 from contextlib import AsyncExitStack
-from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from loguru import logger
+from mcp import ClientSession
+from mcp.client.sse import sse_client
+from mcp.client.stdio import StdioServerParameters, stdio_client
 
 from energbench.agent.providers import ToolDefinition
-
-
-@dataclass
-class MCPServerConfig:
-    """Configuration for an MCP server.
-
-    Supports both local (stdio) and remote (SSE) connections:
-    - For local: provide command (and optionally args, env)
-    - For remote: provide url
-    """
-
-    name: str
-    command: Optional[str] = None
-    url: Optional[str] = None
-    args: list[str] = field(default_factory=list)
-    env: Optional[dict[str, str]] = None
-    description: str = ""
-
-    def __post_init__(self):
-        """Validate that either command or url is provided."""
-        if not self.command and not self.url:
-            raise ValueError(f"Server '{self.name}' must have either 'command' or 'url'")
+from energbench.agent.schema import MCPServerConfig
 
 
 class MCPClient:
@@ -39,22 +17,6 @@ class MCPClient:
 
     Manages connections to MCP servers and provides a unified interface
     for tool discovery and execution.
-
-    Supports both local (stdio) and remote (SSE) connections.
-
-    Usage:
-        # As async context manager (recommended)
-        async with MCPClient(servers) as client:
-            tools = client.list_tools()
-            result = await client.call_tool("tool_name", {})
-
-        # Manual lifecycle management
-        client = MCPClient(servers)
-        await client.connect()
-        try:
-            # use client
-        finally:
-            await client.disconnect()
     """
 
     def __init__(self, servers: Optional[list[MCPServerConfig]] = None):
@@ -65,7 +27,7 @@ class MCPClient:
         """
         self.servers = servers or []
         self._sessions: dict[str, Any] = {}
-        self._tools: dict[str, dict[str, Any]] = {}  # tool_name -> {server, definition}
+        self._tools: dict[str, dict[str, Any]] = {}
         self._connected = False
         self._exit_stack: Optional[AsyncExitStack] = None
 
@@ -74,7 +36,7 @@ class MCPClient:
         await self.connect()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Async context manager exit."""
         await self.disconnect()
 
@@ -83,22 +45,16 @@ class MCPClient:
 
         Supports both stdio (local) and SSE (remote) transports.
         """
-        from mcp import ClientSession
-
-        # Create exit stack to manage all context managers
         self._exit_stack = AsyncExitStack()
         await self._exit_stack.__aenter__()
 
         for server in self.servers:
             try:
                 if server.url:
-                    # Remote connection via SSE
                     await self._connect_sse(server)
                 else:
-                    # Local connection via stdio
                     await self._connect_stdio(server)
 
-                # Discover tools from this server
                 session = self._sessions.get(server.name)
                 if session:
                     tools_result = await session.list_tools()
@@ -128,21 +84,17 @@ class MCPClient:
         Args:
             server: Server configuration with command.
         """
-        from mcp import ClientSession
-        from mcp.client.stdio import StdioServerParameters, stdio_client
-
         params = StdioServerParameters(
             command=server.command,
             args=server.args,
             env=server.env,
         )
 
-        # Use exit stack to properly manage the context manager
+        assert self._exit_stack is not None
         read, write = await self._exit_stack.enter_async_context(
             stdio_client(params)
         )
 
-        # Create and initialize session, also managed by exit stack
         session = await self._exit_stack.enter_async_context(
             ClientSession(read, write)
         )
@@ -156,15 +108,11 @@ class MCPClient:
         Args:
             server: Server configuration with URL.
         """
-        from mcp import ClientSession
-        from mcp.client.sse import sse_client
-
-        # Use exit stack to properly manage the context manager
+        assert self._exit_stack is not None
         read, write = await self._exit_stack.enter_async_context(
             sse_client(server.url)
         )
 
-        # Create and initialize session, also managed by exit stack
         session = await self._exit_stack.enter_async_context(
             ClientSession(read, write)
         )
@@ -225,11 +173,10 @@ class MCPClient:
         try:
             result = await session.call_tool(tool_name, arguments)
 
-            # Extract text content from result
             if result.content:
                 for content in result.content:
                     if hasattr(content, "text"):
-                        return content.text
+                        return str(content.text)
 
             return json.dumps({"result": "Tool executed successfully"})
 
@@ -237,7 +184,7 @@ class MCPClient:
             logger.error(f"Tool call failed: {tool_name} - {e}")
             return json.dumps({"error": str(e), "tool": tool_name})
 
-    def get_executor(self):
+    def get_executor(self) -> Any:
         """Get a tool executor function for use with ReActAgent.
 
         Returns:
@@ -274,7 +221,7 @@ class MCPToolAdapter:
         """Get tool definitions from MCP servers."""
         return self.client.list_tools()
 
-    async def execute(self, tool_name: str, **kwargs) -> str:
+    async def execute(self, tool_name: str, **kwargs: Any) -> str:
         """Execute an MCP tool.
 
         Args:
@@ -296,10 +243,6 @@ def get_default_mcp_servers() -> list[MCPServerConfig]:
         - RAG_SERVER_URL: URL for remote RAG server (e.g., https://example.com/sse)
         - DATABASE_SERVER_URL: URL for remote Database server
 
-    Note: For local servers, install them separately:
-        - pip install ./mcp-servers/rag-server
-        - pip install ./mcp-servers/database-server
-
     Returns:
         List of MCP server configs for RAG and Database servers.
     """
@@ -308,7 +251,6 @@ def get_default_mcp_servers() -> list[MCPServerConfig]:
 
     servers = []
 
-    # RAG Server
     if rag_url:
         servers.append(
             MCPServerConfig(
@@ -317,32 +259,14 @@ def get_default_mcp_servers() -> list[MCPServerConfig]:
                 description="Energy document retrieval and search (remote)",
             )
         )
-    else:
-        servers.append(
-            MCPServerConfig(
-                name="energy-rag",
-                command="energy-rag-server",
-                args=[],
-                description="Energy document retrieval and search (local)",
-            )
-        )
 
-    # Database Server
+
     if db_url:
         servers.append(
             MCPServerConfig(
                 name="energy-database",
                 url=db_url,
                 description="Energy market database queries (remote)",
-            )
-        )
-    else:
-        servers.append(
-            MCPServerConfig(
-                name="energy-database",
-                command="energy-database-server",
-                args=[],
-                description="Energy market database queries (local)",
             )
         )
 

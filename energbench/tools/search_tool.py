@@ -1,14 +1,14 @@
-"""Exa search tool for web search capabilities."""
-
 import json
 import os
 from typing import Optional, Union
 
+from exa_py import Exa
 from loguru import logger
 
 from energbench.agent.providers import ToolDefinition
 
 from .base_tool import BaseTool
+from .constants import SEARCH_MAX_RESULTS, SEARCH_TEXT_LIMIT
 
 
 class SearchTool(BaseTool):
@@ -21,7 +21,7 @@ class SearchTool(BaseTool):
     def __init__(
         self,
         api_key: Optional[str] = None,
-        text_length_limit: int = 1000,
+        text_length_limit: int = SEARCH_TEXT_LIMIT,
         default_num_results: int = 5,
     ):
         """Initialize the search tool.
@@ -43,7 +43,6 @@ class SearchTool(BaseTool):
         if not self.api_key:
             logger.warning("EXA_API_KEY not set. Search functionality will be limited.")
 
-        # Register methods
         self.register_method("search_web", self.search)
         self.register_method("get_page_contents", self.get_contents)
 
@@ -66,7 +65,7 @@ class SearchTool(BaseTool):
                         },
                         "num_results": {
                             "type": "integer",
-                            "description": "Number of results to return (default: 5, max: 10)",
+                            "description": f"Number of results to return (default: 5, max: {SEARCH_MAX_RESULTS})",
                         },
                         "text": {
                             "type": "boolean",
@@ -167,7 +166,7 @@ class SearchTool(BaseTool):
         text: bool = True,
         highlights: bool = True,
         summary: bool = False,
-        livecrawl: str = "always",
+        livecrawl: str = "fallback",
         search_type: str = "auto",
         include_domains: Optional[list[str]] = None,
         exclude_domains: Optional[list[str]] = None,
@@ -189,14 +188,11 @@ class SearchTool(BaseTool):
             JSON string with search results.
         """
         try:
-            from exa_py import Exa
-
             if not self.api_key:
                 return json.dumps({"error": "EXA_API_KEY not configured"})
 
             exa = Exa(self.api_key)
 
-            # Build search parameters
             search_kwargs = {
                 "text": text,
                 "highlights": highlights,
@@ -208,16 +204,13 @@ class SearchTool(BaseTool):
                 "exclude_domains": exclude_domains,
             }
 
-            # Remove None, empty strings, and empty lists
             search_kwargs = {
                 k: v for k, v in search_kwargs.items()
                 if v is not None and v != "" and v != []
             }
 
-            # Perform search
             results = exa.search_and_contents(query, **search_kwargs)
 
-            # Parse results
             parsed_results = []
             for result in results.results:
                 result_dict = {"url": result.url}
@@ -285,8 +278,6 @@ class SearchTool(BaseTool):
             JSON string with page contents.
         """
         try:
-            from exa_py import Exa
-
             if not self.api_key:
                 return json.dumps({"error": "EXA_API_KEY not configured"})
 
@@ -302,7 +293,6 @@ class SearchTool(BaseTool):
                 "subpageTarget": subpage_target,
             }
 
-            # Remove None, empty strings, and empty lists
             params = {
                 k: v for k, v in params.items()
                 if v is not None and v != "" and v != []

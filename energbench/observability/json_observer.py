@@ -1,26 +1,21 @@
-"""JSON file observer for local observability.
-
-This module provides a file-based observer that writes complete agent traces
-to JSON files. Useful for local development, debugging, and offline analysis.
-
-Features:
-- Complete trace data (no truncation)
-- All steps including failed tool calls
-- Full tool inputs and outputs
-- Error details and stack traces
-- Configurable output formats (individual files or JSONL)
-"""
-
 import json
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
+from uuid import uuid4
+
+try:
+    import fcntl
+    _HAS_FCNTL = True
+except ImportError:
+    _HAS_FCNTL = False
 
 from loguru import logger
 
 from energbench.agent.schema import AgentRun, AgentStep, StepType
+
 from .base import BaseObserver
+from .constants import ERROR_PREVIEW_LENGTH, RAW_ERROR_LENGTH
 
 
 class JSONFileObserver(BaseObserver):
@@ -42,27 +37,34 @@ class JSONFileObserver(BaseObserver):
     def __init__(
         self,
         output_dir: str = "./observability_logs",
+        run_name: Optional[str] = None,
         single_file: bool = False,
         filename: str = "agent_traces.jsonl",
         pretty_print: bool = True,
-        include_raw_messages: bool = True,
     ):
         """Initialize the JSON observer.
 
         Args:
-            output_dir: Directory to store trace files.
+            output_dir: Base directory to store trace files.
+            run_name: Optional subdirectory name for organizing runs (e.g., "no_tools").
+                     When provided, traces are saved to: {output_dir}/{run_name}/{model}/
             single_file: If True, append all traces to one JSONL file.
                         If False, create one JSON file per trace.
             filename: Filename for single_file mode (should end in .jsonl).
             pretty_print: If True, format JSON with indentation (individual files only).
-            include_raw_messages: If True, include raw LLM message history when available.
         """
-        self.output_dir = Path(output_dir)
+        self.base_output_dir = Path(output_dir)
+        self.run_name = run_name
+
+        if run_name:
+            self.output_dir = self.base_output_dir / run_name
+        else:
+            self.output_dir = self.base_output_dir
+
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.single_file = single_file
         self.filename = filename
         self.pretty_print = pretty_print
-        self.include_raw_messages = include_raw_messages
         self._enabled = True
 
         logger.info(f"JSONFileObserver initialized. Output dir: {self.output_dir}")
@@ -102,7 +104,7 @@ class JSONFileObserver(BaseObserver):
             return None
 
         try:
-            trace_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            trace_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid4().hex[:8]}"
 
             trace_data = self._build_trace_data(
                 trace_id=trace_id,
@@ -113,7 +115,7 @@ class JSONFileObserver(BaseObserver):
                 session_id=session_id,
             )
 
-            self._write_trace(trace_id, trace_data)
+            self._write_trace(trace_id, trace_data, metadata=metadata)
 
             logger.debug(f"Traced agent run to JSON: {trace_id}")
             return trace_id
@@ -133,46 +135,36 @@ class JSONFileObserver(BaseObserver):
     ) -> dict[str, Any]:
         """Build complete trace data structure."""
 
-        # Analyze steps for summary
         step_summary = self._analyze_steps(run.steps)
 
         return {
-            # Identification
             "trace_id": trace_id,
             "timestamp": datetime.now().isoformat(),
             "start_time": datetime.fromtimestamp(run.start_time).isoformat() if run.start_time else None,
             "end_time": datetime.fromtimestamp(run.end_time).isoformat() if run.end_time else None,
 
-            # Query and Response
             "query": run.query,
             "final_answer": run.final_answer,
 
-            # Status
             "success": run.success,
             "error": run.error,
 
-            # Metrics - Complete token breakdown
             "metrics": {
                 "iterations": run.iterations,
                 "tool_calls_count": run.tool_calls_count,
                 "total_input_tokens": run.total_input_tokens,
                 "total_output_tokens": run.total_output_tokens,
                 "total_cached_tokens": run.total_cached_tokens,
+                "total_reasoning_tokens": run.total_reasoning_tokens,
                 "total_tokens": run.total_tokens,
                 "total_latency_ms": run.total_latency_ms,
                 "duration_seconds": run.duration_seconds,
             },
-
-            # Step Summary
             "step_summary": step_summary,
-
-            # All Steps - Complete and unfiltered
             "steps": [
                 self._serialize_step(step, index)
                 for index, step in enumerate(run.steps)
             ],
-
-            # Metadata
             "metadata": metadata or {},
             "tags": tags or [],
             "user_id": user_id,
@@ -181,7 +173,7 @@ class JSONFileObserver(BaseObserver):
 
     def _analyze_steps(self, steps: list[AgentStep]) -> dict[str, Any]:
         """Analyze steps and provide summary statistics."""
-        summary = {
+        summary: dict[str, Any] = {
             "total_steps": len(steps),
             "step_types": {},
             "tool_calls": [],
@@ -190,39 +182,36 @@ class JSONFileObserver(BaseObserver):
         }
 
         for step in steps:
-            # Count step types
             step_type = step.step_type.value
             summary["step_types"][step_type] = summary["step_types"].get(step_type, 0) + 1
 
-            # Track tool calls
             if step.step_type == StepType.ACTION and step.tool_name:
                 summary["tool_calls"].append(step.tool_name)
 
-            # Track failed tool calls (check observation for errors)
             if step.step_type == StepType.OBSERVATION and step.tool_output:
                 if self._is_tool_error(step.tool_output):
                     summary["failed_tool_calls"].append({
                         "tool": step.tool_name,
-                        "error_preview": step.tool_output[:200] if len(step.tool_output) > 200 else step.tool_output,
+                        "error_preview": step.tool_output[:ERROR_PREVIEW_LENGTH] if len(step.tool_output) > ERROR_PREVIEW_LENGTH else step.tool_output,
                     })
 
-            # Track error steps
             if step.step_type == StepType.ERROR:
                 summary["errors"].append(step.content)
 
         return summary
 
     def _is_tool_error(self, output: str) -> bool:
-        """Check if tool output indicates an error."""
+        """Check if tool output indicates an error.
+
+        Uses explicit key checks only to avoid false positives from
+        incidental mentions of 'error' in tool output values.
+        """
         try:
             data = json.loads(output)
             if isinstance(data, dict):
-                # Check for common error patterns
                 if data.get("error"):
                     return True
                 if data.get("success") is False:
-                    return True
-                if "error" in str(data).lower() and "errno" not in str(data).lower():
                     return True
         except (json.JSONDecodeError, TypeError):
             pass
@@ -235,22 +224,15 @@ class JSONFileObserver(BaseObserver):
             "step_type": step.step_type.value,
             "timestamp": datetime.fromtimestamp(step.timestamp).isoformat() if step.timestamp else None,
             "timestamp_unix": step.timestamp,
-
-            # Content - never truncated
             "content": step.content,
-
-            # Tool information (for action/observation steps)
             "tool_name": step.tool_name,
             "tool_input": step.tool_input,
-            "tool_output": step.tool_output,  # Full output, never truncated
+            "tool_output": step.tool_output,
             "tool_output_length": len(step.tool_output) if step.tool_output else 0,
-
-            # Metrics
             "tokens_used": step.tokens_used,
             "latency_ms": step.latency_ms,
         }
 
-        # Add error analysis for observation steps
         if step.step_type == StepType.OBSERVATION and step.tool_output:
             step_data["is_error"] = self._is_tool_error(step.tool_output)
             if step_data["is_error"]:
@@ -269,20 +251,46 @@ class JSONFileObserver(BaseObserver):
                     "success": data.get("success"),
                 }
         except (json.JSONDecodeError, TypeError):
-            return {"raw_error": output[:500]}
+            return {"raw_error": output[:RAW_ERROR_LENGTH]}
         return None
 
-    def _write_trace(self, trace_id: str, trace_data: dict[str, Any]) -> None:
-        """Write trace data to file."""
+    def _write_trace(
+        self,
+        trace_id: str,
+        trace_data: dict[str, Any],
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> None:
+        """Write trace to file.
+
+        If metadata contains provider, model, and question_id, traces are organized
+        into subdirectories by model with question numbers in filenames:
+            {output_dir}/{run_name}/{provider}_{model}/trace_q{question_id}_{timestamp}.json
+
+        Otherwise falls back to flat structure:
+            {output_dir}/trace_{trace_id}.json
+        """
+        if metadata and all(k in metadata for k in ("provider", "model", "question_id")):
+            model_dir = f"{metadata['provider']}_{metadata['model']}"
+            trace_output_dir = self.output_dir / model_dir
+            trace_output_dir.mkdir(parents=True, exist_ok=True)
+            filename = f"trace_q{metadata['question_id']}_{trace_id}.json"
+        else:
+            trace_output_dir = self.output_dir
+            filename = f"trace_{trace_id}.json"
+
         if self.single_file:
-            # Append to JSONL file (one JSON object per line)
-            filepath = self.output_dir / self.filename
+            filepath = trace_output_dir / self.filename
             with open(filepath, "a", encoding="utf-8") as f:
-                f.write(json.dumps(trace_data, default=str, ensure_ascii=False) + "\n")
+                if _HAS_FCNTL:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                try:
+                    f.write(json.dumps(trace_data, default=str, ensure_ascii=False) + "\n")
+                finally:
+                    if _HAS_FCNTL:
+                        fcntl.flock(f.fileno(), fcntl.LOCK_UN)
             logger.debug(f"Appended trace to {filepath}")
         else:
-            # Write individual JSON file
-            filepath = self.output_dir / f"trace_{trace_id}.json"
+            filepath = trace_output_dir / filename
             with open(filepath, "w", encoding="utf-8") as f:
                 if self.pretty_print:
                     json.dump(trace_data, f, indent=2, default=str, ensure_ascii=False)
@@ -291,13 +299,34 @@ class JSONFileObserver(BaseObserver):
             logger.debug(f"Wrote trace to {filepath}")
 
     def flush(self) -> None:
-        """No-op for file observer (writes are immediate)."""
         pass
 
     def shutdown(self) -> None:
-        """Shutdown the observer."""
         self._enabled = False
         logger.info("JSONFileObserver shutdown")
+
+    def _find_trace_file(self, trace_id: str) -> Optional[Path]:
+        """Find a trace file by ID, searching flat directory and subdirectories.
+
+        Handles both flat traces (trace_{id}.json) and organized traces
+        ({provider}_{model}/trace_q{question_id}_{id}.json).
+
+        Args:
+            trace_id: The trace ID to search for.
+
+        Returns:
+            Path to the trace file, or None if not found.
+        """
+        # Check flat directory first
+        flat_path = self.output_dir / f"trace_{trace_id}.json"
+        if flat_path.exists():
+            return flat_path
+
+        # Search subdirectories for organized traces
+        for match in self.output_dir.rglob(f"*{trace_id}*.json"):
+            return match
+
+        return None
 
     def get_trace_file(self, trace_id: str) -> Optional[Path]:
         """Get the file path for a specific trace.
@@ -310,37 +339,43 @@ class JSONFileObserver(BaseObserver):
         """
         if self.single_file:
             return self.output_dir / self.filename
-        else:
-            filepath = self.output_dir / f"trace_{trace_id}.json"
-            return filepath if filepath.exists() else None
+        return self._find_trace_file(trace_id)
 
     def list_traces(self) -> list[str]:
         """List all trace IDs in the output directory.
+
+        Searches both the flat directory and any model subdirectories.
 
         Returns:
             List of trace IDs.
         """
         if self.single_file:
-            filepath = self.output_dir / self.filename
-            if not filepath.exists():
-                return []
             traces = []
-            with open(filepath, "r", encoding="utf-8") as f:
-                for line in f:
-                    try:
-                        data = json.loads(line)
-                        traces.append(data.get("trace_id", "unknown"))
-                    except json.JSONDecodeError:
-                        continue
+            for jsonl_file in self.output_dir.rglob(self.filename):
+                with open(jsonl_file, encoding="utf-8") as f:
+                    for line in f:
+                        try:
+                            data = json.loads(line)
+                            traces.append(data.get("trace_id", "unknown"))
+                        except json.JSONDecodeError:
+                            continue
             return traces
         else:
-            return [
-                f.stem.replace("trace_", "")
-                for f in self.output_dir.glob("trace_*.json")
-            ]
+            traces = []
+            for trace_path in self.output_dir.rglob("trace_*.json"):
+                # Read trace_id from file to handle both flat and organized filenames
+                try:
+                    with open(trace_path, encoding="utf-8") as fp:
+                        data = json.load(fp)
+                        traces.append(data.get("trace_id", trace_path.stem.replace("trace_", "")))
+                except (json.JSONDecodeError, OSError):
+                    traces.append(trace_path.stem.replace("trace_", ""))
+            return traces
 
     def load_trace(self, trace_id: str) -> Optional[dict[str, Any]]:
         """Load a specific trace by ID.
+
+        Searches both the flat directory and any model subdirectories.
 
         Args:
             trace_id: The trace ID to load.
@@ -349,21 +384,20 @@ class JSONFileObserver(BaseObserver):
             Trace data dict, or None if not found.
         """
         if self.single_file:
-            filepath = self.output_dir / self.filename
-            if not filepath.exists():
-                return None
-            with open(filepath, "r", encoding="utf-8") as f:
-                for line in f:
-                    try:
-                        data = json.loads(line)
-                        if data.get("trace_id") == trace_id:
-                            return data
-                    except json.JSONDecodeError:
-                        continue
+            for jsonl_file in self.output_dir.rglob(self.filename):
+                with open(jsonl_file, encoding="utf-8") as f:
+                    for line in f:
+                        try:
+                            data: dict[str, Any] = json.loads(line)
+                            if data.get("trace_id") == trace_id:
+                                return data
+                        except json.JSONDecodeError:
+                            continue
             return None
         else:
-            filepath = self.output_dir / f"trace_{trace_id}.json"
-            if not filepath.exists():
+            filepath = self._find_trace_file(trace_id)
+            if filepath is None:
                 return None
-            with open(filepath, "r", encoding="utf-8") as f:
-                return json.load(f)
+            with open(filepath, encoding="utf-8") as fp:
+                loaded: dict[str, Any] = json.load(fp)
+                return loaded

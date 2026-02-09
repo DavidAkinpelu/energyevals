@@ -1,14 +1,13 @@
-"""DeepInfra provider implementation.
-
-DeepInfra provides an OpenAI-compatible API for various open-source models.
-"""
-
 import json
 import os
 import time
-from typing import Any, AsyncIterator, Optional
+from collections.abc import AsyncIterator
+from typing import Any, Optional
 
 from openai import AsyncOpenAI
+
+from energbench.agent.constants import MAX_TOKENS
+from energbench.agent.schema.messages import ImageContent, TextContent
 
 from .base_provider import (
     BaseProvider,
@@ -63,7 +62,7 @@ class DeepInfraProvider(BaseProvider):
         messages: list[Message],
         tools: Optional[list[ToolDefinition]] = None,
         temperature: float = 0.0,
-        max_tokens: int = 4096,
+        max_tokens: Optional[int] = MAX_TOKENS,
         **kwargs: Any,
     ) -> ProviderResponse:
         """Generate a completion using DeepInfra's API."""
@@ -82,14 +81,12 @@ class DeepInfraProvider(BaseProvider):
             request_kwargs["tools"] = self.format_tools(tools)
             request_kwargs["tool_choice"] = kwargs.get("tool_choice", "auto")
 
-        # Merge any additional kwargs
         request_kwargs.update({k: v for k, v in kwargs.items() if k not in request_kwargs})
 
         response = await self.client.chat.completions.create(**request_kwargs)
 
         latency_ms = (time.time() - start_time) * 1000
 
-        # Extract tool calls if present
         tool_calls = None
         message = response.choices[0].message
         if message.tool_calls:
@@ -123,7 +120,7 @@ class DeepInfraProvider(BaseProvider):
         messages: list[Message],
         tools: Optional[list[ToolDefinition]] = None,
         temperature: float = 0.0,
-        max_tokens: int = 4096,
+        max_tokens: Optional[int] = MAX_TOKENS,
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         """Stream a completion from DeepInfra."""
@@ -167,10 +164,12 @@ class DeepInfraProvider(BaseProvider):
         for msg in messages:
             formatted_msg: dict[str, Any] = {
                 "role": msg.role,
-                "content": msg.content,
             }
+            if msg.content_parts and msg.has_images:
+                formatted_msg["content"] = self._format_multimodal_content(msg)
+            else:
+                formatted_msg["content"] = msg.content
 
-            # Handle tool calls in assistant messages
             if msg.tool_calls:
                 formatted_msg["tool_calls"] = [
                     {
@@ -188,10 +187,39 @@ class DeepInfraProvider(BaseProvider):
                     for tc in msg.tool_calls
                 ]
 
-            # Handle tool response messages
             if msg.role == "tool" and msg.tool_call_id:
                 formatted_msg["tool_call_id"] = msg.tool_call_id
 
             formatted.append(formatted_msg)
 
         return formatted
+
+    def _format_multimodal_content(self, msg: Message) -> list[dict[str, Any]]:
+        """Format multi-modal content (text + images) for OpenAI-compatible API."""
+        content_parts: list[dict[str, Any]] = []
+        for part in msg.content_parts or []:
+            if isinstance(part, TextContent):
+                content_parts.append({"type": "text", "text": part.text})
+            elif isinstance(part, ImageContent):
+                if part.image_url:
+                    content_parts.append({
+                        "type": "image_url",
+                        "image_url": {"url": part.image_url},
+                    })
+                elif part.image_base64:
+                    content_parts.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{part.media_type};base64,{part.image_base64}"
+                        },
+                    })
+            elif isinstance(part, dict):
+                if part.get("type") == "text":
+                    content_parts.append({"type": "text", "text": part.get("text", "")})
+                elif part.get("type") == "image":
+                    url = part.get("image_url") or f"data:{part.get('media_type', 'image/jpeg')};base64,{part.get('image_base64', '')}"
+                    content_parts.append({
+                        "type": "image_url",
+                        "image_url": {"url": url},
+                    })
+        return content_parts

@@ -1,22 +1,35 @@
-"""Battery optimization tool for energy storage revenue stacking."""
-
 import json
 import os
-from datetime import datetime
-from typing import Optional
+from typing import Any
 
 import numpy as np
+import pandas as pd
 from loguru import logger
+from pyomo.environ import (
+    ConcreteModel,
+    ConstraintList,
+    NonNegativeReals,
+    Objective,
+    Var,
+    maximize,
+)
+from pyomo.opt import SolverFactory, TerminationCondition
 
 from energbench.agent.providers import ToolDefinition
+from energbench.utils import generate_timestamp
 
 from .base_tool import BaseTool
+from .constants import (
+    BATTERY_INITIAL_SOC_FRACTION,
+    BATTERY_ROUNDING_PROFILE,
+    BATTERY_ROUNDING_SUMMARY,
+)
 
 
 class BatteryOptimizationTool(BaseTool):
     """Tool for battery storage optimization."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             name="battery_optimization",
             description="Optimize battery storage operations for maximum revenue",
@@ -83,9 +96,7 @@ class BatteryOptimizationTool(BaseTool):
         ]
 
     @staticmethod
-    def _load_csv(csv_path: str):
-        import pandas as pd
-
+    def _load_csv(csv_path: str) -> pd.DataFrame:
         if not os.path.exists(csv_path):
             raise FileNotFoundError(f"CSV file not found at path: {csv_path}")
         return pd.read_csv(csv_path)
@@ -122,17 +133,6 @@ class BatteryOptimizationTool(BaseTool):
             JSON string with the optimization results.
         """
         try:
-            import pandas as pd
-            from pyomo.environ import (
-                ConcreteModel,
-                ConstraintList,
-                NonNegativeReals,
-                Objective,
-                Var,
-                maximize,
-            )
-            from pyomo.opt import SolverFactory, TerminationCondition
-
             df = self._load_csv(csv_path)
             if energy_price_column not in df.columns:
                 return json.dumps({"error": f"Column '{energy_price_column}' not found in CSV."})
@@ -166,10 +166,10 @@ class BatteryOptimizationTool(BaseTool):
                 model.constraints.add(model.charge_power[t] - model.discharge_power[t] <= model.abs_power[t])
                 model.constraints.add(model.discharge_power[t] - model.charge_power[t] <= model.abs_power[t])
 
-            model.constraints.add(model.storage_soc[0] == 0.5 * battery_size_mwh)
+            model.constraints.add(model.storage_soc[0] == BATTERY_INITIAL_SOC_FRACTION * battery_size_mwh)
             model.constraints.add(model.storage_soc[0] == model.storage_soc[horizon - 1])
 
-            def total_cost(m):
+            def total_cost(m: ConcreteModel) -> Any:
                 energy_rev = sum(
                     (timestep_in_hours * energy_price[t] * (m.discharge_power[t] - m.charge_power[t]))
                     for t in range(horizon)
@@ -235,26 +235,26 @@ class BatteryOptimizationTool(BaseTool):
             for idx in range(horizon):
                 output_rows.append(
                     {
-                        "operation_profile": round(operation_profile[idx], 4),
-                        "state_of_charge": round(state_of_charge[idx], 4),
-                        "net_revenue": round(float(net_revenue_series[idx]), 4),
-                        "total_revenue": round(float(total_revenue_series[idx]), 4),
-                        "charging_cost": round(float(charging_cost_series[idx]), 4),
-                        "degradation_penalty": round(float(degradation_penalty_series[idx]), 4),
+                        "operation_profile": round(operation_profile[idx], BATTERY_ROUNDING_PROFILE),
+                        "state_of_charge": round(state_of_charge[idx], BATTERY_ROUNDING_PROFILE),
+                        "net_revenue": round(float(net_revenue_series[idx]), BATTERY_ROUNDING_PROFILE),
+                        "total_revenue": round(float(total_revenue_series[idx]), BATTERY_ROUNDING_PROFILE),
+                        "charging_cost": round(float(charging_cost_series[idx]), BATTERY_ROUNDING_PROFILE),
+                        "degradation_penalty": round(float(degradation_penalty_series[idx]), BATTERY_ROUNDING_PROFILE),
                     }
                 )
 
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = generate_timestamp()
             save_csv_path = f"battery_revenue_optimization_{timestamp}.csv"
             pd.DataFrame(output_rows).to_csv(save_csv_path, index=False)
 
             return json.dumps(
                 {
                     "run_description": run_description,
-                    "net_revenue": round(net_revenue, 2),
-                    "total_revenue": round(total_revenue, 2),
-                    "charging_cost": round(charging_cost, 2),
-                    "degradation_penalty": round(degradation_penalty, 2),
+                    "net_revenue": round(net_revenue, BATTERY_ROUNDING_SUMMARY),
+                    "total_revenue": round(total_revenue, BATTERY_ROUNDING_SUMMARY),
+                    "charging_cost": round(charging_cost, BATTERY_ROUNDING_SUMMARY),
+                    "degradation_penalty": round(degradation_penalty, BATTERY_ROUNDING_SUMMARY),
                     "rows": output_rows,
                     "saved_csv": save_csv_path,
                 },
