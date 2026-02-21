@@ -117,7 +117,8 @@ class GridStatusAPITool(BaseTool):
         On success, saves data to CSV and returns preview rows, filepath, and row count; on error, returns
         the full JSON error. Notes: filter_operator and time_comparison are fixed to '=' and cannot be
         changed. time_val cannot be used together with start_time or end_time. For time-related filters,
-        NEVER use filter_column and filter_value; use start_time/end_time or time_val instead.
+        NEVER use filter_column and filter_value; use start_time/end_time or time_val instead. If an input
+        is not used, set it to None or an empty string.
 
         Args:
             dataset_id: The ID of the dataset to query.
