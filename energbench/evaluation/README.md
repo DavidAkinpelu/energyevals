@@ -30,6 +30,44 @@ flowchart LR
 5. Optionally run paired significance tests across models.
 6. Write JSON reports, CSV summaries, and print a human-readable summary.
 
+## Ground Truth Dataset
+
+The evaluation module scores agent traces against ground-truth answers stored in
+a CSV file. Two dataset files live under `data/`:
+
+| File | Used by | Columns |
+| --- | --- | --- |
+| `data/eval_samples.csv` | Benchmark runner | Questions only (no answers) |
+| `data/eval_samples_with_answers.csv` | Evaluation module | Questions **+ Answer + Approach** |
+
+The default path is `data/eval_samples_with_answers.csv` (set by
+`EvalConfig.dataset_path`). Override it in the YAML config or with the
+`--dataset` CLI flag.
+
+### CSV columns
+
+| Column | Description |
+| --- | --- |
+| `S/N` | Question number (integer, 1-indexed). Used as the question ID throughout the pipeline. |
+| `Category` | Topic category. Drives judge strategy routing (e.g. "Market data retrieval and analysis" uses the accuracy judge; everything else uses the attributes judge). |
+| `Question type` | Descriptor such as "Data retrieval with sources" or "Data retrieval and analysis without sources". |
+| `Difficulty level` | One of `Easy`, `Medium`, or `Hard`. |
+| `Question` | The full question text posed to the agent. |
+| `Answer` | The expected ground-truth answer. Can be free-text prose or tabular data. Compared against the agent's `final_answer` by the judges. |
+| `Approach` | The expert-recommended methodology. Used by `judge_approach` to evaluate the agent's reasoning steps. |
+
+### How ground truth is loaded
+
+`data_loader.load_ground_truth()` reads the CSV and returns a
+`dict[int, GroundTruth]` keyed by `S/N`. The `GroundTruth` model (defined in
+`models.py`) carries four fields: `answer`, `approach`, `question_type`, and
+`category`.
+
+The current dataset contains **11 questions** across four categories
+(Market data retrieval and analysis, Market rules retrieval, Policy and
+regulatory analysis, Project and asset development analysis) and three
+difficulty levels (Easy, Medium, Hard).
+
 ## Module Files
 
 | File | Purpose |
