@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any
 
 from energbench.agent.schema import AgentRun
 
@@ -15,11 +15,11 @@ class BaseObserver(ABC):
     def trace_agent_run(
         self,
         run: AgentRun,
-        metadata: Optional[dict[str, Any]] = None,
-        tags: Optional[list[str]] = None,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-    ) -> Optional[str]:
+        metadata: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+    ) -> str | None:
         """Trace a complete agent run.
 
         Args:
@@ -43,7 +43,7 @@ class BaseObserver(ABC):
         input_tokens: int = 0,
         output_tokens: int = 0,
         latency_ms: float = 0.0,
-        tool_calls: Optional[list[dict]] = None,
+        tool_calls: list[dict] | None = None,
     ) -> None:
         """Trace an individual LLM API call (optional method).
 
@@ -69,7 +69,7 @@ class BaseObserver(ABC):
         arguments: dict[str, Any],
         result: str,
         latency_ms: float = 0.0,
-        error: Optional[str] = None,
+        error: str | None = None,
     ) -> None:
         """Trace a tool execution (optional method).
 

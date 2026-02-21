@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 import json
 import time
-from typing import Any
+from typing import Any, Self
 
 from loguru import logger
 
@@ -349,47 +347,47 @@ class AgentBuilder:
         self._csv_threshold: int = CSV_THRESHOLD
         self._csv_output_dir: str = "./agent_outputs"
 
-    def with_provider(self, provider: BaseProvider) -> AgentBuilder:
+    def with_provider(self, provider: BaseProvider) -> Self:
         """Set the LLM provider."""
         self._provider = provider
         return self
 
-    def with_tool(self, tool: ToolDefinition) -> AgentBuilder:
+    def with_tool(self, tool: ToolDefinition) -> Self:
         """Add a tool to the agent."""
         self._tools.append(tool)
         return self
 
-    def with_tools(self, tools: list[ToolDefinition]) -> AgentBuilder:
+    def with_tools(self, tools: list[ToolDefinition]) -> Self:
         """Add multiple tools to the agent."""
         self._tools.extend(tools)
         return self
 
-    def with_tool_executor(self, executor: ToolExecutor) -> AgentBuilder:
+    def with_tool_executor(self, executor: ToolExecutor) -> Self:
         """Set the tool executor function."""
         self._tool_executor = executor
         return self
 
-    def with_max_iterations(self, max_iterations: int) -> AgentBuilder:
+    def with_max_iterations(self, max_iterations: int) -> Self:
         """Set the maximum number of iterations."""
         self._max_iterations = max_iterations
         return self
 
-    def with_system_prompt(self, prompt: str) -> AgentBuilder:
+    def with_system_prompt(self, prompt: str) -> Self:
         """Set a custom system prompt."""
         self._system_prompt = prompt
         return self
 
-    def with_csv_threshold(self, threshold: int) -> AgentBuilder:
+    def with_csv_threshold(self, threshold: int) -> Self:
         """Set the row count threshold for saving results to CSV."""
         self._csv_threshold = threshold
         return self
 
-    def with_csv_output_dir(self, directory: str) -> AgentBuilder:
+    def with_csv_output_dir(self, directory: str) -> Self:
         """Set the directory for CSV output files."""
         self._csv_output_dir = directory
         return self
 
-    def with_config(self, config: AgentConfig) -> AgentBuilder:
+    def with_config(self, config: AgentConfig) -> Self:
         """Apply configuration from an AgentConfig object."""
         self._max_iterations = config.max_iterations
         self._csv_threshold = config.csv_threshold

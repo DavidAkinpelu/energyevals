@@ -1,7 +1,7 @@
 import json
 import os
 from contextlib import AsyncExitStack
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 from mcp import ClientSession
@@ -19,7 +19,7 @@ class MCPClient:
     for tool discovery and execution.
     """
 
-    def __init__(self, servers: Optional[list[MCPServerConfig]] = None):
+    def __init__(self, servers: list[MCPServerConfig] | None = None):
         """Initialize the MCP client.
 
         Args:
@@ -29,7 +29,7 @@ class MCPClient:
         self._sessions: dict[str, Any] = {}
         self._tools: dict[str, dict[str, Any]] = {}
         self._connected = False
-        self._exit_stack: Optional[AsyncExitStack] = None
+        self._exit_stack: AsyncExitStack | None = None
 
     async def __aenter__(self) -> "MCPClient":
         """Async context manager entry."""
@@ -274,7 +274,7 @@ def get_default_mcp_servers() -> list[MCPServerConfig]:
 
 
 async def create_mcp_client(
-    servers: Optional[list[MCPServerConfig]] = None,
+    servers: list[MCPServerConfig] | None = None,
 ) -> MCPClient:
     """Create and connect an MCP client.
 

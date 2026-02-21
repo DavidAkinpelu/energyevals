@@ -1,13 +1,11 @@
 import json
 import os
-from typing import Any, Optional
+from typing import Any, Literal
 
 import requests
 from loguru import logger
 
-from energbench.agent.providers import ToolDefinition
-
-from .base_tool import BaseTool
+from .base_tool import BaseTool, tool_method
 
 
 class OpenWeatherTool(BaseTool):
@@ -17,7 +15,7 @@ class OpenWeatherTool(BaseTool):
     air pollution data, and geocoding services.
     """
 
-    def __init__(self, api_key: Optional[str] = None, units: str = "metric"):
+    def __init__(self, api_key: str | None = None, units: str = "metric"):
         """Initialize the OpenWeather tool.
 
         Args:
@@ -38,11 +36,6 @@ class OpenWeatherTool(BaseTool):
         self.base_url = "https://api.openweathermap.org/data/2.5"
         self.geo_url = "https://api.openweathermap.org/geo/1.0"
 
-        self.register_method("geocode_location", self.geocode_location)
-        self.register_method("get_current_weather", self.get_current_weather)
-        self.register_method("get_forecast", self.get_forecast)
-        self.register_method("get_historical_weather", self.get_historical_weather)
-        self.register_method("get_air_pollution", self.get_air_pollution)
 
     def _make_request(self, url: str, params: dict[str, Any]) -> dict[str, Any]:
         """Make a request to the OpenWeather API."""
@@ -67,8 +60,10 @@ class OpenWeatherTool(BaseTool):
         }
         return self._make_request(f"{self.geo_url}/direct", params)
 
+    @tool_method()
     def geocode_location(self, location: str, limit: int = 1) -> str:
-        """Convert location name to coordinates.
+        """Convert a location name to geographic coordinates (latitude/longitude).
+        Useful for getting coordinates before making weather API calls.
 
         Args:
             location: The location to geocode (e.g., "Austin, TX, USA").
@@ -80,17 +75,17 @@ class OpenWeatherTool(BaseTool):
         result = self._geocode(location, limit)
         return json.dumps(result, indent=2)
 
+    @tool_method()
     def get_current_weather(
         self,
         location: str,
-        units: Optional[str] = None,
+        units: Literal["metric", "imperial", "standard"] | None = None,
     ) -> str:
-        """Get current weather for a location.
+        """Get current weather conditions for a location including temperature, humidity, pressure, wind speed, and weather description.
 
         Args:
             location: The location to get weather for (e.g., "Austin, TX, USA").
-            units: Units of measurement ("metric", "imperial", "standard").
-                   Defaults to instance setting.
+            units: Units of measurement ("metric", "imperial", "standard"). Defaults to "metric".
 
         Returns:
             JSON string with current weather data.
@@ -121,19 +116,20 @@ class OpenWeatherTool(BaseTool):
 
         return json.dumps(weather, indent=2)
 
+    @tool_method()
     def get_forecast(
         self,
         location: str,
         days: int = 5,
-        units: Optional[str] = None,
+        units: Literal["metric", "imperial", "standard"] | None = None,
     ) -> str:
-        """Get weather forecast for a location.
+        """Get weather forecast for up to 5 days with 3-hour intervals.
+        Includes temperature, humidity, precipitation, and wind predictions.
 
         Args:
             location: The location to get forecast for (e.g., "Austin, TX, USA").
             days: Number of days to forecast (1-5, default: 5).
-            units: Units of measurement ("metric", "imperial", "standard").
-                   Defaults to instance setting.
+            units: Units of measurement ("metric", "imperial", "standard"). Defaults to "metric".
 
         Returns:
             JSON string with forecast data.
@@ -166,23 +162,23 @@ class OpenWeatherTool(BaseTool):
 
         return json.dumps(forecast, indent=2)
 
+    @tool_method()
     def get_historical_weather(
         self,
         location: str,
         start: int,
         end: int,
         type_inp: str = "hour",
-        units: Optional[str] = None,
+        units: Literal["metric", "imperial", "standard"] | None = None,
     ) -> str:
-        """Get historical weather data for a location.
+        """Get historical weather data for a specific time range. Requires Unix timestamps for start and end dates.
 
         Args:
             location: The location to get historical weather for.
             start: Start date (Unix timestamp, UTC), e.g., 1369728000.
             end: End date (Unix timestamp, UTC), e.g., 1369789200.
             type_inp: Type of the call, keep as "hour".
-            units: Units of measurement ("metric", "imperial", "standard").
-                   Defaults to instance setting.
+            units: Units of measurement ("metric", "imperial", "standard"). Defaults to "metric".
 
         Returns:
             JSON string with historical weather data.
@@ -216,8 +212,9 @@ class OpenWeatherTool(BaseTool):
 
         return json.dumps(historical, indent=2)
 
+    @tool_method()
     def get_air_pollution(self, location: str) -> str:
-        """Get current air pollution data for a location.
+        """Get current air quality data including pollutant concentrations (CO, NO, NO2, O3, SO2, PM2.5, PM10, NH3) and Air Quality Index.
 
         Args:
             location: The location to get air pollution for.
@@ -250,131 +247,4 @@ class OpenWeatherTool(BaseTool):
 
         return json.dumps(pollution, indent=2)
 
-    def get_tools(self) -> list[ToolDefinition]:
-        """Return tool definitions for OpenWeather tools."""
-        return [
-            ToolDefinition(
-                name="geocode_location",
-                description=(
-                    "Convert a location name to geographic coordinates (latitude/longitude). "
-                    "Useful for getting coordinates before making weather API calls."
-                ),
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "location": {
-                            "type": "string",
-                            "description": "Location to geocode (e.g., 'Austin, TX, USA')",
-                        },
-                        "limit": {
-                            "type": "integer",
-                            "description": "Number of results to return (default: 1)",
-                            "default": 1,
-                        },
-                    },
-                    "required": ["location"],
-                },
-            ),
-            ToolDefinition(
-                name="get_current_weather",
-                description=(
-                    "Get current weather conditions for a location including temperature, "
-                    "humidity, pressure, wind speed, and weather description."
-                ),
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "location": {
-                            "type": "string",
-                            "description": "Location to get weather for (e.g., 'Austin, TX, USA')",
-                        },
-                        "units": {
-                            "type": "string",
-                            "enum": ["metric", "imperial", "standard"],
-                            "description": "Units of measurement (default: metric)",
-                        },
-                    },
-                    "required": ["location"],
-                },
-            ),
-            ToolDefinition(
-                name="get_forecast",
-                description=(
-                    "Get weather forecast for up to 5 days with 3-hour intervals. "
-                    "Includes temperature, humidity, precipitation, and wind predictions."
-                ),
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "location": {
-                            "type": "string",
-                            "description": "Location to get forecast for (e.g., 'Austin, TX, USA')",
-                        },
-                        "days": {
-                            "type": "integer",
-                            "description": "Number of days to forecast (1-5, default: 5)",
-                            "minimum": 1,
-                            "maximum": 5,
-                        },
-                        "units": {
-                            "type": "string",
-                            "enum": ["metric", "imperial", "standard"],
-                            "description": "Units of measurement (default: metric)",
-                        },
-                    },
-                    "required": ["location"],
-                },
-            ),
-            ToolDefinition(
-                name="get_historical_weather",
-                description=(
-                    "Get historical weather data for a specific time range. "
-                    "Requires Unix timestamps for start and end dates."
-                ),
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "location": {
-                            "type": "string",
-                            "description": "Location to get historical weather for",
-                        },
-                        "start": {
-                            "type": "integer",
-                            "description": "Start date as Unix timestamp (UTC), e.g., 1369728000",
-                        },
-                        "end": {
-                            "type": "integer",
-                            "description": "End date as Unix timestamp (UTC), e.g., 1369789200",
-                        },
-                        "type_inp": {
-                            "type": "string",
-                            "description": "Type of call, keep as 'hour' (default)",
-                        },
-                        "units": {
-                            "type": "string",
-                            "enum": ["metric", "imperial", "standard"],
-                            "description": "Units of measurement (default: metric)",
-                        },
-                    },
-                    "required": ["location", "start", "end"],
-                },
-            ),
-            ToolDefinition(
-                name="get_air_pollution",
-                description=(
-                    "Get current air quality data including pollutant concentrations "
-                    "(CO, NO, NO2, O3, SO2, PM2.5, PM10, NH3) and Air Quality Index."
-                ),
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "location": {
-                            "type": "string",
-                            "description": "Location to get air pollution data for",
-                        },
-                    },
-                    "required": ["location"],
-                },
-            ),
-        ]
 

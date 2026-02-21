@@ -2,7 +2,7 @@ import base64
 import os
 import time
 from collections.abc import AsyncIterator
-from typing import Any, Optional
+from typing import Any
 
 from energbench.agent.schema.messages import ImageContent, TextContent
 
@@ -34,8 +34,8 @@ class GoogleProvider(BaseProvider):
     def __init__(
         self,
         model: str = "gemini-2.0-flash",
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
+        api_key: str | None = None,
+        base_url: str | None = None,
         **kwargs: Any,
     ):
         """Initialize the Google provider.
@@ -62,9 +62,9 @@ class GoogleProvider(BaseProvider):
     async def complete(
         self,
         messages: list[Message],
-        tools: Optional[list[ToolDefinition]] = None,
+        tools: list[ToolDefinition] | None = None,
         temperature: float = 0.0,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
         **kwargs: Any,
     ) -> ProviderResponse:
         """Generate a completion using Google's Gemini API."""
@@ -91,7 +91,7 @@ class GoogleProvider(BaseProvider):
         latency_ms = (time.time() - start_time) * 1000
 
         content = ""
-        tool_calls: Optional[list[ToolCall]] = None
+        tool_calls: list[ToolCall] | None = None
 
         if response.candidates and len(response.candidates) > 0:
             candidate = response.candidates[0]
@@ -144,9 +144,9 @@ class GoogleProvider(BaseProvider):
     async def stream(
         self,
         messages: list[Message],
-        tools: Optional[list[ToolDefinition]] = None,
+        tools: list[ToolDefinition] | None = None,
         temperature: float = 0.0,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         """Stream a completion from Google Gemini."""

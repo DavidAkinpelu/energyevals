@@ -1,5 +1,3 @@
-from typing import Optional
-
 from .base import BaseObserver
 from .composite_observer import CompositeObserver
 from .json_observer import JSONFileObserver
@@ -14,7 +12,7 @@ from .langfuse_client import (
 def get_observer(
     backend: str = "auto",
     output_dir: str = "./observability_logs",
-    run_name: Optional[str] = None,
+    run_name: str | None = None,
     single_file: bool = False,
 ) -> BaseObserver:
     """Get an observer instance based on the specified backend.

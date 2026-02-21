@@ -1,12 +1,6 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
+from .config import BenchmarkConfig
 from .constants import ANSWER_PREVIEW_LENGTH, HEADER_WIDTH, QUESTION_PREVIEW_LENGTH
-
-if TYPE_CHECKING:
-    from .config import BenchmarkConfig
-    from .models import BenchmarkResult, Question
+from .models import BenchmarkResult, Question
 
 
 def print_header(text: str) -> None:

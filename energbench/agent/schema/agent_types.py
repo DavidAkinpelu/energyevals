@@ -1,7 +1,7 @@
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from energbench.agent.constants import CSV_THRESHOLD, MAX_ITERATIONS
 
@@ -33,9 +33,9 @@ class AgentStep:
 
     step_type: StepType
     content: str
-    tool_name: Optional[str] = None
-    tool_input: Optional[dict[str, Any]] = None
-    tool_output: Optional[str] = None
+    tool_name: str | None = None
+    tool_input: dict[str, Any] | None = None
+    tool_output: str | None = None
     tokens_used: int = 0
     latency_ms: float = 0.0
     timestamp: float = field(default_factory=time.time)
@@ -64,7 +64,7 @@ class AgentRun:
 
     query: str
     steps: list[AgentStep] = field(default_factory=list)
-    final_answer: Optional[str] = None
+    final_answer: str | None = None
     total_input_tokens: int = 0
     total_cached_tokens: int = 0
     total_output_tokens: int = 0
@@ -73,9 +73,9 @@ class AgentRun:
     tool_calls_count: int = 0
     iterations: int = 0
     success: bool = False
-    error: Optional[str] = None
+    error: str | None = None
     start_time: float = field(default_factory=time.time)
-    end_time: Optional[float] = None
+    end_time: float | None = None
 
     @property
     def total_tokens(self) -> int:
@@ -104,4 +104,4 @@ class AgentConfig:
     max_iterations: int = MAX_ITERATIONS
     csv_threshold: int = CSV_THRESHOLD
     csv_output_dir: str = "./agent_outputs"
-    system_prompt: Optional[str] = None
+    system_prompt: str | None = None

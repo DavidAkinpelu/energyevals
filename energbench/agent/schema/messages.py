@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Optional, Union
+from typing import Any
 
 
 @dataclass
@@ -16,11 +16,11 @@ class ImageContent:
 
     type: str = "image"
     image_base64: str = ""
-    image_url: Optional[str] = None
+    image_url: str | None = None
     media_type: str = "image/jpeg"
 
 
-ContentPart = Union[TextContent, ImageContent]
+ContentPart = TextContent | ImageContent
 
 
 @dataclass
@@ -38,10 +38,10 @@ class Message:
 
     role: str
     content: str = ""
-    content_parts: Optional[list[ContentPart]] = None
-    tool_calls: Optional[list[dict[str, Any]]] = None
-    tool_call_id: Optional[str] = None
-    name: Optional[str] = None
+    content_parts: list[ContentPart] | None = None
+    tool_calls: list[dict[str, Any]] | None = None
+    tool_call_id: str | None = None
+    name: str | None = None
 
     @property
     def has_images(self) -> bool:

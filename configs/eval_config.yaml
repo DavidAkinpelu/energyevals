@@ -1,0 +1,57 @@
+# Evaluation Pipeline Configuration
+# Used by: scripts/run_eval.py -> energbench.evaluation
+
+# =============================================================================
+# LLM Judge Settings
+# =============================================================================
+
+judge:
+  provider: openai
+  model: gpt-4o
+  temperature: 0.0
+  max_tokens: 4096
+
+# =============================================================================
+# Paths
+# =============================================================================
+
+# Path to benchmark trace directory (output of run_benchmark.py)
+results_path: ./benchmark_traces
+
+# Dataset CSV with questions, answers, and approaches
+dataset_path: ./data/eval_samples_with_answers.csv
+
+# Directory for evaluation output
+output_dir: ./evaluation_results
+
+# Run name -- should match the benchmark observability run_name
+# Uncomment to specify (otherwise auto-discovers model dirs under results_path)
+# run_name: eval_samples
+
+# =============================================================================
+# Tolerances
+# =============================================================================
+
+tolerances:
+  abs_tol: 0.01
+  rel_tol: 0.5
+
+# =============================================================================
+# Statistics
+# =============================================================================
+
+statistics:
+  confidence_level: 0.95
+  significance_alpha: 0.05
+
+# =============================================================================
+# Scope (optional)
+# =============================================================================
+
+# Filter to specific models (directory names under results_path/{run_name}/)
+# models:
+#   - openai_gpt-4.1
+#   - anthropic_claude-sonnet-4-20250514
+
+# Filter to specific question IDs
+# questions: [1, 3, 5]

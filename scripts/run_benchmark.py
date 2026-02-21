@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import annotations
 
 import argparse
 import asyncio
@@ -113,6 +112,13 @@ Config file (YAML):
         action="store_true",
         help="List available tools and exit",
     )
+    parser.add_argument(
+        "--num-trials",
+        type=int,
+        default=None,
+        help="Number of independent trials per question (default: 1). "
+        "Produces trial_N/ subdirectories in trace output.",
+    )
 
     return parser.parse_args()
 
@@ -171,6 +177,10 @@ def apply_cli_overrides(config: BenchmarkConfig, args: argparse.Namespace) -> No
         config.observability_enabled = False
     if args.no_mcp:
         config.mcp_enabled = False
+
+    # Trial override
+    if args.num_trials is not None:
+        config.num_trials = args.num_trials
 
     # Tool overrides
     if args.tools:

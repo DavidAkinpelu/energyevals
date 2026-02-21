@@ -1,14 +1,13 @@
 import json
 from datetime import datetime
-from typing import Optional
 from urllib.parse import urlencode
 
 import requests
 from loguru import logger
 
-from energbench.agent.providers import ToolDefinition
 from energbench.utils import generate_timestamp
 
+from ..base_tool import tool_method
 from ._base import DocketBaseTool
 
 
@@ -20,53 +19,14 @@ class VirginiaDocketTool(DocketBaseTool):
             name="virginia_dockets",
             description="Search Virginia SCC daily filings by date range",
         )
-        self.register_method("search_virginia_dockets", self.search_virginia)
 
-    def get_tools(self) -> list[ToolDefinition]:
-        return [
-            ToolDefinition(
-                name="search_virginia_dockets",
-                description="Search Virginia SCC daily filings by date range.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "start_date": {
-                            "type": "string",
-                            "description": (
-                                "Start date for the search in YYYY-MM-DD format (inclusive)."
-                            ),
-                        },
-                        "end_date": {
-                            "type": "string",
-                            "description": (
-                                "End date for the search in YYYY-MM-DD format (inclusive)."
-                            ),
-                        },
-                        "docname_contains": {
-                            "type": "string",
-                            "description": "Keyword to search within document names",
-                        },
-                        "case_contains": {
-                            "type": "string",
-                            "description": "Keyword to search within case numbers",
-                        },
-                        "timeout": {
-                            "type": "integer",
-                            "default": 30,
-                            "description": "Timeout in seconds. Defaults to 30.",
-                        },
-                    },
-                    "required": ["start_date", "end_date"],
-                },
-            ),
-        ]
-
+    @tool_method(name="search_virginia_dockets")
     def search_virginia(
         self,
         start_date: str,
         end_date: str,
-        docname_contains: Optional[str] = None,
-        case_contains: Optional[str] = None,
+        docname_contains: str | None = None,
+        case_contains: str | None = None,
         timeout: int = 30,
     ) -> str:
         """Search Virginia SCC daily filings by date range.

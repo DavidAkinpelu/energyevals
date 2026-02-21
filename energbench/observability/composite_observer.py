@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 
@@ -43,11 +43,11 @@ class CompositeObserver(BaseObserver):
     def trace_agent_run(
         self,
         run: AgentRun,
-        metadata: Optional[dict[str, Any]] = None,
-        tags: Optional[list[str]] = None,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-    ) -> Optional[str]:
+        metadata: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+    ) -> str | None:
         """Trace to all configured observers.
 
         Args:
@@ -96,7 +96,7 @@ class CompositeObserver(BaseObserver):
         input_tokens: int = 0,
         output_tokens: int = 0,
         latency_ms: float = 0.0,
-        tool_calls: Optional[list[dict]] = None,
+        tool_calls: list[dict] | None = None,
     ) -> None:
         """Delegate LLM call tracing to all observers."""
         for observer in self.observers:
@@ -121,7 +121,7 @@ class CompositeObserver(BaseObserver):
         arguments: dict[str, Any],
         result: str,
         latency_ms: float = 0.0,
-        error: Optional[str] = None,
+        error: str | None = None,
     ) -> None:
         """Delegate tool execution tracing to all observers."""
         for observer in self.observers:

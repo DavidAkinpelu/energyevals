@@ -1,13 +1,11 @@
 import json
 import os
-from typing import Optional, Union
+from typing import Literal
 
 from exa_py import Exa
 from loguru import logger
 
-from energbench.agent.providers import ToolDefinition
-
-from .base_tool import BaseTool
+from .base_tool import BaseTool, tool_method
 from .constants import SEARCH_MAX_RESULTS, SEARCH_TEXT_LIMIT
 
 
@@ -20,9 +18,9 @@ class SearchTool(BaseTool):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         text_length_limit: int = SEARCH_TEXT_LIMIT,
-        default_num_results: int = 5,
+        default_num_results: int = SEARCH_MAX_RESULTS,
     ):
         """Initialize the search tool.
 
@@ -43,149 +41,38 @@ class SearchTool(BaseTool):
         if not self.api_key:
             logger.warning("EXA_API_KEY not set. Search functionality will be limited.")
 
-        self.register_method("search_web", self.search)
-        self.register_method("get_page_contents", self.get_contents)
-
-    def get_tools(self) -> list[ToolDefinition]:
-        """Return tool definitions for the search tool."""
-        return [
-            ToolDefinition(
-                name="search_web",
-                description=(
-                    "Search the web using Exa for relevant information about energy markets, "
-                    "regulations, companies, and technical topics. Returns titles, URLs, "
-                    "and text snippets from matching pages."
-                ),
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "The search query describing what you're looking for",
-                        },
-                        "num_results": {
-                            "type": "integer",
-                            "description": f"Number of results to return (default: 5, max: {SEARCH_MAX_RESULTS})",
-                        },
-                        "text": {
-                            "type": "boolean",
-                            "description": "Include text content in results (default: true)",
-                        },
-                        "highlights": {
-                            "type": "boolean",
-                            "description": "Include highlights (default: true)",
-                        },
-                        "summary": {
-                            "type": "boolean",
-                            "description": "Include Exa summaries when available (default: false)",
-                        },
-                        "livecrawl": {
-                            "type": "string",
-                            "enum": ["never", "fallback", "preferred", "always"],
-                            "description": "Live crawl behavior (default: always)",
-                        },
-                        "search_type": {
-                            "type": "string",
-                            "enum": ["neural", "fast", "auto", "deep"],
-                            "description": "Search method: neural (embeddings-based), fast (streamlined), auto (default, combines methods), deep (comprehensive with query expansion)",
-                        },
-                        "include_domains": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "Restrict results to these domains",
-                        },
-                        "exclude_domains": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "Exclude results from these domains",
-                        },
-                    },
-                    "required": ["query"],
-                },
-            ),
-            ToolDefinition(
-                name="get_page_contents",
-                description=(
-                    "Get the full page contents, summaries, and metadata for a list of URLs. "
-                    "Returns instant results from cache, with automatic live crawling as fallback for uncached pages. "
-                    "Use this after search_web to get more details from promising results."
-                ),
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "urls": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "Array of URLs to crawl",
-                        },
-                        "text": {
-                            "oneOf": [
-                                {"type": "boolean"},
-                                {"type": "object"}
-                            ],
-                            "description": "Include full page text (default: true). Can be object with custom settings.",
-                        },
-                        "highlights": {
-                            "oneOf": [
-                                {"type": "boolean"},
-                                {"type": "object"}
-                            ],
-                            "description": "Include relevant text snippets (default: true). Can be object with config.",
-                        },
-                        "summary": {
-                            "oneOf": [
-                                {"type": "boolean"},
-                                {"type": "object"}
-                            ],
-                            "description": "Include page summaries (default: false). Can be object with config.",
-                        },
-                        "livecrawl": {
-                            "type": "string",
-                            "enum": ["never", "fallback", "preferred", "always"],
-                            "description": "Live crawl behavior (default: fallback)",
-                        },
-                        "subpages": {
-                            "type": "integer",
-                            "description": "Number of subpages to crawl from the provided URLs",
-                        },
-                        "subpage_target": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "Keywords to target specific subpages (e.g., ['about', 'products'])",
-                        },
-                    },
-                    "required": ["urls"],
-                },
-            ),
-        ]
-
+    @tool_method(name="search_web")
     def search(
         self,
         query: str,
-        num_results: Optional[int] = None,
+        num_results: int | None = None,
         text: bool = True,
         highlights: bool = True,
         summary: bool = False,
-        livecrawl: str = "fallback",
-        search_type: str = "auto",
-        include_domains: Optional[list[str]] = None,
-        exclude_domains: Optional[list[str]] = None,
+        livecrawl: Literal["never", "fallback", "preferred", "always"] = "fallback",
+        search_type: Literal["neural", "fast", "auto", "deep"] = "auto",
+        include_domains: list[str] | None = None,
+        exclude_domains: list[str] | None = None,
     ) -> str:
-        """Search the web using Exa.
+        """Search the web using Exa for relevant information about energy markets, regulations, companies, and technical topics.
+        Returns titles, URLs, and text snippets from matching pages.
 
         Args:
-            query: The search query.
-            num_results: Number of results to return (default: uses default_num_results).
+            query: The search query describing what you're looking for.
+            num_results: Number of results to return.
             text: Include text content in results.
             highlights: Include highlights in results.
             summary: Include Exa summaries when available.
             livecrawl: Live crawl behavior ("never", "fallback", "preferred", "always").
-            search_type: Search method ("neural", "fast", "auto", "deep"). Default: "auto".
+            search_type: Search method. "neural" uses embeddings for semantic similarity, "fast" is
+                keyword-based, "auto" (default) combines both methods, "deep" performs comprehensive
+                search with query expansion.
             include_domains: Restrict results to these domains.
             exclude_domains: Exclude results from these domains.
 
         Returns:
-            JSON string with search results.
+            JSON string with search results including query, num_results, and a list of result
+            objects each containing url, title, author, published_date, text, and highlights.
         """
         try:
             if not self.api_key:
@@ -247,21 +134,20 @@ class SearchTool(BaseTool):
             logger.error(f"Search failed: {e}")
             return json.dumps({"error": str(e), "query": query})
 
+    @tool_method(name="get_page_contents")
     def get_contents(
         self,
-        urls: Optional[list[str]] = None,
-        text: Union[bool, dict] = True,
-        highlights: Union[bool, dict] = True,
-        summary: Union[bool, dict] = False,
-        livecrawl: str = "fallback",
-        subpages: Optional[int] = None,
-        subpage_target: Optional[list[str]] = None,
+        urls: list[str],
+        text: bool | dict = True,
+        highlights: bool | dict = True,
+        summary: bool | dict = False,
+        livecrawl: Literal["never", "fallback", "preferred", "always"] = "fallback",
+        subpages: int | None = None,
+        subpage_target: list[str] | None = None,
     ) -> str:
-        """Retrieve content from specific URLs.
-
-        Get the full page contents, summaries, and metadata for a list of URLs.
-        Returns instant results from cache, with automatic live crawling as fallback
-        for uncached pages.
+        """Get the full page contents, summaries, and metadata for a list of URLs.
+        Returns instant results from cache, with automatic live crawling as fallback for uncached pages.
+        Use this after search_web to get more details from promising results.
 
         Args:
             urls: Array of URLs to crawl.

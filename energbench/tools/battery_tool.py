@@ -15,10 +15,9 @@ from pyomo.environ import (
 )
 from pyomo.opt import SolverFactory, TerminationCondition
 
-from energbench.agent.providers import ToolDefinition
 from energbench.utils import generate_timestamp
 
-from .base_tool import BaseTool
+from .base_tool import BaseTool, tool_method
 from .constants import (
     BATTERY_INITIAL_SOC_FRACTION,
     BATTERY_ROUNDING_PROFILE,
@@ -35,72 +34,13 @@ class BatteryOptimizationTool(BaseTool):
             description="Optimize battery storage operations for maximum revenue",
         )
 
-        self.register_method("battery_revenue_optimization", self.battery_revenue_optimization)
-
-    def get_tools(self) -> list[ToolDefinition]:
-        return [
-            ToolDefinition(
-                name="battery_revenue_optimization",
-                description=(
-                    "Optimize battery revenue from energy arbitrage using Pyomo. "
-                    "Reads a CSV of energy prices and returns revenue metrics and dispatch."
-                ),
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "run_description": {"type": "string",
-                            "description": "One word description of the model run, used for the filename of the output csv file"
-                        },
-                        "csv_path": {"type": "string",
-                            "description": "Path to the CSV file containing the energy prices."
-                        },
-                        "energy_price_column": {"type": "string",
-                            "description": "Column name of the energy prices."
-                        },
-                        "battery_size_mw": {"type": "number",
-                            "description": "Battery size in MW. Battery size is the maximum power output of the battery."
-                        },
-                        "battery_duration": {"type": "number",
-                            "description": "Battery duration in hours. Battery duration is the maximum amount of time the battery can store energy."
-                        },
-                        "battery_degradation_cost": {"type": "number", "default": 24.0,
-                            "description": "Battery degradation cost in $/MWh. Battery degradation cost is the cost of degradation of the battery."
-                        },
-                        "round_trip_efficiency": {"type": "number", "default": 0.81,
-                            "description": "Round trip efficiency. Round trip efficiency is the efficiency of the battery when charging and discharging."
-                        },
-                        "minimum_state_of_charge": {"type": "number", "default": 0.1,
-                            "description": "Minimum state of charge. Minimum state of charge is the minimum state of charge of the battery."
-                        },
-                        "maximum_state_of_charge": {"type": "number", "default": 0.8,
-                            "description": "Maximum state of charge. Maximum state of charge is the maximum state of charge of the battery."
-                        },
-                        "timestep_in_hours": {"type": "number", "default": 1.0,
-                            "description": "Timestep in hours. Timestep is the time step of the optimization."
-                        },
-                        "days": {"type": "number", "default": 365.0,
-                            "description": "Number of days. Number of days is the number of days of the optimization."
-                        },
-                    },
-                    "required": [
-                        "run_description",
-                        "csv_path",
-                        "energy_price_column",
-                        "battery_size_mw",
-                        "battery_duration",
-                    ],
-                },
-
-            ),
-
-        ]
-
     @staticmethod
     def _load_csv(csv_path: str) -> pd.DataFrame:
         if not os.path.exists(csv_path):
             raise FileNotFoundError(f"CSV file not found at path: {csv_path}")
         return pd.read_csv(csv_path)
 
+    @tool_method()
     def battery_revenue_optimization(
         self,
         run_description: str,
@@ -115,22 +55,37 @@ class BatteryOptimizationTool(BaseTool):
         timestep_in_hours: float = 1.0,
         days: float = 365.0,
     ) -> str:
-        """Optimize battery revenue from energy arbitrage using Pyomo.
+        """Produces optimal potential net revenues for battery storage projects using energy arbitrage only
+        (perfect price foresight, no price-uncertainty penalty). Reads a CSV of energy prices and returns
+        summary metrics, time-series rows, and a saved CSV path.
+
         Args:
             run_description: One word description of the model run, used for the filename of the output csv file
             csv_path: Path to the CSV file containing the energy prices.
             energy_price_column: Column name of the energy prices.
             battery_size_mw: Battery size in MW. Battery size is the maximum power output of the battery.
             battery_duration: Battery duration in hours. Battery duration is the maximum amount of time the battery can store energy.
-            battery_degradation_cost: Battery degradation cost in $/MWh. Battery degradation cost is the cost of degradation of the battery.
-            round_trip_efficiency: Round trip efficiency. Round trip efficiency is the efficiency of the battery when charging and discharging.
-            minimum_state_of_charge: Minimum state of charge. Minimum state of charge is the minimum state of charge of the battery.
-            maximum_state_of_charge: Maximum state of charge. Maximum state of charge is the maximum state of charge of the battery.
-            timestep_in_hours: Timestep in hours. Timestep is the time step of the optimization.
-            days: Number of days. Number of days is the number of days of the optimization.
+            battery_degradation_cost: cost in $/MWh reflecting additional costs to preserve battery life based on number
+                                    of cycles and capital cost. Default is $24/MWh based on $110,000/MW and $205,000/MWh
+                                    default capex and 6000 cycles
+            round_trip_efficiency: float reflecting battery charging and discharging efficiency. Should always be between 0 and 1
+            minimum_state_of_charge: float reflecting battery minimum state of charge. Should always be between 0 and 1
+            maximum_state_of_charge: float reflecting battery maximum state of charge. Should always be between 0 and 1
+            timestep_in_hours: float representing minimum time step
+            days: float representing number of days in the input price data
 
         Returns:
-            JSON string with the optimization results.
+            JSON string with the optimization results. The value fields are as follows.
+
+            "run_description": description of the run,
+            "net_revenue": float reflecting net battery revenues after removing charging and degradation costs in $
+            "total_revenue": float reflecting total battery discharge revenues in $
+            "charging_cost": float reflecting annual charging costs in $
+            "degradation_penalty": float reflecting additional O&M for degradation management in $
+            "rows": contains time series results including operating profile, state_of_charge, net_revenue, total_revenue,
+                    charging_cost an degradation penalty
+            "saved_csv": saved file path for the output csv
+
         """
         try:
             df = self._load_csv(csv_path)
@@ -225,7 +180,7 @@ class BatteryOptimizationTool(BaseTool):
             charging_cost = float(-1 * np.sum(charging_only * energy_price[: len(charging_only)]) * timestep_in_hours)
 
             net_revenue_series = (
-                np.array(total_revenue_series) - charging_cost_series - np.array(degradation_penalty_series)
+                np.array(total_revenue_series) + charging_cost_series + np.array(degradation_penalty_series) #adding because degradation and charging cost series are negative
             )
             net_revenue = float(np.sum(net_revenue_series))
 

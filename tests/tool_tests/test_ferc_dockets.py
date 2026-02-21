@@ -26,7 +26,8 @@ class TestFERCDocketToolUnit:
         assert "ferc" in tools[0].description.lower()
         assert "start_date" in tools[0].parameters["properties"]
         assert "keyword" in tools[0].parameters["properties"]
-        assert "keyword" in tools[0].parameters["required"]
+        assert "start_date" in tools[0].parameters["required"]
+        assert "end_date" in tools[0].parameters["required"]
 
     def test_search_ferc_success(self, mocker):
         """Test successful FERC eLibrary search with mocked API."""

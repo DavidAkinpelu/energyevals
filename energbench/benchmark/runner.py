@@ -1,12 +1,10 @@
-from __future__ import annotations
-
 import shutil
-from typing import TYPE_CHECKING
 
 from energbench.agent.providers import get_provider
 from energbench.agent.react_agent import ReActAgent
 from energbench.agent.schema import AgentRun, ModelSpec, ToolDefinition, ToolExecutor
 from energbench.mcp import create_mcp_client
+from energbench.mcp.client import MCPClient
 from energbench.observability import BaseObserver, get_observer
 from energbench.tools import create_default_registry
 
@@ -17,9 +15,6 @@ from .display import print_header, print_question, print_result
 from .models import BenchmarkResult, Question
 from .results import save_results
 from .tools import build_tool_executor, filter_tools
-
-if TYPE_CHECKING:
-    from energbench.mcp.client import MCPClient
 
 def _trace_run(
     observer: BaseObserver | None,
@@ -333,44 +328,60 @@ async def run_benchmark(config: BenchmarkConfig) -> int:
 
     tools, mcp_client, executor = await _setup_tools(config)
 
-    all_results: dict[str, list[BenchmarkResult]] = {}
+    all_results: dict[str, dict[int, list[BenchmarkResult]]] = {}
 
     print_header("Running Multi-Model Benchmark")
     print(f"  Models: {len(config.models)}")
     for m in config.models:
         print(f"    - {m.display_name}")
+    if config.num_trials > 1:
+        print(f"  Trials: {config.num_trials}")
 
     try:
         for model_spec in config.models:
-            model_results = await _run_model_benchmark(
-                model_spec=model_spec,
-                questions=questions,
-                tools=tools,
-                executor=executor,
-                config=config,
-                observer=observer,
-            )
-            all_results[model_spec.display_name] = model_results
+            all_results[model_spec.display_name] = {}
+            for trial in range(1, config.num_trials + 1):
+                if config.num_trials > 1:
+                    print(f"\n  --- Trial {trial}/{config.num_trials} ---")
+
+                if observer and hasattr(observer, "set_trial"):
+                    observer.set_trial(trial if config.num_trials > 1 else None)
+
+                model_results = await _run_model_benchmark(
+                    model_spec=model_spec,
+                    questions=questions,
+                    tools=tools,
+                    executor=executor,
+                    config=config,
+                    observer=observer,
+                )
+                all_results[model_spec.display_name][trial] = model_results
 
     finally:
         if mcp_client:
             await mcp_client.disconnect()
         if observer:
+            if hasattr(observer, "set_trial"):
+                observer.set_trial(None)
             observer.flush()
             observer.shutdown()
     print_header("Summary")
 
     total_failed = 0
-    for model_name, results in all_results.items():
-        passed = sum(1 for r in results if r.success)
-        failed = len(results) - passed
+    for model_name, trials in all_results.items():
+        all_model_results = [r for trial_results in trials.values() for r in trial_results]
+        passed = sum(1 for r in all_model_results if r.success)
+        failed = len(all_model_results) - passed
         total_failed += failed
-        total_tokens = sum(r.metrics.get("total_tokens", 0) for r in results)
-        total_duration = sum(r.metrics.get("duration_seconds", 0) for r in results)
+        total_tokens = sum(r.metrics.get("total_tokens", 0) for r in all_model_results)
+        total_duration = sum(r.metrics.get("duration_seconds", 0) for r in all_model_results)
+        num_questions = len(next(iter(trials.values()), []))
 
-        pct = (passed / len(results) * 100) if results else 0
+        pct = (passed / len(all_model_results) * 100) if all_model_results else 0
         print(f"\n  {model_name}:")
-        print(f"    Questions: {len(results)}")
+        print(f"    Questions: {num_questions}")
+        if config.num_trials > 1:
+            print(f"    Trials: {config.num_trials}")
         print(f"    Passed: {passed} ({pct:.0f}%)")
         print(f"    Failed: {failed}")
         print(f"    Total tokens: {total_tokens:,}")

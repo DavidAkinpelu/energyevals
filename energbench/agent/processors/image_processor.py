@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from energbench.utils import extract_images_from_result
 
 

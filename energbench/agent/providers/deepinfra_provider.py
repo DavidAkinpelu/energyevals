@@ -2,7 +2,7 @@ import json
 import os
 import time
 from collections.abc import AsyncIterator
-from typing import Any, Optional
+from typing import Any
 
 from openai import AsyncOpenAI
 
@@ -30,8 +30,8 @@ class DeepInfraProvider(BaseProvider):
     def __init__(
         self,
         model: str = "meta-llama/Llama-3.3-70B-Instruct",
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
+        api_key: str | None = None,
+        base_url: str | None = None,
         **kwargs: Any,
     ):
         """Initialize the DeepInfra provider.
@@ -60,9 +60,9 @@ class DeepInfraProvider(BaseProvider):
     async def complete(
         self,
         messages: list[Message],
-        tools: Optional[list[ToolDefinition]] = None,
+        tools: list[ToolDefinition] | None = None,
         temperature: float = 0.0,
-        max_tokens: Optional[int] = MAX_TOKENS,
+        max_tokens: int | None = MAX_TOKENS,
         **kwargs: Any,
     ) -> ProviderResponse:
         """Generate a completion using DeepInfra's API."""
@@ -118,9 +118,9 @@ class DeepInfraProvider(BaseProvider):
     async def stream(
         self,
         messages: list[Message],
-        tools: Optional[list[ToolDefinition]] = None,
+        tools: list[ToolDefinition] | None = None,
         temperature: float = 0.0,
-        max_tokens: Optional[int] = MAX_TOKENS,
+        max_tokens: int | None = MAX_TOKENS,
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         """Stream a completion from DeepInfra."""

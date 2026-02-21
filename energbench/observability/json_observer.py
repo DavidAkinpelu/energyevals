@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 from uuid import uuid4
 
 try:
@@ -37,7 +37,7 @@ class JSONFileObserver(BaseObserver):
     def __init__(
         self,
         output_dir: str = "./observability_logs",
-        run_name: Optional[str] = None,
+        run_name: str | None = None,
         single_file: bool = False,
         filename: str = "agent_traces.jsonl",
         pretty_print: bool = True,
@@ -66,6 +66,7 @@ class JSONFileObserver(BaseObserver):
         self.filename = filename
         self.pretty_print = pretty_print
         self._enabled = True
+        self._trial: int | None = None
 
         logger.info(f"JSONFileObserver initialized. Output dir: {self.output_dir}")
 
@@ -74,14 +75,24 @@ class JSONFileObserver(BaseObserver):
         """Check if the observer is enabled."""
         return self._enabled
 
+    def set_trial(self, trial_num: int | None) -> None:
+        """Set the current trial number for trace output path nesting.
+
+        When set to an int, traces are saved under a ``trial_N/`` subdirectory
+        inside the model directory.  When set to ``None`` (default / single-trial),
+        traces are written directly into the model directory for backward
+        compatibility.
+        """
+        self._trial = trial_num
+
     def trace_agent_run(
         self,
         run: AgentRun,
-        metadata: Optional[dict[str, Any]] = None,
-        tags: Optional[list[str]] = None,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-    ) -> Optional[str]:
+        metadata: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+    ) -> str | None:
         """Write complete agent run to JSON file.
 
         Captures ALL data from the run including:
@@ -128,10 +139,10 @@ class JSONFileObserver(BaseObserver):
         self,
         trace_id: str,
         run: AgentRun,
-        metadata: Optional[dict[str, Any]],
-        tags: Optional[list[str]],
-        user_id: Optional[str],
-        session_id: Optional[str],
+        metadata: dict[str, Any] | None,
+        tags: list[str] | None,
+        user_id: str | None,
+        session_id: str | None,
     ) -> dict[str, Any]:
         """Build complete trace data structure."""
 
@@ -240,7 +251,7 @@ class JSONFileObserver(BaseObserver):
 
         return step_data
 
-    def _extract_error_details(self, output: str) -> Optional[dict[str, Any]]:
+    def _extract_error_details(self, output: str) -> dict[str, Any] | None:
         """Extract error details from tool output."""
         try:
             data = json.loads(output)
@@ -258,7 +269,7 @@ class JSONFileObserver(BaseObserver):
         self,
         trace_id: str,
         trace_data: dict[str, Any],
-        metadata: Optional[dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Write trace to file.
 
@@ -272,6 +283,8 @@ class JSONFileObserver(BaseObserver):
         if metadata and all(k in metadata for k in ("provider", "model", "question_id")):
             model_dir = f"{metadata['provider']}_{metadata['model']}"
             trace_output_dir = self.output_dir / model_dir
+            if self._trial is not None:
+                trace_output_dir = trace_output_dir / f"trial_{self._trial}"
             trace_output_dir.mkdir(parents=True, exist_ok=True)
             filename = f"trace_q{metadata['question_id']}_{trace_id}.json"
         else:
@@ -305,7 +318,7 @@ class JSONFileObserver(BaseObserver):
         self._enabled = False
         logger.info("JSONFileObserver shutdown")
 
-    def _find_trace_file(self, trace_id: str) -> Optional[Path]:
+    def _find_trace_file(self, trace_id: str) -> Path | None:
         """Find a trace file by ID, searching flat directory and subdirectories.
 
         Handles both flat traces (trace_{id}.json) and organized traces
@@ -328,7 +341,7 @@ class JSONFileObserver(BaseObserver):
 
         return None
 
-    def get_trace_file(self, trace_id: str) -> Optional[Path]:
+    def get_trace_file(self, trace_id: str) -> Path | None:
         """Get the file path for a specific trace.
 
         Args:
@@ -372,7 +385,7 @@ class JSONFileObserver(BaseObserver):
                     traces.append(trace_path.stem.replace("trace_", ""))
             return traces
 
-    def load_trace(self, trace_id: str) -> Optional[dict[str, Any]]:
+    def load_trace(self, trace_id: str) -> dict[str, Any] | None:
         """Load a specific trace by ID.
 
         Searches both the flat directory and any model subdirectories.

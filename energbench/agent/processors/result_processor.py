@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from pathlib import Path
 
 from energbench.agent.constants import CSV_THRESHOLD

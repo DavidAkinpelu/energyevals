@@ -322,6 +322,7 @@ tools:
 
 agent:
   max_iterations: 25
+  num_trials: 3              # Run each question 3 times for statistical evaluation
 
 mcp:
   enabled: true
@@ -388,7 +389,10 @@ Available tool names: `battery`, `docket`, `gridstatus`, `openweather`, `renewab
 ```yaml
 agent:
   max_iterations: 25       # Maximum ReAct loop iterations per question (default: 25)
+  num_trials: 1            # Independent trials per question (default: 1)
 ```
+
+When `num_trials` is greater than 1, each question is run N independent times per model. Traces are stored in `trial_N/` subdirectories, and the results JSON groups answers by trial. This is designed for statistical evaluation -- the downstream evaluation pipeline uses multiple trials to compute confidence intervals and significance tests between models.
 
 ### `mcp`
 
@@ -461,6 +465,16 @@ python scripts/run_benchmark.py --tools search,gridstatus,battery
 python scripts/run_benchmark.py --exclude-tools docket,tariffs
 ```
 
+### Multiple trials
+
+```bash
+# Run 3 independent trials per question (for statistical evaluation)
+python scripts/run_benchmark.py --num-trials 3
+
+# Combine with multi-model
+python scripts/run_benchmark.py --models openai:gpt-4o anthropic:claude-sonnet-4-20250514 --num-trials 3
+```
+
 ### Feature toggles
 
 ```bash
@@ -500,6 +514,7 @@ python scripts/run_benchmark.py --list-tools
 | `--reasoning-model` | | Override reasoning model detection (`true`, `false`, `auto`) |
 | `--tools` | | Include only these tools (comma-separated) |
 | `--exclude-tools` | | Exclude these tools (comma-separated) |
+| `--num-trials` | | Number of independent trials per question (default: 1) |
 
 ---
 
@@ -719,6 +734,57 @@ When you run a benchmark, the terminal shows progress in real time. Here is an e
 - **Trace ID** -- identifier linking to the detailed trace file.
 - **Summary** -- aggregate pass/fail counts, total tokens, and total time per model.
 
+**Multi-trial output:** When `num_trials > 1`, the console output includes trial markers and trial counts in the summary:
+
+```
+======================================================================
+  Running Multi-Model Benchmark
+======================================================================
+  Models: 1
+    - openai/gpt-4o
+  Trials: 3
+
+  --- Trial 1/3 ---
+
+======================================================================
+  Evaluating: openai/gpt-4o
+======================================================================
+
+  [1/3] Question 1 | Market rules retrieval | Easy
+  ...
+  [PASS]
+  Metrics: tokens=4200, tools=3, time=12.3s
+
+  --- Trial 2/3 ---
+
+======================================================================
+  Evaluating: openai/gpt-4o
+======================================================================
+
+  [1/3] Question 1 | Market rules retrieval | Easy
+  ...
+  [PASS]
+  Metrics: tokens=3900, tools=3, time=11.8s
+
+  --- Trial 3/3 ---
+
+  ...
+
+======================================================================
+  Summary
+======================================================================
+
+  openai/gpt-4o:
+    Questions: 3
+    Trials: 3
+    Passed: 9 (100%)
+    Failed: 0
+    Total tokens: 38,400
+    Total time: 105.7s
+
+  Results saved: benchmark_results/benchmark_openai_20260207_150000.json
+```
+
 ### 11b. Results JSON File
 
 After a benchmark completes, results are saved as JSON.
@@ -730,7 +796,9 @@ After a benchmark completes, results are saved as JSON.
 - Single model: `benchmark_{provider}_{YYYYMMDD_HHMMSS}.json`
 - Multi-model: `benchmark_multi_{YYYYMMDD_HHMMSS}.json`
 
-**JSON structure:**
+**JSON structure (single trial):**
+
+When `num_trials` is 1 (the default), results are stored as a flat list per model:
 
 ```json
 {
@@ -741,12 +809,14 @@ After a benchmark completes, results are saved as JSON.
     ],
     "questions_file": "data/AI Evals New Questions.xlsx - Q&As.csv",
     "mcp_enabled": true,
-    "max_iterations": 25
+    "max_iterations": 25,
+    "num_trials": 1
   },
   "summary": {
     "total_questions": 3,
     "models": {
       "openai/gpt-4o-mini": {
+        "num_trials": 1,
         "passed": 2,
         "failed": 1,
         "total_tokens": 16500,
@@ -778,6 +848,66 @@ After a benchmark completes, results are saved as JSON.
         "trace_id": "20260207_143012_123456"
       }
     ]
+  }
+}
+```
+
+**JSON structure (multiple trials):**
+
+When `num_trials > 1`, results are grouped by `trial_N` keys instead of a flat list:
+
+```json
+{
+  "timestamp": "2026-02-07T15:00:00.123456",
+  "config": {
+    "models": [
+      {"provider": "openai", "model": "gpt-4o"}
+    ],
+    "questions_file": "data/AI Evals New Questions.xlsx - Q&As.csv",
+    "mcp_enabled": true,
+    "max_iterations": 25,
+    "num_trials": 3
+  },
+  "summary": {
+    "total_questions": 3,
+    "models": {
+      "openai/gpt-4o": {
+        "num_trials": 3,
+        "passed": 9,
+        "failed": 0,
+        "total_tokens": 38400,
+        "total_duration_seconds": 105.7
+      }
+    }
+  },
+  "results_by_model": {
+    "openai/gpt-4o": {
+      "trial_1": [
+        {
+          "question_id": 1,
+          "category": "Market rules retrieval",
+          "difficulty": "Easy",
+          "question": "What fees are associated with...",
+          "success": true,
+          "answer": "The NYISO generation interconnection process involves...",
+          "error": null,
+          "metrics": { "total_tokens": 4200, "tool_calls": 3, "..." : "..." },
+          "trace_id": "20260207_150012_123456"
+        }
+      ],
+      "trial_2": [
+        {
+          "question_id": 1,
+          "...": "..."
+        }
+      ],
+      "trial_3": [
+        {
+          "question_id": 1,
+          "...": "..."
+        }
+      ]
+    }
   }
 }
 ```
@@ -929,6 +1059,34 @@ benchmark_traces/
       trace_q3_20260207_144100_678901.json
 ```
 
+**With `num_trials: 3` (multi-trial):**
+
+When `num_trials > 1`, traces are organized into `trial_N/` subdirectories under each model:
+
+```
+benchmark_results/
+  benchmark_openai_20260207_150000.json
+
+benchmark_traces/
+  eval_run/
+    benchmark_config.yaml                          # Auto-copied config
+    openai_gpt-4o/
+      trial_1/
+        trace_q1_20260207_150012_123456.json
+        trace_q2_20260207_150025_234567.json
+        trace_q3_20260207_150040_345678.json
+      trial_2/
+        trace_q1_20260207_150112_456789.json
+        trace_q2_20260207_150125_567890.json
+        trace_q3_20260207_150140_678901.json
+      trial_3/
+        trace_q1_20260207_150212_789012.json
+        trace_q2_20260207_150225_890123.json
+        trace_q3_20260207_150240_901234.json
+```
+
+This structure is consumed directly by the evaluation pipeline (`scripts/run_eval.py`), which discovers trials automatically and computes per-question confidence intervals across them.
+
 ---
 
 ## 12. Common Recipes
@@ -1021,6 +1179,60 @@ tools:
 
 Compare traces in `benchmark_traces/with_tools/` vs `benchmark_traces/no_tools/`.
 
+### Run multiple trials for statistical evaluation
+
+Running multiple independent trials per question enables confidence intervals and significance testing in the evaluation pipeline.
+
+```bash
+python scripts/run_benchmark.py \
+  --provider openai \
+  --model gpt-4o \
+  --num-trials 3 \
+  --questions 1-10
+```
+
+Or set it in the config file:
+
+```yaml
+agent:
+  max_iterations: 25
+  num_trials: 3
+
+observability:
+  enabled: true
+  backend: json
+  output_dir: ./benchmark_traces
+  run_name: eval_samples
+```
+
+After the benchmark completes, run the evaluation pipeline against the traces:
+
+```bash
+python scripts/run_eval.py \
+  --run-name eval_samples \
+  --model openai_gpt-4o
+```
+
+### Multi-trial multi-model comparison
+
+Combine multiple trials with multiple models for a full statistical comparison:
+
+```bash
+python scripts/run_benchmark.py \
+  --models openai:gpt-4o anthropic:claude-sonnet-4-20250514 \
+  --num-trials 3
+```
+
+Then evaluate and compare:
+
+```bash
+python scripts/run_eval.py \
+  --run-name eval_samples \
+  --compare
+```
+
+The evaluation pipeline discovers all models and trials automatically, computes per-question confidence intervals, and runs paired significance tests between models.
+
 ### Run a single model on a specific question for debugging
 
 ```bash
@@ -1101,9 +1313,27 @@ python scripts/run_benchmark.py
 - Missing `models` list in config. The config must include a `models` list (see [Section 6](#6-benchmark-configuration-reference)).
 - Invalid question IDs (non-positive integers or non-integer values).
 - `max_iterations` set to less than 1.
+- `num_trials` set to less than 1.
 - Invalid observability backend (must be `json` or `langfuse`).
 
 **Fix:** Check the error messages -- they describe exactly what is wrong. Correct your config file and retry.
+
+### Wide confidence intervals in evaluation results
+
+**Symptom:** After running the evaluation pipeline, confidence intervals are very wide or degenerate (upper == lower).
+
+**Fix:** Run the benchmark with more trials. Confidence intervals require multiple independent observations per question. A single trial produces degenerate intervals (the CI collapses to the single score). Three or more trials are recommended:
+
+```yaml
+agent:
+  num_trials: 3
+```
+
+Or on the command line:
+
+```bash
+python scripts/run_benchmark.py --num-trials 3
+```
 
 ### Agent hits max iterations without answering
 

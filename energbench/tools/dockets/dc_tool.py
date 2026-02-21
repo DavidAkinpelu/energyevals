@@ -4,9 +4,9 @@ import requests
 from bs4 import BeautifulSoup
 from loguru import logger
 
-from energbench.agent.providers import ToolDefinition
 from energbench.utils import generate_timestamp
 
+from ..base_tool import tool_method
 from ._base import DocketBaseTool
 
 
@@ -18,73 +18,8 @@ class DCDocketTool(DocketBaseTool):
             name="dc_dockets",
             description="Search DC PSC filings by date range",
         )
-        self.register_method("search_dc_dockets", self.search_dc)
 
-    def get_tools(self) -> list[ToolDefinition]:
-        return [
-            ToolDefinition(
-                name="search_dc_dockets",
-                description="Search DC PSC filings by date range.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "start_date": {
-                            "type": "string",
-                            "description": "Start date for the search in MM/DD/YYYY format.",
-                        },
-                        "end_date": {
-                            "type": "string",
-                            "description": "End date for the search in MM/DD/YYYY format.",
-                        },
-                        "keywords": {
-                            "type": "string",
-                            "description": "Keyword to search for in filings",
-                        },
-                        "company_individual": {
-                            "type": "string",
-                            "description": "Company or individual to filter by",
-                        },
-                        "case_type_id": {
-                            "type": "string",
-                            "description": "Case type identifier to filter by",
-                        },
-                        "docket_number": {
-                            "type": "string",
-                            "description": "Docket/order number to filter by",
-                        },
-                        "filing_type_id": {
-                            "type": "string",
-                            "description": "Filing type identifier to filter by",
-                        },
-                        "sub_filing_type_id": {
-                            "type": "string",
-                            "description": "Sub-filing type identifier to filter by",
-                        },
-                        "industry_type": {
-                            "type": "string",
-                            "description": "Industry type identifier to filter by",
-                        },
-                        "records_to_show": {
-                            "type": "integer",
-                            "default": 50,
-                            "description": "Number of records to show. Defaults to 50.",
-                        },
-                        "records_to_skip": {
-                            "type": "integer",
-                            "default": 0,
-                            "description": "Number of records to skip. Defaults to 0.",
-                        },
-                        "timeout": {
-                            "type": "integer",
-                            "default": 30,
-                            "description": "Timeout in seconds. Defaults to 30.",
-                        },
-                    },
-                    "required": ["start_date", "end_date"],
-                },
-            ),
-        ]
-
+    @tool_method(name="search_dc_dockets")
     def search_dc(
         self,
         start_date: str,
@@ -100,7 +35,7 @@ class DCDocketTool(DocketBaseTool):
         records_to_skip: int = 0,
         timeout: int = 30,
     ) -> str:
-        """Retrieve docket filings from the DC PSC eDocket system.
+        """Search DC PSC filings by date range from the eDocket system.
 
         Args:
             start_date: Start date in MM/DD/YYYY format.

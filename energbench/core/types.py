@@ -1,7 +1,6 @@
 from pathlib import Path
-from typing import Union
 
-PathLike = Union[str, Path]
+PathLike = str | Path
 
 
 def ensure_path(p: PathLike) -> Path:

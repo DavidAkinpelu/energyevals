@@ -1,14 +1,13 @@
 import json
-from typing import Optional
 from urllib.parse import urlencode
 
 import requests
 from bs4 import BeautifulSoup
 from loguru import logger
 
-from energbench.agent.providers import ToolDefinition
 from energbench.utils import generate_timestamp, get_system_ca_bundle
 
+from ..base_tool import tool_method
 from ._base import DocketBaseTool
 
 
@@ -20,92 +19,23 @@ class TexasDocketTool(DocketBaseTool):
             name="texas_dockets",
             description="Search Texas PUCT filings or dockets",
         )
-        self.register_method("search_texas_dockets", self.search_texas)
 
-    def get_tools(self) -> list[ToolDefinition]:
-        return [
-            ToolDefinition(
-                name="search_texas_dockets",
-                description="Search Texas Public Utility Commission (PUCT) filings or dockets.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "date_from": {
-                            "type": "string",
-                            "description": "Start date for the search in MM/DD/YYYY format.",
-                        },
-                        "date_to": {
-                            "type": "string",
-                            "description": "End date for the search in MM/DD/YYYY format.",
-                        },
-                        "utility_name": {
-                            "type": "string",
-                            "description": "Utility name to filter by",
-                        },
-                        "control_number": {
-                            "type": "string",
-                            "description": "Control number to filter by",
-                        },
-                        "description": {
-                            "type": "string",
-                            "description": "Description to filter by",
-                        },
-                        "filing_description": {
-                            "type": "string",
-                            "description": "Text to match in filing descriptions. DO NOT USE THIS!!!",
-                        },
-                        "utility_type": {
-                            "type": "string",
-                            "default": "A",
-                            "description": "Utility type to filter by. Options: A, T, W.",
-                        },
-                        "document_type": {
-                            "type": "string",
-                            "default": "ALL",
-                            "description": "Document type to filter by. Options: ALL (default)",
-                        },
-                        "item_match": {
-                            "type": "string",
-                            "default": "Equal",
-                            "description": (
-                                "Item match to filter by. Options: Equal (default), Contains, "
-                                "Starts With, Ends With, Does Not Contain."
-                            ),
-                        },
-                        "sort_order": {
-                            "type": "string",
-                            "default": "Descending",
-                            "description": (
-                                "Sort order to filter by. Options: "
-                                "Descending (newest first), Ascending (oldest first)."
-                            ),
-                        },
-                        "timeout": {
-                            "type": "integer",
-                            "default": 30,
-                            "description": "Timeout in seconds. Defaults to 30.",
-                        },
-                    },
-                    "required": ["date_from", "date_to"],
-                },
-            ),
-        ]
-
+    @tool_method(name="search_texas_dockets")
     def search_texas(
         self,
         date_from: str,
         date_to: str,
-        utility_name: Optional[str] = None,
-        control_number: Optional[str] = None,
-        description: Optional[str] = None,
-        filing_description: Optional[str] = None,
+        utility_name: str | None = None,
+        control_number: str | None = None,
+        description: str | None = None,
+        filing_description: str | None = None,
         utility_type: str = "A",
         document_type: str = "ALL",
         item_match: str = "Equal",
         sort_order: str = "Descending",
         timeout: int = 30,
     ) -> str:
-        """Query the Texas PUCT Interchange website for filings or dockets.
+        """Search Texas Public Utility Commission (PUCT) filings or dockets.
 
         Parameters:
             date_from: Start of filing date range in "MM/DD/YYYY" format.
