@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 @dataclass
@@ -8,10 +7,10 @@ class MCPServerConfig:
     """
 
     name: str
-    command: Optional[str] = None
-    url: Optional[str] = None
+    command: str | None = None
+    url: str | None = None
     args: list[str] = field(default_factory=list)
-    env: Optional[dict[str, str]] = None
+    env: dict[str, str] | None = None
     description: str = ""
 
     def __post_init__(self) -> None:

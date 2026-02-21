@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import os
 import ssl
 from functools import lru_cache

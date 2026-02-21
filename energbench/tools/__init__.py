@@ -1,4 +1,4 @@
-from .base_tool import BaseTool, ToolRegistry, ToolResult
+from .base_tool import BaseTool, ToolRegistry, ToolResult, tool_method
 from .battery_tool import BatteryOptimizationTool
 from .dockets import (
     DCDocketTool,
@@ -22,6 +22,7 @@ __all__ = [
     "BaseTool",
     "ToolRegistry",
     "ToolResult",
+    "tool_method",
     "SearchTool",
     "GridStatusAPITool",
     "TariffsTool",

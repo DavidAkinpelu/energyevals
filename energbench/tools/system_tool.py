@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import io
 import json
 import re
@@ -10,9 +8,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from energbench.agent.providers import ToolDefinition
-
-from .base_tool import BaseTool
+from .base_tool import BaseTool, tool_method
 from .constants import SYSTEM_COMMAND_TIMEOUT, SYSTEM_MAX_RESULTS
 
 
@@ -24,72 +20,24 @@ class SystemTool(BaseTool):
             name="system",
             description="Local filesystem and command utilities",
         )
-        self.register_method("list_files", self.list_files)
-        self.register_method("grep_files", self.grep_files)
-        self.register_method("run_python_code", self.run_python_code)
-        self.register_method("run_shell_command", self.run_shell_command)
 
-    def get_tools(self) -> list[ToolDefinition]:
-        return [
-            ToolDefinition(
-                name="list_files",
-                description="List files under a path.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "path": {"type": "string", "description": "Path to list files from"},
-                        "recursive": {"type": "boolean", "default": False},
-                        "max_results": {"type": "integer", "default": SYSTEM_MAX_RESULTS},
-                    },
-                },
-            ),
-            ToolDefinition(
-                name="grep_files",
-                description="Search files for a pattern (uses rg if available).",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "pattern": {"type": "string", "description": "Regex pattern to search for"},
-                        "path": {"type": "string", "description": "Path to search"},
-                        "glob": {"type": "string", "description": "Optional glob filter (e.g., '*.py')"},
-                        "case_insensitive": {"type": "boolean", "default": False},
-                        "max_results": {"type": "integer", "default": SYSTEM_MAX_RESULTS},
-                    },
-                    "required": ["pattern"],
-                },
-            ),
-            ToolDefinition(
-                name="run_python_code",
-                description="Execute Python code in-process and return stdout/stderr.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "code": {"type": "string", "description": "Python code to execute"},
-                    },
-                    "required": ["code"],
-                },
-            ),
-            ToolDefinition(
-                name="run_shell_command",
-                description="Run a shell command locally.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "command": {"type": "string", "description": "Shell command to run"},
-                        "cwd": {"type": "string", "description": "Working directory"},
-                        "timeout": {"type": "integer", "default": SYSTEM_COMMAND_TIMEOUT},
-                    },
-                    "required": ["command"],
-                },
-            ),
-        ]
-
+    @tool_method()
     def list_files(
         self,
         path: str = ".",
         recursive: bool = False,
         max_results: int = SYSTEM_MAX_RESULTS,
     ) -> str:
+        """List files and directories under a given path, returning their full paths.
+
+        Args:
+            path: Path to list files from (defaults to current directory).
+            recursive: Whether to list files recursively through subdirectories.
+            max_results: Maximum number of results to return.
+
+        Returns:
+            JSON string with path, count, and a list of file/directory paths.
+        """
         try:
             base = Path(path).expanduser()
             if not base.exists():
@@ -112,6 +60,7 @@ class SystemTool(BaseTool):
             logger.error(f"list_files failed: {exc}")
             return json.dumps({"error": str(exc)})
 
+    @tool_method()
     def grep_files(
         self,
         pattern: str,
@@ -120,6 +69,19 @@ class SystemTool(BaseTool):
         case_insensitive: bool = False,
         max_results: int = SYSTEM_MAX_RESULTS,
     ) -> str:
+        """Search files for a pattern using ripgrep if available, falling back to Python regex.
+        Returns matching lines in file:line:content format.
+
+        Args:
+            pattern: Regex pattern to search for.
+            path: Path to search (defaults to current directory).
+            glob: Optional glob filter (e.g., '*.py').
+            case_insensitive: Whether to search case-insensitively.
+            max_results: Maximum number of results to return.
+
+        Returns:
+            JSON string with count and a list of matching lines.
+        """
         base = Path(path).expanduser()
         if not base.exists():
             return json.dumps({"error": f"Path not found: {path}"})
@@ -171,7 +133,18 @@ class SystemTool(BaseTool):
 
         return json.dumps({"count": len(results), "results": results}, indent=2)
 
+    @tool_method()
     def run_python_code(self, code: str) -> str:
+        """Execute Python code in the current process and return stdout/stderr.
+        The code runs with access to all installed packages (pandas, numpy, etc.) and any data
+        loaded in the current session.
+
+        Args:
+            code: Python code to execute. Has access to all installed packages (pandas, numpy, etc.).
+
+        Returns:
+            JSON string with status, stdout, and stderr.
+        """
         stdout = io.StringIO()
         stderr = io.StringIO()
         namespace: dict[str, object] = {}
@@ -197,12 +170,23 @@ class SystemTool(BaseTool):
                 indent=2,
             )
 
+    @tool_method()
     def run_shell_command(
         self,
         command: str,
         cwd: str | None = None,
         timeout: int = SYSTEM_COMMAND_TIMEOUT,
     ) -> str:
+        """Run a shell command locally and return stdout/stderr.
+
+        Args:
+            command: Shell command to run.
+            cwd: Working directory. Defaults to the current working directory.
+            timeout: Timeout in seconds.
+
+        Returns:
+            JSON string with status, returncode, stdout, and stderr.
+        """
         try:
             args = shlex.split(command)
             result = subprocess.run(

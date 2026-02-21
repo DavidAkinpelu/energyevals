@@ -1,19 +1,14 @@
-from __future__ import annotations
-
 import json
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from energbench.agent.schema import ToolDefinition, ToolExecutor
+from energbench.mcp.client import MCPClient
+from energbench.tools.base_tool import ToolRegistry
 
+from .config import ToolsConfig
 from .constants import TOOL_DESCRIPTION_PREVIEW_LENGTH
 from .display import print_header
-
-if TYPE_CHECKING:
-    from energbench.mcp.client import MCPClient
-    from energbench.tools.base_tool import ToolRegistry
-
-    from .config import ToolsConfig
 
 logger = logging.getLogger(__name__)
 

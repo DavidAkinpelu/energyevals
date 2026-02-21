@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
-from typing import Any, Optional
+from typing import Any
 
 from energbench.agent.constants import MAX_TOKENS
 from energbench.agent.schema import (
@@ -33,8 +33,8 @@ class BaseProvider(ABC):
     def __init__(
         self,
         model: str,
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
+        api_key: str | None = None,
+        base_url: str | None = None,
         **kwargs: Any,
     ):
         """Initialize the provider.
@@ -60,9 +60,9 @@ class BaseProvider(ABC):
     async def complete(
         self,
         messages: list[Message],
-        tools: Optional[list[ToolDefinition]] = None,
+        tools: list[ToolDefinition] | None = None,
         temperature: float = 0.0,
-        max_tokens: Optional[int] = MAX_TOKENS,
+        max_tokens: int | None = MAX_TOKENS,
         **kwargs: Any,
     ) -> ProviderResponse:
         """Generate a completion from the model.
@@ -83,9 +83,9 @@ class BaseProvider(ABC):
     async def stream(
         self,
         messages: list[Message],
-        tools: Optional[list[ToolDefinition]] = None,
+        tools: list[ToolDefinition] | None = None,
         temperature: float = 0.0,
-        max_tokens: Optional[int] = MAX_TOKENS,
+        max_tokens: int | None = MAX_TOKENS,
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         """Stream a completion from the model.
@@ -100,7 +100,7 @@ class BaseProvider(ABC):
         Yields:
             String chunks as they are generated.
         """
-        yield ""  
+        yield ""
         raise NotImplementedError
 
     @abstractmethod

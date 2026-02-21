@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -14,7 +13,7 @@ class ModelSpec:
 
     provider: str
     model: str
-    is_reasoning_model: Optional[bool] = None
+    is_reasoning_model: bool | None = None
 
     @property
     def display_name(self) -> str:

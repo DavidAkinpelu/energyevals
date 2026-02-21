@@ -38,13 +38,22 @@ htmlcov/
 
 # IDE
 .idea/
+.vs/
 .vscode/
+.cursor/
 *.swp
 *.swo
 *~
 
+# Linting
+.ruff_cache/
+
 # Results and outputs
 results/
+benchmark_results/
+benchmark_traces/
+evaluation_results/
+agent_outputs/
 *.json.bak
 
 # Logs
@@ -55,5 +64,5 @@ logs/
 .DS_Store
 Thumbs.db
 
-# claude 
+# Claude
 .claude/

@@ -1,12 +1,12 @@
 import json
-from typing import Optional
+from typing import Literal
 
 import requests
 from loguru import logger
 
-from energbench.agent.providers import ToolDefinition
 from energbench.utils import generate_timestamp
 
+from ..base_tool import tool_method
 from ._base import DocketBaseTool
 
 
@@ -18,96 +18,72 @@ class FERCDocketTool(DocketBaseTool):
             name="ferc_dockets",
             description="Search the FERC eLibrary for filings and dockets",
         )
-        self.register_method("search_ferc_dockets", self.search_ferc)
 
-    def get_tools(self) -> list[ToolDefinition]:
-        return [
-            ToolDefinition(
-                name="search_ferc_dockets",
-                description="Search the FERC eLibrary for filings and dockets.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "start_date": {
-                            "type": "string",
-                            "description": "Start date of the search window in 'YYYY-MM-DD' format.",
-                        },
-                        "end_date": {
-                            "type": "string",
-                            "description": "End date of the search window in 'YYYY-MM-DD' format.",
-                        },
-                        "keyword": {
-                            "type": "string",
-                            "description": (
-                                "Keyword or phrase to search within documents "
-                                "(e.g. 'Capacity markets', 'data centers')."
-                            ),
-                        },
-                        "docket_number": {
-                            "type": "string",
-                            "description": "Docket number to filter the search (e.g., 'ER25-1234').",
-                        },
-                        "sub_docket_numbers": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "List of sub-docket numbers to include in the filter.",
-                        },
-                        "search_full_text": {
-                            "type": "boolean",
-                            "default": True,
-                            "description": "Whether to search within the full text of documents.",
-                        },
-                        "search_description": {
-                            "type": "boolean",
-                            "default": True,
-                            "description": "Whether to search within the document descriptions.",
-                        },
-                        "results_per_page": {
-                            "type": "integer",
-                            "default": 50,
-                            "description": "Number of results to return per page.",
-                        },
-                        "page": {
-                            "type": "integer",
-                            "default": 0,
-                            "description": (
-                                "Zero-based index for pagination "
-                                "(e.g., page=0 returns the first set of results)."
-                            ),
-                        },
-                    },
-                    "required": ["start_date", "end_date", "keyword"],
-                },
-            ),
-        ]
-
+    @tool_method(name="search_ferc_dockets")
     def search_ferc(
         self,
         start_date: str,
         end_date: str,
-        keyword: str,
-        docket_number: Optional[str] = None,
-        sub_docket_numbers: Optional[list[str]] = None,
+        keyword: str | None = "",
+        affiliation_type: Literal["agent", "author", "recipient"] | None = None,
+        affiliation: str | None = None,
+        last_name: str | None = None,
+        first_initial: str | None = None,
+        middle_initial: str | None = None,
+        docket_number: str | None = None,
+        sub_docket_numbers: list[str] | None = None,
         search_full_text: bool = True,
         search_description: bool = True,
-        results_per_page: int = 50,
+        results_per_page: int = 500,
         page: int = 0,
     ) -> str:
-        """Search the FERC eLibrary using the AdvancedSearch API.
+        """Search the FERC eLibrary using the AdvancedSearch API for filings and dockets.
+        Returns source, keyword, date range, number of results, detailed results, and a saved CSV path.
 
         Parameters:
-            start_date: Start date of the search window in "YYYY-MM-DD" format.
-            end_date: End date of the search window in "YYYY-MM-DD" format.
-            keyword: Keyword or phrase to search within documents.
-            docket_number: Docket number to filter the search (e.g., "ER25-1234").
-            sub_docket_numbers: List of sub-docket numbers to include in the filter.
-            search_full_text: Whether to search within the full text of documents.
-            search_description: Whether to search within document descriptions.
-            results_per_page: Number of results to return per page.
-            page: Zero-based index for pagination.
+            start_date (str): Start date of the search window in "YYYY-MM-DD" format.
+            end_date (str): End date of the search window in "YYYY-MM-DD" format.
+            keyword (str,optional): Keyword or phrase to search within documents. Default is ""
+            affiliation_type (str,optional): Keyword showing the role of the docket filer. Can only be one of ["agent","author","recipient"]
+                                    and can be used to provide specific filters such as the affiliated organization
+            affiliation (str,optional): Name of the organization affiliated with the docket
+            last_name (str,optional): Last name of the filing entity or personnel
+            first_initial(str,optional): First initial of the filing entity or personnel
+            middle_initial(str,optional): Middle initial of the filing entity or personnel
+            docket_number (str, optional): Docket number to filter the search (e.g., "ER25-1234").
+            sub_docket_numbers (List[str], optional): List of sub-docket numbers to include in the filter.
+            search_full_text (bool): Whether to search within the full text of documents (default: True).
+            search_description (bool): Whether to search within document descriptions (default: True).
+            results_per_page (int): Number of results to return per page.
+            page (int): Zero-based index for pagination (e.g., page=0 returns the first set of results).
+
+        Returns the following
+            return json.dumps(
+                {
+                    "source": "FERC",
+                    "keyword": keyword,
+                    "date_range": f"{start_date} to {end_date}",
+                    "num_results": len(results),
+                    "results": results, this is a list of dictionaries with the fields "title",
+                                "filed_date","docket_numbers","category","libraries","accession_number",
+                                "pdf_files", and "affiliations"
+                    "saved_csv": saved_csv, a saved file cotaining the fields in results as the columns
+                },
+                indent=2,
+            )
         """
         try:
+
             url = "https://elibrary.ferc.gov/eLibraryWebAPI/api/Search/AdvancedSearch"
+
+            affiliation_inputs = {
+                "afType": affiliation_type,
+                "affiliation": affiliation,
+                "lastName": last_name,
+                "firstInitial": first_initial,
+                "middleInitial": middle_initial,
+            }
+
             payload = {
                 "searchText": keyword,
                 "searchFullText": search_full_text,
@@ -120,7 +96,7 @@ class FERCDocketTool(DocketBaseTool):
                     }
                 ],
                 "availability": None,
-                "affiliations": [],
+                "affiliations": [affiliation_inputs],
                 "categories": [],
                 "libraries": [],
                 "accessionNumber": None,
@@ -141,7 +117,7 @@ class FERCDocketTool(DocketBaseTool):
             }
 
             headers = {"Content-Type": "application/json", "Accept": "application/json"}
-            response = requests.post(url, json=payload, headers=headers, timeout=60)
+            response = requests.post(url, json=payload, headers=headers)
             response.raise_for_status()
             data = response.json()
 

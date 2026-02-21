@@ -1,15 +1,15 @@
 import json
 import os
-from typing import Any, Optional
+import time
+from typing import Any, Literal
 
 import pandas as pd
 import requests
 from loguru import logger
 
-from energbench.agent.providers import ToolDefinition
 from energbench.utils import generate_timestamp
 
-from .base_tool import BaseTool
+from .base_tool import BaseTool, tool_method
 from .constants import GRID_STATUS_PAGE_SIZE, HTTP_TIMEOUT_EXTENDED
 
 
@@ -22,7 +22,7 @@ class GridStatusAPITool(BaseTool):
 
     BASE_URL = "https://api.gridstatus.io/v1"
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         """Initialize the Grid Status tool.
 
         Args:
@@ -38,12 +38,8 @@ class GridStatusAPITool(BaseTool):
         if not self.api_key:
             logger.warning("GRIDSTATUS_API_KEY not set. Tool will not function.")
 
-        self.register_method("list_gridstatus_datasets", self.list_gridstatus_datasets)
-        self.register_method("inspect_gridstatus_dataset", self.inspect_gridstatus_dataset)
-        self.register_method("query_gridstatus_dataset", self.query_gridstatus_dataset)
-
     def _make_request(
-        self, endpoint: str, params: Optional[dict[str, Any]] = None
+        self, endpoint: str, params: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         """Make a request to the Grid Status API."""
         if not self.api_key:
@@ -65,8 +61,11 @@ class GridStatusAPITool(BaseTool):
         """Set the API key for Grid Status API."""
         self.api_key = api_key
 
+    @tool_method()
     def list_gridstatus_datasets(self) -> str:
-        """Returns JSON list of available datasets with id, name, and description."""
+        """Return a JSON list of available Grid Status datasets with each dataset's id, name, and description.
+        Use this first to discover valid dataset IDs before inspection or querying."""
+
         result = self._make_request("datasets")
 
         if "error" in result:
@@ -83,63 +82,64 @@ class GridStatusAPITool(BaseTool):
 
         return json.dumps(datasets, indent=2)
 
+    @tool_method()
     def inspect_gridstatus_dataset(self, dataset_id: str) -> str:
-        """
+        """Return full metadata for a specific Grid Status dataset to understand its schema and query options before running dataset queries.
+
         Args:
-            dataset_id: The id of the dataset to inspect
+            dataset_id: The id of the gridstatus dataset to inspect.
 
         Returns:
-            A JSON string of the full metadata associated with the dataset
-        Prints the full metadata associated with a grid status dataset id as a JSON string.
+            A JSON string of the full metadata associated with the dataset.
         """
         result = self._make_request(f"datasets/{dataset_id}")
         return json.dumps(result, indent=2, default=str)
 
+    @tool_method()
     def query_gridstatus_dataset(
         self,
         dataset_id: str,
-        filter_column: Optional[str] = None,
-        filter_value: Optional[str] = None,
-        limit: Optional[int] = None,
-        columns: Optional[list[str]] = None,
-        start_time: Optional[str] = None,
-        end_time: Optional[str] = None,
-        time: Optional[str] = None,
-        publish_time: Optional[str] = None,
-        publish_time_start: Optional[str] = None,
-        publish_time_end: Optional[str] = None,
-        resample_frequency: Optional[str] = None,
-        resample_by: Optional[str] = None,
-        resample_function: Optional[str] = "mean",
+        filter_column: str | None = None,
+        filter_value: str | None = None,
+        limit: int | None = None,
+        columns: list[str] | None = None,
+        start_time: str | None = None,
+        end_time: str | None = None,
+        time_val: str | None = None,
+        publish_time: str | None = None,
+        publish_time_start: str | None = None,
+        publish_time_end: str | None = None,
+        resample_frequency: str | None = None,
+        resample_by: str | None = None,
+        resample_function: Literal["mean", "sum", "min", "max", "count", "stddev", "variance"] | None = "mean",
     ) -> str:
-        """
-        Query data from a specific Grid Status dataset.
-        On success (status 200), saves 'data' as CSV, prints df.head() and filepath.
-        On error, prints full JSON response.
-        filter operator is fixed to '=' and cannot be changed
-        time comparison is fixed to '=' and cannot be changed
+        """Query data from a Grid Status dataset with optional filtering, column selection, and resampling.
+        On success, saves data to CSV and returns preview rows, filepath, and row count; on error, returns
+        the full JSON error. Notes: filter_operator and time_comparison are fixed to '=' and cannot be
+        changed. time_val cannot be used together with start_time or end_time. For time-related filters,
+        NEVER use filter_column and filter_value; use start_time/end_time or time_val instead.
 
         Args:
-        dataset_id (str): The ID of the dataset to query.
-        filter_column (str): Column name to filter results by. Default is None
-        filter_value (str): Value to filter results by. Default is None
-        limit (int): Maximum number of rows to return. Default is None
-        columns (list[str]): Columns to return. Default is None
-        start_time (str): ISO 8601 start time (for time_index_column). Default is None
-        end_time (str): ISO 8601 end time (for time_index_column). Default is None
-        time (str): 'latest' or ISO 8601 timestamp. Default is None
-        publish_time (str): Advanced filtering for forecast datasets. Default is None
-        publish_time_start (str): Start of publish_time filter. Default is None
-        publish_time_end (str): End of publish_time filter. Default is None
-        resample_frequency (str): e.g. '1 minute', '5 minutes', '1 hour', etc. Default is None
-        resample_by (str): Columns to group by before resampling. Default is None
-        resample_function (str): Should be one of the following options - 'mean', 'sum', 'min', 'max', 'count', 'stddev', 'variance'. Default is 'mean'
+            dataset_id: The ID of the dataset to query.
+            filter_column: Column name to filter results by. Do NOT use for time-related filtering.
+            filter_value: Value to filter results by. Do NOT use for time-related filtering.
+            limit: Maximum number of rows to return.
+            columns: Columns to return.
+            start_time: ISO 8601 start time (for time_index_column). Cannot be used with time_val.
+            end_time: ISO 8601 end time (for time_index_column). Cannot be used with time_val.
+            time_val: 'latest' or ISO 8601 timestamp. Cannot be used with start_time or end_time.
+            publish_time: Advanced filtering for forecast datasets.
+            publish_time_start: Start of publish_time filter.
+            publish_time_end: End of publish_time filter.
+            resample_frequency: e.g. '1 minute', '5 minutes', '1 hour', etc.
+            resample_by: Columns to group by before resampling.
+            resample_function: One of 'mean', 'sum', 'min', 'max', 'count', 'stddev', 'variance'. Default is 'mean'.
 
-        time cannot be used with start_time or end_time
-        time_comparison can only be used when time is used
-        for time related filters, NEVER use filter_column & filter_value. Use either time or start_time and end_time
-
+        Returns:
+            JSON string. On success contains 'preview' (first rows as list of dicts), 'filepath'
+            (absolute path to saved CSV), and 'row_count'. On error contains the full API error response.
         """
+        time.sleep(5)
 
         page = 1
         page_size = GRID_STATUS_PAGE_SIZE
@@ -171,8 +171,8 @@ class GridStatusAPITool(BaseTool):
             params["start_time"] = start_time
         if end_time is not None:
             params["end_time"] = end_time
-        if time is not None:
-            params["time"] = time
+        if time_val is not None:
+            params["time"] = time_val
         if publish_time is not None:
             params["publish_time"] = publish_time
         if publish_time_start is not None:
@@ -185,6 +185,8 @@ class GridStatusAPITool(BaseTool):
             params["resample_by"] = resample_by
         if resample_function is not None:
             params["resample_function"] = resample_function
+
+        params = {k: v for k, v in params.items() if v not in ("", None)}
 
         result = self._make_request(f"datasets/{dataset_id}/query", params)
 
@@ -212,106 +214,3 @@ class GridStatusAPITool(BaseTool):
                 return json.dumps({"error": str(e), "data": data}, indent=2, default=str)
         else:
             return json.dumps({"message": "No data found in response", "response": result}, indent=2, default=str)
-
-    def get_tools(self) -> list[ToolDefinition]:
-        """Return tool definitions for Grid Status tools."""
-        return [
-            ToolDefinition(
-                name="list_gridstatus_datasets",
-                description=(
-                    "List all available datasets from the Grid Status API. "
-                    "Returns dataset IDs, names, and descriptions for electricity "
-                    "market data including prices, load, generation, and forecasts."
-                ),
-                parameters={"type": "object", "properties": {}},
-            ),
-            ToolDefinition(
-                name="inspect_gridstatus_dataset",
-                description=(
-                    "Get detailed metadata for a specific dataset including "
-                    "available columns, time ranges, and data frequency."
-                ),
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "dataset_id": {
-                            "type": "string",
-                            "description": "The dataset ID (e.g., 'ercot_spp_real_time')",
-                        },
-                    },
-                    "required": ["dataset_id"],
-                },
-            ),
-            ToolDefinition(
-                name="query_gridstatus_dataset",
-                description=(
-                    "Query data from a Grid Status dataset. Supports time filtering, "
-                    "column selection, and resampling. On success, saves data as CSV "
-                    "and prints the filepath. On error, prints the full JSON response."
-                ),
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "dataset_id": {
-                            "type": "string",
-                            "description": "The dataset ID to query",
-                        },
-                        "start_time": {
-                            "type": "string",
-                            "description": "ISO 8601 start time (e.g., '2024-01-01T00:00:00Z')",
-                        },
-                        "end_time": {
-                            "type": "string",
-                            "description": "ISO 8601 end time",
-                        },
-                        "columns": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "List of columns to return",
-                        },
-                        "filter_column": {
-                            "type": "string",
-                            "description": "Column to filter by",
-                        },
-                        "filter_value": {
-                            "type": "string",
-                            "description": "Value to filter by",
-                        },
-                        "limit": {
-                            "type": "integer",
-                            "description": "Maximum rows to return",
-                        },
-                        "resample_frequency": {
-                            "type": "string",
-                            "description": "Resample frequency (e.g., '1 hour', '1 day')",
-                        },
-                        "resample_by": {
-                            "type": "string",
-                            "description": "Columns to group by before resampling",
-                        },
-                        "resample_function": {
-                            "type": "string",
-                            "description": "Resample function (mean, sum, min, max, count, stddev, variance)",
-                            "default": "mean",
-                        },
-                        "time": {
-                            "type": "string",
-                            "description": "Specific time or 'latest' (use instead of start/end)",
-                        },
-                        "publish_time": {
-                            "type": "string",
-                            "description": "Publish time filter for forecast datasets",
-                        },
-                        "publish_time_start": {
-                            "type": "string",
-                            "description": "Publish time start filter",
-                        },
-                        "publish_time_end": {
-                            "type": "string",
-                            "description": "Publish time end filter",
-                        },
-                    },
-                    "required": ["dataset_id"],
-                },
-            ),
-        ]

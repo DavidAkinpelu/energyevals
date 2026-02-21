@@ -3,8 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from energbench.agent.react_agent import ReActAgent
-from energbench.agent.schema import ToolDefinition
-from energbench.tools.base_tool import BaseTool, ToolRegistry
+from energbench.tools.base_tool import BaseTool, ToolRegistry, tool_method
 
 
 class SimpleTestTool(BaseTool):
@@ -12,24 +11,16 @@ class SimpleTestTool(BaseTool):
 
     def __init__(self):
         super().__init__(name="test_tool", description="A test tool")
-        self.register_method("test_method", self.test_method)
 
-    def get_tools(self):
-        return [
-            ToolDefinition(
-                name="test_method",
-                description="A test method",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "input": {"type": "string"},
-                    },
-                    "required": ["input"],
-                },
-            )
-        ]
-
+    @tool_method(parameters={
+        "type": "object",
+        "properties": {
+            "input": {"type": "string"},
+        },
+        "required": ["input"],
+    })
     def test_method(self, input: str) -> str:
+        """A test method."""
         return f"Result: {input}"
 
 

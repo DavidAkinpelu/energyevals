@@ -2,16 +2,16 @@ import json
 import re
 from datetime import datetime, timezone
 from html import unescape
-from typing import Optional
+from typing import Literal
 from urllib.parse import urlencode
 
 import requests
 from bs4 import BeautifulSoup, Tag
 from loguru import logger
 
-from energbench.agent.providers import ToolDefinition
 from energbench.utils import generate_timestamp
 
+from ..base_tool import tool_method
 from ._base import DocketBaseTool
 
 
@@ -23,56 +23,15 @@ class NewYorkDocketTool(DocketBaseTool):
             name="new_york_dockets",
             description="Search New York DPS cases or documents",
         )
-        self.register_method("search_new_york_dockets", self.search_new_york)
 
-    def get_tools(self) -> list[ToolDefinition]:
-        return [
-            ToolDefinition(
-                name="search_new_york_dockets",
-                description="Search New York DPS cases or documents between dates.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "start_date": {
-                            "type": "string",
-                            "description": "Start date (MM/DD/YYYY)",
-                        },
-                        "end_date": {
-                            "type": "string",
-                            "description": "End date (MM/DD/YYYY)",
-                        },
-                        "keyword": {
-                            "type": "string",
-                            "description": "Keyword to search for",
-                        },
-                        "case_number": {
-                            "type": "string",
-                            "description": "Case number to filter by",
-                        },
-                        "mode": {
-                            "type": "string",
-                            "enum": ["cases", "documents"],
-                            "default": "cases",
-                            "description": "Search mode: 'cases' or 'documents'",
-                        },
-                        "timeout": {
-                            "type": "integer",
-                            "default": 30,
-                            "description": "Timeout in seconds. Defaults to 30.",
-                        },
-                    },
-                    "required": ["start_date", "end_date"],
-                },
-            ),
-        ]
-
+    @tool_method(name="search_new_york_dockets")
     def search_new_york(
         self,
         start_date: str,
         end_date: str,
-        keyword: Optional[str] = None,
-        case_number: Optional[str] = None,
-        mode: str = "cases",
+        keyword: str | None = None,
+        case_number: str | None = None,
+        mode: Literal["cases", "documents"] = "cases",
         timeout: int = 30,
     ) -> str:
         """Search New York DPS cases or documents between dates.
@@ -98,7 +57,7 @@ class NewYorkDocketTool(DocketBaseTool):
 
             ms_date_re = re.compile(r"/Date\((\d+)\)/")
 
-            def ms_date_to_str(s: Optional[str]) -> Optional[str]:
+            def ms_date_to_str(s: str | None) -> str | None:
                 if not s or not isinstance(s, str):
                     return None
                 m = ms_date_re.fullmatch(s)
@@ -108,7 +67,7 @@ class NewYorkDocketTool(DocketBaseTool):
                 dt = datetime.fromtimestamp(millis / 1000.0, tz=timezone.utc)
                 return dt.strftime("%Y-%m-%d")
 
-            def extract_anchor(html_snippet: Optional[str]) -> tuple[Optional[str], Optional[str]]:
+            def extract_anchor(html_snippet: str | None) -> tuple[str | None, str | None]:
                 if not html_snippet:
                     return None, None
                 try:

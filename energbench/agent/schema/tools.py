@@ -1,6 +1,6 @@
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional, Union
+from typing import Any
 
 from energbench.agent.constants import CSV_THRESHOLD, PREVIEW_ROWS
 
@@ -37,7 +37,7 @@ class ToolDefinition:
     )
 
 
-ToolExecutor = Callable[[str, dict[str, Any]], Union[str, Awaitable[str]]]
+ToolExecutor = Callable[[str, dict[str, Any]], str | Awaitable[str]]
 
 
 @dataclass
@@ -55,9 +55,9 @@ class ToolResult:
 
     success: bool
     data: Any
-    error: Optional[str] = None
+    error: str | None = None
     row_count: int = 0
-    csv_path: Optional[str] = None
+    csv_path: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_context_string(self, csv_threshold: int = CSV_THRESHOLD) -> str:

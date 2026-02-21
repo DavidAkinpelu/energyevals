@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 
@@ -12,7 +12,7 @@ class DocketBaseTool(BaseTool):
     """
 
     @staticmethod
-    def _save_csv(rows: list[dict[str, Any]], save_csv_path: Optional[str]) -> Optional[str]:
+    def _save_csv(rows: list[dict[str, Any]], save_csv_path: str | None) -> str | None:
         if not save_csv_path:
             return None
         try:

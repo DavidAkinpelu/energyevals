@@ -1,14 +1,14 @@
 import json
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup, Tag
 from loguru import logger
 
-from energbench.agent.providers import ToolDefinition
 from energbench.utils import generate_timestamp
 
+from ..base_tool import tool_method
 from ._base import DocketBaseTool
 
 
@@ -20,69 +20,18 @@ class SouthCarolinaDocketTool(DocketBaseTool):
             name="south_carolina_dockets",
             description="Search South Carolina PSC dockets by date range",
         )
-        self.register_method("search_south_carolina_dockets", self.search_south_carolina)
 
-    def get_tools(self) -> list[ToolDefinition]:
-        return [
-            ToolDefinition(
-                name="search_south_carolina_dockets",
-                description="Search South Carolina PSC dockets by date range.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "start_date": {
-                            "type": "string",
-                            "description": "Start date (YYYY-MM-DD)",
-                        },
-                        "end_date": {
-                            "type": "string",
-                            "description": "End date (YYYY-MM-DD)",
-                        },
-                        "organization": {
-                            "type": "string",
-                            "description": "Organization name to filter by",
-                        },
-                        "individual": {
-                            "type": "string",
-                            "description": "Individual name to filter by",
-                        },
-                        "summary": {
-                            "type": "string",
-                            "description": "Keyword(s) to search within filing summaries",
-                        },
-                        "number_year": {
-                            "type": "string",
-                            "description": "Docket number year component",
-                        },
-                        "number_sequence": {
-                            "type": "string",
-                            "description": "Docket number sequence component",
-                        },
-                        "number_type": {
-                            "type": "string",
-                            "description": "Docket number typpe code",
-                        },
-                        "timeout": {
-                            "type": "integer",
-                            "default": 30,
-                            "description": "Timeout in seconds",
-                        },
-                    },
-                    "required": ["start_date", "end_date"],
-                },
-            ),
-        ]
-
+    @tool_method(name="search_south_carolina_dockets")
     def search_south_carolina(
         self,
         start_date: str,
         end_date: str,
-        organization: Optional[str] = None,
-        individual: Optional[str] = None,
-        summary: Optional[str] = None,
-        number_year: Optional[str] = None,
-        number_sequence: Optional[str] = None,
-        number_type: Optional[str] = None,
+        organization: str | None = None,
+        individual: str | None = None,
+        summary: str | None = None,
+        number_year: str | None = None,
+        number_sequence: str | None = None,
+        number_type: str | None = None,
         timeout: int = 30,
     ) -> str:
         """Search South Carolina PSC dockets by date range.

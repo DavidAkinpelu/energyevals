@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 from .tools import ToolCall
 
@@ -22,12 +22,12 @@ class ProviderResponse:
     """
 
     content: str
-    tool_calls: Optional[list[ToolCall]] = None
+    tool_calls: list[ToolCall] | None = None
     input_tokens: int = 0
     cached_tokens: int = 0
     output_tokens: int = 0
     reasoning_tokens: int = 0
     latency_ms: float = 0.0
     model: str = ""
-    finish_reason: Optional[str] = None
-    raw_response: Optional[Any] = None
+    finish_reason: str | None = None
+    raw_response: Any | None = None

@@ -6,7 +6,7 @@ import pytest
 from energbench.agent.providers import ProviderResponse, ToolCall, get_provider
 from energbench.agent.react_agent import ReActAgent
 from energbench.agent.schema import StepType
-from energbench.tools.base_tool import BaseTool, ToolDefinition, ToolRegistry
+from energbench.tools.base_tool import BaseTool, ToolRegistry, tool_method
 
 
 class SimpleTestTool(BaseTool):
@@ -14,25 +14,16 @@ class SimpleTestTool(BaseTool):
 
     def __init__(self):
         super().__init__(name="test_tool", description="A test tool")
-        self.register_method("get_answer", self.get_answer)
 
-    def get_tools(self):
-        return [
-            ToolDefinition(
-                name="get_answer",
-                description="Get a test answer",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "query": {"type": "string"},
-                    },
-                    "required": ["query"],
-                },
-            )
-        ]
-
+    @tool_method(parameters={
+        "type": "object",
+        "properties": {
+            "query": {"type": "string"},
+        },
+        "required": ["query"],
+    })
     def get_answer(self, query: str) -> str:
-        """Return test answer."""
+        """Get a test answer."""
         return f"Answer for: {query}"
 
 

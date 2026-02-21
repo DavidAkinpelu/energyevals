@@ -1,18 +1,4 @@
 #!/usr/bin/env python
-"""Interactive CLI to ask the energBench agent questions.
-
-Run the ReAct agent interactively -- type a question, get an answer.
-No benchmark config or CSV files required.
-
-Examples:
-  python scripts/run_agent.py                              # defaults: openai / gpt-4o-mini
-  python scripts/run_agent.py -p anthropic                 # use Anthropic default model
-  python scripts/run_agent.py -p openai -m gpt-4o          # specific provider + model
-  python scripts/run_agent.py --mcp                        # also load MCP tools
-  python scripts/run_agent.py --no-tools                   # run without any tools (pure LLM)
-  python scripts/run_agent.py -q "What is CAISO?"          # single question, no interactive loop
-"""
-from __future__ import annotations
 
 import argparse
 import asyncio

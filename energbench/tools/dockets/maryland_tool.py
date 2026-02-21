@@ -1,15 +1,15 @@
 import json
 import re
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup, Tag
 from loguru import logger
 
-from energbench.agent.providers import ToolDefinition
 from energbench.utils import generate_timestamp
 
+from ..base_tool import tool_method
 from ._base import DocketBaseTool
 
 
@@ -21,73 +21,8 @@ class MarylandDocketTool(DocketBaseTool):
             name="maryland_dockets",
             description="Search Maryland PSC cases and official filings",
         )
-        self.register_method("get_maryland_psc_item", self.get_maryland_psc_item)
-        self.register_method("get_maryland_official_filings", self.get_maryland_official_filings)
 
-    def get_tools(self) -> list[ToolDefinition]:
-        return [
-            ToolDefinition(
-                name="get_maryland_psc_item",
-                description="Fetch a Maryland PSC case/rulemaking/public conference by number.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "kind": {
-                            "type": "string",
-                            "description": (
-                                "Type of item to retrieve. "
-                                "Options: 'rulemaking', 'public_conference', 'case'."
-                            ),
-                        },
-                        "number": {
-                            "type": "string",
-                            "description": (
-                                "Unique identifier for the item "
-                                "(e.g., 'RM123456', 'PC123456')."
-                            ),
-                        },
-                        "timeout": {
-                            "type": "integer",
-                            "default": 30,
-                            "description": "Timeout in seconds. Defaults to 30.",
-                        },
-                    },
-                    "required": ["kind", "number"],
-                },
-            ),
-            ToolDefinition(
-                name="get_maryland_official_filings",
-                description="Search Maryland PSC official filings by date range.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "start_date": {
-                            "type": "string",
-                            "description": "Start date in 'MM/DD/YYYY' format.",
-                        },
-                        "end_date": {
-                            "type": "string",
-                            "description": "End date in 'MM/DD/YYYY' format.",
-                        },
-                        "company_name": {
-                            "type": "string",
-                            "description": "Optional filter for the 'Company Name' field.",
-                        },
-                        "maillog_number": {
-                            "type": "string",
-                            "description": "Optional filter for the 'Maillog #' field.",
-                        },
-                        "timeout": {
-                            "type": "integer",
-                            "default": 30,
-                            "description": "Timeout in seconds. Defaults to 30.",
-                        },
-                    },
-                    "required": ["start_date", "end_date"],
-                },
-            ),
-        ]
-
+    @tool_method()
     def get_maryland_psc_item(
         self,
         kind: Literal["rulemaking", "public_conference", "case"],
@@ -194,12 +129,13 @@ class MarylandDocketTool(DocketBaseTool):
             logger.error(f"Maryland PSC item fetch failed: {e}")
             return json.dumps({"error": str(e), "source": "Maryland PSC"})
 
+    @tool_method()
     def get_maryland_official_filings(
         self,
         start_date: str,
         end_date: str,
-        company_name: Optional[str] = None,
-        maillog_number: Optional[str] = None,
+        company_name: str | None = None,
+        maillog_number: str | None = None,
         timeout: int = 30,
     ) -> str:
         """Search Maryland PSC 'Official Filings' by date range.

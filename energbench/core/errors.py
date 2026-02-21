@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 
 class EnergBenchError(Exception):
@@ -7,7 +7,7 @@ class EnergBenchError(Exception):
     All custom exceptions in energBench should inherit from this class.
     """
 
-    def __init__(self, message: str, context: Optional[dict[str, Any]] = None):
+    def __init__(self, message: str, context: dict[str, Any] | None = None):
         """Initialize error with message and optional context.
 
         Args:
@@ -36,7 +36,7 @@ class ToolError(EnergBenchError):
         message: str,
         tool_name: str,
         recoverable: bool = True,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ):
         """Initialize tool error.
 
@@ -64,9 +64,9 @@ class APIError(ToolError):
         self,
         message: str,
         tool_name: str,
-        status_code: Optional[int] = None,
-        response_body: Optional[str] = None,
-        context: Optional[dict[str, Any]] = None,
+        status_code: int | None = None,
+        response_body: str | None = None,
+        context: dict[str, Any] | None = None,
     ):
         """Initialize API error.
 
@@ -97,7 +97,7 @@ class ProviderError(EnergBenchError):
         provider: str,
         model: str,
         recoverable: bool = True,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ):
         """Initialize provider error.
 
@@ -127,8 +127,8 @@ class ConfigurationError(EnergBenchError):
     def __init__(
         self,
         message: str,
-        config_key: Optional[str] = None,
-        context: Optional[dict[str, Any]] = None,
+        config_key: str | None = None,
+        context: dict[str, Any] | None = None,
     ):
         """Initialize configuration error.
 

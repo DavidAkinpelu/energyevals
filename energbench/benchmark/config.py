@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Self
 
 import yaml
 
@@ -10,9 +8,6 @@ from energbench.agent.schema import ModelSpec
 from energbench.benchmark.constants import DEFAULT_MAX_ITERATIONS
 from energbench.core.errors import ConfigurationError
 from energbench.core.types import ensure_path
-
-if TYPE_CHECKING:
-    pass
 
 DEFAULT_CONFIG = {
     "models": [
@@ -88,6 +83,7 @@ class BenchmarkConfig:
     max_iterations: int
     results_dir: Path
     save_answers: bool
+    num_trials: int = 1
     tools_config: ToolsConfig = field(default_factory=ToolsConfig)
     config_path: Path | None = None
 
@@ -138,6 +134,9 @@ class BenchmarkConfig:
         if self.max_iterations < 1:
             errors.append(f"max_iterations must be at least 1, got {self.max_iterations}")
 
+        if self.num_trials < 1:
+            errors.append(f"num_trials must be at least 1, got {self.num_trials}")
+
         if self.questions is not None:
             if not isinstance(self.questions, list):
                 errors.append(f"questions must be a list, got {type(self.questions).__name__}")
@@ -149,7 +148,7 @@ class BenchmarkConfig:
         return errors
 
     @classmethod
-    def from_dict(cls, data: dict, base_path: Path) -> BenchmarkConfig:
+    def from_dict(cls, data: dict, base_path: Path) -> Self:
         """Create config from dictionary."""
         obs = data.get("observability", {})
         mcp = data.get("mcp", {})
@@ -198,6 +197,7 @@ class BenchmarkConfig:
             max_iterations=agent.get("max_iterations", DEFAULT_MAX_ITERATIONS),
             results_dir=Path(output.get("results_dir", "./benchmark_results")),
             save_answers=output.get("save_answers", True),
+            num_trials=agent.get("num_trials", 1),
             tools_config=tools_config,
         )
 

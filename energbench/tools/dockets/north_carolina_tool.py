@@ -1,15 +1,15 @@
 import json
 import os
 import re
-from typing import Any, Optional
+from typing import Any
 
 import requests
 from bs4 import BeautifulSoup, Tag
 from loguru import logger
 
-from energbench.agent.providers import ToolDefinition
 from energbench.utils import generate_timestamp
 
+from ..base_tool import tool_method
 from ._base import DocketBaseTool
 
 
@@ -21,80 +21,17 @@ class NorthCarolinaDocketTool(DocketBaseTool):
             name="north_carolina_dockets",
             description="Search North Carolina Utilities Commission dockets",
         )
-        self.register_method("search_north_carolina_dockets", self.search_north_carolina)
 
-    def get_tools(self) -> list[ToolDefinition]:
-        return [
-            ToolDefinition(
-                name="search_north_carolina_dockets",
-                description="Search North Carolina Utilities Commission dockets.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "date_from": {
-                            "type": "string",
-                            "description": "Start date for the search in MM/DD/YYYY format.",
-                        },
-                        "date_to": {
-                            "type": "string",
-                            "description": "End date for the search in MM/DD/YYYY format.",
-                        },
-                        "docket_number": {
-                            "type": "string",
-                            "description": "Docket number to filter by",
-                        },
-                        "company_name": {
-                            "type": "string",
-                            "description": "Company name to filter by",
-                        },
-                        "exclude_closed": {
-                            "type": "boolean",
-                            "default": False,
-                            "description": (
-                                "Whether to exclude closed dockets from results. "
-                                "Defaults to False."
-                            ),
-                        },
-                        "limit_to_filing_type_labels": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": (
-                                "List of filing type labels to restrict search results "
-                                "(case-insensitive exact matches)."
-                            ),
-                        },
-                        "storage_state_path": {
-                            "type": "string",
-                            "description": (
-                                "Optional Playwright storage state path "
-                                "to reuse Cloudflare session."
-                            ),
-                        },
-                        "max_pages": {
-                            "type": "integer",
-                            "default": 5,
-                            "description": "Maximum number of pages to fetch. Defaults to 5.",
-                        },
-                        "timeout": {
-                            "type": "integer",
-                            "default": 30,
-                            "description": "Timeout in seconds. Defaults to 30.",
-                        },
-                    },
-                    "required": ["date_from", "date_to"],
-                },
-            ),
-        ]
-
+    @tool_method(name="search_north_carolina_dockets")
     def search_north_carolina(
         self,
         date_from: str,
         date_to: str,
-        docket_number: Optional[str] = None,
-        company_name: Optional[str] = None,
+        docket_number: str | None = None,
+        company_name: str | None = None,
         exclude_closed: bool = False,
-        limit_to_filing_type_labels: Optional[list[str]] = None,
-        storage_state_path: Optional[str] = None,
+        limit_to_filing_type_labels: list[str] | None = None,
+        storage_state_path: str | None = None,
         max_pages: int = 5,
         timeout: int = 30,
     ) -> str:
