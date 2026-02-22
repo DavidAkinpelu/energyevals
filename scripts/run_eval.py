@@ -121,6 +121,7 @@ def main() -> int:
     print(f"  Models filter: {config.models or 'all'}")
     print(f"  Questions:     {config.questions or 'all'}")
     print(f"  Compare:       {config.compare}")
+    print(f"  Strategy:      default={config.default_strategy}, categories={config.category_strategies or '{}'}")
 
     reports = run_evaluation(config)
 

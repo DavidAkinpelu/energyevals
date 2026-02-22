@@ -3,6 +3,8 @@ from pathlib import Path
 
 import yaml
 
+from .strategy import VALID_STRATEGIES
+
 
 @dataclass
 class JudgeConfig:
@@ -25,6 +27,9 @@ class EvalConfig:
     run_name: str | None = None
     models: list[str] | None = None
     questions: list[int] | None = None
+
+    category_strategies: dict[str, str] = field(default_factory=dict)
+    default_strategy: str = "attributes"
 
     abs_tol: float = 0.01
     rel_tol: float = 0.5
@@ -66,6 +71,20 @@ def load_eval_config(path: Path | str | None = None, base_path: Path | None = No
         max_tokens=judge_data.get("max_tokens", 4096),
     )
 
+    strategy_data = data.get("strategy", {})
+    category_strategies: dict[str, str] = strategy_data.get("categories", {})
+    default_strategy: str = strategy_data.get("default", "attributes")
+
+    invalid = {v for v in category_strategies.values() if v not in VALID_STRATEGIES}
+    if invalid:
+        raise ValueError(
+            f"Invalid strategy value(s) {invalid} in config; must be one of {VALID_STRATEGIES}"
+        )
+    if default_strategy not in VALID_STRATEGIES:
+        raise ValueError(
+            f"Invalid default strategy {default_strategy!r}; must be one of {VALID_STRATEGIES}"
+        )
+
     tolerances = data.get("tolerances", {})
     stats = data.get("statistics", {})
 
@@ -91,6 +110,8 @@ def load_eval_config(path: Path | str | None = None, base_path: Path | None = No
         run_name=data.get("run_name"),
         models=models_raw,
         questions=questions_parsed,
+        category_strategies=category_strategies,
+        default_strategy=default_strategy,
         abs_tol=tolerances.get("abs_tol", 0.01),
         rel_tol=tolerances.get("rel_tol", 0.5),
         confidence_level=stats.get("confidence_level", 0.95),

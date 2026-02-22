@@ -94,7 +94,7 @@ def _evaluate_trial(
         client, question_text, suggested_steps, agent_answer, model=model,
     )
 
-    strategy = get_strategy(category)
+    strategy = get_strategy(category, config.category_strategies, config.default_strategy)
     raw_accuracy = None
     raw_attributes = None
 
@@ -170,7 +170,7 @@ def _evaluate_model(
         suggested_steps = row.get("Approach", "")
         category = row.get("Category", "")
         difficulty = row.get("Difficulty level", "")
-        strategy = get_strategy(category)
+        strategy = get_strategy(category, config.category_strategies, config.default_strategy)
 
         trial_evals: list[TrialEval] = []
         for trial in trials:

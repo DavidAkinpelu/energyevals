@@ -44,7 +44,7 @@ The default path is `data/eval_samples_with_answers.csv` (set by
 | Column | Description |
 | --- | --- |
 | `S/N` | Question number (integer, 1-indexed). Used as the question ID throughout the pipeline. |
-| `Category` | Topic category. Drives judge strategy routing (e.g. "Market data retrieval and analysis" uses the accuracy judge; everything else uses the attributes judge). |
+| `Category` | Topic category. Drives judge strategy routing via the `strategy` section in the YAML config. Categories mapped to `accuracy` use the accuracy judge; all others use the attributes judge. |
 | `Question type` | Descriptor such as "Data retrieval with sources" or "Data retrieval and analysis without sources". |
 | `Difficulty level` | One of `Easy`, `Medium`, or `Hard`. |
 | `Question` | The full question text posed to the agent. |
@@ -96,8 +96,8 @@ steps, and tool usage.
 answer, respecting configurable absolute and relative tolerances.
 
 - Raw scale: **0 -- 1** (used directly, no normalization needed).
-- Only used for questions in the **"Market data retrieval and analysis"**
-  category.
+- Used for categories explicitly mapped to `accuracy` in the config's
+  `strategy.categories` section.
 
 ### Attributes
 
@@ -106,7 +106,8 @@ and checks whether the agent's answer contains each one (or a reasonable
 equivalent).
 
 - Raw scale: **0 -- 1** alignment score.
-- Used for **all categories except** "Market data retrieval and analysis".
+- Used for all categories not explicitly mapped to `accuracy` (i.e. the
+  default strategy).
 
 ### Sources
 
@@ -123,12 +124,24 @@ can be overridden via config or the `--judge-model` CLI flag.
 ## Strategy Routing
 
 `strategy.py` decides which accuracy-style judge to use based on the question
-category:
+category. The mapping is fully config-driven via the `strategy` section in the
+YAML config file:
 
-| Category | Strategy | Judge |
-| --- | --- | --- |
-| Market data retrieval and analysis | `accuracy` | `judge_accuracy` |
-| Everything else | `attributes` | `judge_attributes` |
+```yaml
+strategy:
+  default: attributes          # used for categories not listed below
+  categories:
+    "Market data retrieval and analysis": accuracy
+    "My Custom Category": accuracy
+```
+
+| Strategy value | Judge used |
+| --- | --- |
+| `accuracy` | `judge_accuracy` -- numerical/factual correctness |
+| `attributes` | `judge_attributes` -- key attribute alignment |
+
+Categories not listed in `strategy.categories` use `strategy.default`
+(defaults to `attributes` when omitted).
 
 ## Statistical Analysis
 
@@ -191,6 +204,11 @@ dataset_path: ./data/eval_samples_with_answers.csv
 output_dir: ./evaluation_results
 
 # run_name: eval_samples
+
+strategy:
+  default: attributes
+  categories:
+    "Market data retrieval and analysis": accuracy
 
 tolerances:
   abs_tol: 0.01
