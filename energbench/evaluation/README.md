@@ -33,12 +33,7 @@ flowchart LR
 ## Ground Truth Dataset
 
 The evaluation module scores agent traces against ground-truth answers stored in
-a CSV file. Two dataset files live under `data/`:
-
-| File | Used by | Columns |
-| --- | --- | --- |
-| `data/eval_samples.csv` | Benchmark runner | Questions only (no answers) |
-| `data/eval_samples_with_answers.csv` | Evaluation module | Questions **+ Answer + Approach** |
+a CSV file (`data/eval_samples_with_answers.csv`).
 
 The default path is `data/eval_samples_with_answers.csv` (set by
 `EvalConfig.dataset_path`). Override it in the YAML config or with the
