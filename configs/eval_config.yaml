@@ -29,6 +29,19 @@ output_dir: ./evaluation_results
 # run_name: eval_samples
 
 # =============================================================================
+# Strategy (category -> judge mapping)
+# =============================================================================
+# Maps question categories to judge strategies.
+# Valid strategies: "accuracy" (numerical correctness) or "attributes" (key attribute alignment).
+# Categories not listed here use the default strategy.
+
+strategy:
+  default: attributes
+  categories:
+    "Market data retrieval and analysis": accuracy
+    # "My Custom Category": accuracy
+
+# =============================================================================
 # Tolerances
 # =============================================================================
 

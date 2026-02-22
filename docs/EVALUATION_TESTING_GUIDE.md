@@ -115,6 +115,8 @@ print(f'Rel tolerance:     {c.rel_tol}')
 print(f'Confidence level:  {c.confidence_level}')
 print(f'Sig alpha:         {c.significance_alpha}')
 print(f'Compare:           {c.compare}')
+print(f'Category strategies: {c.category_strategies}')
+print(f'Default strategy:    {c.default_strategy}')
 "
 
 # 3b. Load from YAML config
@@ -122,11 +124,13 @@ python -c "
 from pathlib import Path
 from energbench.evaluation.config import load_eval_config
 c = load_eval_config('configs/eval_config.yaml', base_path=Path('.'))
-print(f'Judge model:       {c.judge.model}')
-print(f'Results path:      {c.results_path}')
-print(f'Dataset path:      {c.dataset_path}')
-print(f'Abs tolerance:     {c.abs_tol}')
-print(f'Rel tolerance:     {c.rel_tol}')
+print(f'Judge model:         {c.judge.model}')
+print(f'Results path:        {c.results_path}')
+print(f'Dataset path:        {c.dataset_path}')
+print(f'Abs tolerance:       {c.abs_tol}')
+print(f'Rel tolerance:       {c.rel_tol}')
+print(f'Category strategies: {c.category_strategies}')
+print(f'Default strategy:    {c.default_strategy}')
 "
 ```
 
@@ -134,8 +138,11 @@ print(f'Rel tolerance:     {c.rel_tol}')
 
 - [ ] Default config: judge model is `gpt-4o`, provider is `openai`, temperature is `0.0`.
 - [ ] Default config: `abs_tol=0.01`, `rel_tol=0.5`, `confidence_level=0.95`.
+- [ ] Default config: `category_strategies` is `{}` (empty dict), `default_strategy` is `"attributes"`.
 - [ ] YAML config: paths resolve relative to the base path (not as raw strings like `./benchmark_traces`).
 - [ ] YAML config: tolerances and judge settings match `configs/eval_config.yaml`.
+- [ ] YAML config: `category_strategies` matches the `strategy.categories` section in the YAML (e.g. `{"Market data retrieval and analysis": "accuracy"}`).
+- [ ] YAML config: `default_strategy` is `"attributes"`.
 
 ---
 
@@ -220,7 +227,7 @@ print(f'Tool latency (ms):{entry.metrics.latency.tool_execution_ms}')
 
 ## 5. Strategy Routing
 
-**Goal:** Verify the category-to-judge-strategy mapping works correctly.
+**Goal:** Verify the config-driven category-to-judge-strategy mapping works correctly. Strategy routing no longer uses a hardcoded map -- it is fully determined by the `strategy` section in the YAML config (or the `category_strategies` / `default_strategy` fields on `EvalConfig`).
 
 ### Steps
 
@@ -228,22 +235,39 @@ print(f'Tool latency (ms):{entry.metrics.latency.tool_execution_ms}')
 python -c "
 from energbench.evaluation.strategy import get_strategy, has_strategy
 
-# 'Market data retrieval and analysis' uses the accuracy judge
-print(get_strategy('Market data retrieval and analysis'))  # should print: accuracy
-print(has_strategy('Market data retrieval and analysis'))   # should print: True
+# Simulate the category map a user would set in their config
+categories = {'Market data retrieval and analysis': 'accuracy'}
 
-# Everything else uses the attributes judge
-print(get_strategy('Market rules retrieval'))               # should print: attributes
-print(get_strategy('Policy and regulatory analysis'))       # should print: attributes
-print(get_strategy('Project and asset development analysis'))  # should print: attributes
-print(has_strategy('Market rules retrieval'))                # should print: False
+# Category present in the map -> uses mapped strategy
+print(get_strategy('Market data retrieval and analysis', categories))  # should print: accuracy
+print(has_strategy('Market data retrieval and analysis', categories))  # should print: True
+
+# Categories NOT in the map -> fall back to default strategy
+print(get_strategy('Market rules retrieval', categories))               # should print: attributes
+print(get_strategy('Policy and regulatory analysis', categories))       # should print: attributes
+print(get_strategy('Project and asset development analysis', categories))  # should print: attributes
+print(has_strategy('Market rules retrieval', categories))               # should print: False
+
+# Empty map -> everything uses the default
+print(get_strategy('Market data retrieval and analysis', {}))           # should print: attributes
+
+# Custom category added to the map
+custom = {'My new category': 'accuracy'}
+print(get_strategy('My new category', custom))                          # should print: accuracy
+print(get_strategy('Other category', custom))                           # should print: attributes
+
+# Custom default strategy
+print(get_strategy('Anything', {}, 'accuracy'))                         # should print: accuracy
 "
 ```
 
 ### What to check
 
-- [ ] `"Market data retrieval and analysis"` returns `"accuracy"` and `has_strategy` returns `True`.
-- [ ] All other categories return `"attributes"` and `has_strategy` returns `False`.
+- [ ] Categories present in the map return the mapped strategy value.
+- [ ] Categories absent from the map return the default strategy (`"attributes"` unless overridden).
+- [ ] `has_strategy` returns `True` only for categories explicitly in the map.
+- [ ] An empty map causes all categories to use the default.
+- [ ] A custom `default_strategy` argument is respected when provided.
 
 ---
 
@@ -335,7 +359,7 @@ for row in rows:
 - [ ] Every question that has a trace file appears in `summary.csv`.
 - [ ] Questions with missing traces are skipped with a warning (not a crash).
 - [ ] Aggregate statistics in `report.json` reflect the mean across all evaluated questions.
-- [ ] The `strategy` column shows `accuracy` for "Market data retrieval and analysis" questions and `attributes` for all others.
+- [ ] The `strategy` column matches what is configured in `strategy.categories` in the eval config YAML (`accuracy` for mapped categories, `attributes` for everything else by default).
 
 ---
 

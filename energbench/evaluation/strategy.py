@@ -1,19 +1,19 @@
-_STRATEGY_MAP: dict[str, str] = {
-    "Market data retrieval and analysis": "accuracy",
-}
-
-_DEFAULT_STRATEGY = "attributes"
+VALID_STRATEGIES = {"accuracy", "attributes"}
 
 
-def get_strategy(category: str) -> str:
-    """Return the accuracy judge type for a question category.
+def get_strategy(
+    category: str,
+    category_strategies: dict[str, str],
+    default_strategy: str = "attributes",
+) -> str:
+    """Return the judge strategy for a question category.
 
-    Returns ``"accuracy"`` for *Market data retrieval and analysis*,
-    ``"attributes"`` for everything else.
+    Looks up *category* in the caller-provided *category_strategies* map.
+    Returns *default_strategy* when the category has no explicit mapping.
     """
-    return _STRATEGY_MAP.get(category, _DEFAULT_STRATEGY)
+    return category_strategies.get(category, default_strategy)
 
 
-def has_strategy(category: str) -> bool:
+def has_strategy(category: str, category_strategies: dict[str, str]) -> bool:
     """Return whether *category* has an explicit strategy mapping."""
-    return category in _STRATEGY_MAP
+    return category in category_strategies
