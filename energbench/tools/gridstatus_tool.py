@@ -118,7 +118,10 @@ class GridStatusAPITool(BaseTool):
         the full JSON error. Notes: filter_operator and time_comparison are fixed to '=' and cannot be
         changed. time_val cannot be used together with start_time or end_time. For time-related filters,
         NEVER use filter_column and filter_value; use start_time/end_time or time_val instead. If an input
-        is not used, set it to None or an empty string.
+        is not used, set it to None or an empty string. Also important to note that each query can only return
+        up to 50,000 rows at a time so it is important to split the queries when data pulls over longer periods
+        are required. The resample inputs are also very powerful and you should use them often when calculating
+        data aggregations
 
         Args:
             dataset_id: The ID of the dataset to query.
