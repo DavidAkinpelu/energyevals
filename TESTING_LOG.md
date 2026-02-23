@@ -166,3 +166,26 @@ Organization: df0e734f-0f9d-419b-8a7c-177b4fa4d45c
 - ✅ LLaMA 70B (3.3-70B-Instruct-Turbo)
 - ✅ GLM family (4.6, 4.7)
 - ✅ Moonshot Kimi (K2-Thinking)
+
+### Latest Test (fEBRUARY 23)
+
+- ✅ OpenAI standard models (gpt-4o-mini)
+- ✅ OpenAI reasoning models (gpt-5-nano)
+
+- ✅ DeepInfra Qwen (2.5-7B tested)
+- ✅ DeepInfra DeepSeek (R1)
+
+- ❌ Gemini family (2.0, 2.5) - "1 validation error for Schema\nenum.0\n Input should be a valid string [type=string_type, input_value=7, input_type=int]\n For further information visit https://errors.pydantic.dev/2.12/v/string_type","
+
+- ✅ Deepinfra MiniMaxAI/MiniMax-M2 
+
+- ✅ LLaMA 70B (3.3-70B-Instruct-Turbo)
+- ❌ meta-llama/Meta-Llama-3.1-405B-Instruct` - "Tool calling not supported"
+
+- ❌ Anthropic Api limit 
+
+- ✅ GLM family (4.6, 4.7) 
+
+- ✅ Nvidia Nemotron (both 30B and 70B variants)
+
+- ✅ Moonshot Kimi (K2-Thinking)
