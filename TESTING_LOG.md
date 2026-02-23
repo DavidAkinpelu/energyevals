@@ -167,7 +167,7 @@ Organization: df0e734f-0f9d-419b-8a7c-177b4fa4d45c
 - ✅ GLM family (4.6, 4.7)
 - ✅ Moonshot Kimi (K2-Thinking)
 
-### Latest Test (fEBRUARY 23)
+# **Latest Test (February 23)**
 
 - ✅ OpenAI standard models (gpt-4o-mini)
 - ✅ OpenAI reasoning models (gpt-5-nano)
