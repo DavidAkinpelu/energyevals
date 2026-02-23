@@ -337,16 +337,18 @@ async def run_benchmark(config: BenchmarkConfig) -> int:
     if config.num_trials > 1:
         print(f"  Trials: {config.num_trials}")
 
+    for model_spec in config.models:
+        all_results[model_spec.display_name] = {}
+
     try:
-        for model_spec in config.models:
-            all_results[model_spec.display_name] = {}
-            for trial in range(1, config.num_trials + 1):
-                if config.num_trials > 1:
-                    print(f"\n  --- Trial {trial}/{config.num_trials} ---")
+        for trial in range(1, config.num_trials + 1):
+            if config.num_trials > 1:
+                print(f"\n  --- Trial {trial}/{config.num_trials} ---")
 
-                if observer and hasattr(observer, "set_trial"):
-                    observer.set_trial(trial if config.num_trials > 1 else None)
+            if observer and hasattr(observer, "set_trial"):
+                observer.set_trial(trial if config.num_trials > 1 else None)
 
+            for model_spec in config.models:
                 model_results = await _run_model_benchmark(
                     model_spec=model_spec,
                     questions=questions,

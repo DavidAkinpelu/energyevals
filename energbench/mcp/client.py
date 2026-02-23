@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from contextlib import AsyncExitStack
@@ -16,20 +17,33 @@ class MCPClient:
     """Client for connecting to multiple MCP servers.
 
     Manages connections to MCP servers and provides a unified interface
-    for tool discovery and execution.
+    for tool discovery and execution.  Each server gets its own
+    ``AsyncExitStack`` so that individual connections can be torn down
+    and re-established without affecting other servers.
     """
 
-    def __init__(self, servers: list[MCPServerConfig] | None = None):
+    def __init__(
+        self,
+        servers: list[MCPServerConfig] | None = None,
+        max_retries: int = 3,
+        retry_base_delay: float = 1.0,
+    ):
         """Initialize the MCP client.
 
         Args:
             servers: List of MCP server configurations.
+            max_retries: Maximum reconnection attempts per tool call failure.
+            retry_base_delay: Base delay in seconds between retries (doubles each attempt).
         """
         self.servers = servers or []
+        self.max_retries = max_retries
+        self.retry_base_delay = retry_base_delay
+
         self._sessions: dict[str, Any] = {}
         self._tools: dict[str, dict[str, Any]] = {}
         self._connected = False
-        self._exit_stack: AsyncExitStack | None = None
+        self._server_stacks: dict[str, AsyncExitStack] = {}
+        self._server_configs: dict[str, MCPServerConfig] = {}
 
     async def __aenter__(self) -> "MCPClient":
         """Async context manager entry."""
@@ -45,43 +59,57 @@ class MCPClient:
 
         Supports both stdio (local) and SSE (remote) transports.
         """
-        self._exit_stack = AsyncExitStack()
-        await self._exit_stack.__aenter__()
-
         for server in self.servers:
             try:
-                if server.url:
-                    await self._connect_sse(server)
-                else:
-                    await self._connect_stdio(server)
-
-                session = self._sessions.get(server.name)
-                if session:
-                    tools_result = await session.list_tools()
-                    for tool in tools_result.tools:
-                        self._tools[tool.name] = {
-                            "server": server.name,
-                            "name": tool.name,
-                            "description": tool.description,
-                            "parameters": tool.inputSchema,
-                        }
-
-                    logger.info(
-                        f"Connected to MCP server '{server.name}' "
-                        f"({'SSE' if server.url else 'stdio'}) "
-                        f"with {len(tools_result.tools)} tools"
-                    )
-
+                await self._connect_server(server)
             except Exception as e:
                 logger.error(f"Failed to connect to MCP server '{server.name}': {e}")
                 raise
 
         self._connected = True
 
-    async def _connect_stdio(self, server: MCPServerConfig) -> None:
-        """Connect to a local MCP server via stdio.
+    async def _connect_server(self, server: MCPServerConfig) -> None:
+        """Connect to a single MCP server and register its tools.
 
         Args:
+            server: Server configuration.
+        """
+        stack = AsyncExitStack()
+        await stack.__aenter__()
+
+        try:
+            if server.url:
+                session = await self._open_sse(stack, server)
+            else:
+                session = await self._open_stdio(stack, server)
+        except Exception:
+            await stack.aclose()
+            raise
+
+        self._server_stacks[server.name] = stack
+        self._server_configs[server.name] = server
+        self._sessions[server.name] = session
+
+        tools_result = await session.list_tools()
+        for tool in tools_result.tools:
+            self._tools[tool.name] = {
+                "server": server.name,
+                "name": tool.name,
+                "description": tool.description,
+                "parameters": tool.inputSchema,
+            }
+
+        logger.info(
+            f"Connected to MCP server '{server.name}' "
+            f"({'SSE' if server.url else 'stdio'}) "
+            f"with {len(tools_result.tools)} tools"
+        )
+
+    async def _open_stdio(self, stack: AsyncExitStack, server: MCPServerConfig) -> ClientSession:
+        """Open a stdio transport and return an initialised session.
+
+        Args:
+            stack: The exit stack that owns the connection lifetime.
             server: Server configuration with command.
         """
         params = StdioServerParameters(
@@ -90,50 +118,70 @@ class MCPClient:
             env=server.env,
         )
 
-        assert self._exit_stack is not None
-        read, write = await self._exit_stack.enter_async_context(
-            stdio_client(params)
-        )
-
-        session = await self._exit_stack.enter_async_context(
-            ClientSession(read, write)
-        )
+        read, write = await stack.enter_async_context(stdio_client(params))
+        session = await stack.enter_async_context(ClientSession(read, write))
         await session.initialize()
+        return session
 
-        self._sessions[server.name] = session
-
-    async def _connect_sse(self, server: MCPServerConfig) -> None:
-        """Connect to a remote MCP server via SSE.
+    async def _open_sse(self, stack: AsyncExitStack, server: MCPServerConfig) -> ClientSession:
+        """Open an SSE transport and return an initialised session.
 
         Args:
+            stack: The exit stack that owns the connection lifetime.
             server: Server configuration with URL.
         """
-        assert self._exit_stack is not None
-        read, write = await self._exit_stack.enter_async_context(
-            sse_client(server.url)
-        )
-
-        session = await self._exit_stack.enter_async_context(
-            ClientSession(read, write)
-        )
+        read, write = await stack.enter_async_context(sse_client(server.url))
+        session = await stack.enter_async_context(ClientSession(read, write))
         await session.initialize()
+        return session
 
-        self._sessions[server.name] = session
+    async def _reconnect_server(self, server_name: str) -> None:
+        """Tear down and re-establish the connection for a single server.
+
+        Only SSE servers are reconnected; stdio failures are not retried.
+
+        Args:
+            server_name: Name of the server to reconnect.
+
+        Raises:
+            ValueError: If the server is unknown or uses stdio transport.
+            Exception: If the reconnection itself fails.
+        """
+        config = self._server_configs.get(server_name)
+        if not config:
+            raise ValueError(f"No config stored for server '{server_name}'")
+        if not config.url:
+            raise ValueError(f"Reconnection is only supported for SSE servers ('{server_name}' uses stdio)")
+
+        old_stack = self._server_stacks.pop(server_name, None)
+        if old_stack:
+            try:
+                await old_stack.aclose()
+            except Exception as e:
+                logger.debug(f"Ignored error closing old stack for '{server_name}': {e}")
+
+        self._sessions.pop(server_name, None)
+        old_tool_names = [name for name, info in self._tools.items() if info["server"] == server_name]
+        for name in old_tool_names:
+            del self._tools[name]
+
+        logger.warning(f"Reconnecting to MCP server '{server_name}' ...")
+        await self._connect_server(config)
 
     async def disconnect(self) -> None:
         """Disconnect from all MCP servers."""
-        if self._exit_stack:
+        for name, stack in reversed(list(self._server_stacks.items())):
             try:
-                await self._exit_stack.aclose()
-                logger.info("Disconnected from all MCP servers")
+                await stack.aclose()
             except Exception as e:
-                logger.error(f"Error during disconnect: {e}")
-            finally:
-                self._exit_stack = None
+                logger.warning(f"Error disconnecting from '{name}': {e}")
 
+        self._server_stacks.clear()
+        self._server_configs.clear()
         self._sessions.clear()
         self._tools.clear()
         self._connected = False
+        logger.info("Disconnected from all MCP servers")
 
     def list_tools(self) -> list[ToolDefinition]:
         """Get all available tools from connected servers.
@@ -153,6 +201,9 @@ class MCPClient:
     async def call_tool(self, tool_name: str, arguments: dict[str, Any]) -> str:
         """Call a tool on the appropriate MCP server.
 
+        On transient failures the client will attempt to reconnect to the
+        server and retry up to ``max_retries`` times with exponential backoff.
+
         Args:
             tool_name: Name of the tool to call.
             arguments: Arguments for the tool.
@@ -165,24 +216,49 @@ class MCPClient:
 
         tool_info = self._tools[tool_name]
         server_name = tool_info["server"]
-        session = self._sessions.get(server_name)
+        server_config = self._server_configs.get(server_name)
+        is_sse = server_config is not None and server_config.url is not None
 
-        if not session:
-            return json.dumps({"error": f"Server not connected: {server_name}"})
+        last_error: Exception | None = None
+        attempts = 1 + (self.max_retries if is_sse else 0)
 
-        try:
-            result = await session.call_tool(tool_name, arguments)
+        for attempt in range(attempts):
+            session = self._sessions.get(server_name)
+            if not session:
+                if attempt == 0:
+                    return json.dumps({"error": f"Server not connected: {server_name}"})
+                break
 
-            if result.content:
-                for content in result.content:
-                    if hasattr(content, "text"):
-                        return str(content.text)
+            try:
+                result = await session.call_tool(tool_name, arguments)
 
-            return json.dumps({"result": "Tool executed successfully"})
+                if result.content:
+                    for content in result.content:
+                        if hasattr(content, "text"):
+                            return str(content.text)
 
-        except Exception as e:
-            logger.error(f"Tool call failed: {tool_name} - {e}")
-            return json.dumps({"error": str(e), "tool": tool_name})
+                return json.dumps({"result": "Tool executed successfully"})
+
+            except Exception as e:
+                last_error = e
+                if not is_sse or attempt >= self.max_retries:
+                    break
+
+                delay = self.retry_base_delay * (2 ** attempt)
+                logger.warning(
+                    f"Tool call '{tool_name}' failed (attempt {attempt + 1}/{attempts}), "
+                    f"reconnecting to '{server_name}' in {delay:.1f}s: {e}"
+                )
+                await asyncio.sleep(delay)
+
+                try:
+                    await self._reconnect_server(server_name)
+                except Exception as re_err:
+                    logger.error(f"Reconnection to '{server_name}' failed: {re_err}")
+                    break
+
+        logger.error(f"Tool call failed: {tool_name} - {last_error}")
+        return json.dumps({"error": str(last_error), "tool": tool_name})
 
     def get_executor(self) -> Any:
         """Get a tool executor function for use with ReActAgent.

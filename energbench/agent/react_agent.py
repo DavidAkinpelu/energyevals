@@ -1,4 +1,5 @@
 import json
+import re
 import time
 from typing import Any, Self
 
@@ -10,6 +11,8 @@ from .constants import (
     QUERY_TRUNCATE_LENGTH,
     TOOL_RESULT_PREVIEW_LENGTH,
 )
+
+_RAW_TOOL_CALL_RE = re.compile(r"<function=\w+.*?</function>", re.DOTALL)
 from .processors import ResultProcessor
 from .prompts import get_system_prompt
 from .providers import BaseProvider, ProviderResponse, ToolDefinition
@@ -111,6 +114,12 @@ class ReActAgent:
                         response, messages, run
                     )
                 else:
+                    if response.content and _RAW_TOOL_CALL_RE.search(response.content):
+                        logger.warning(
+                            "Model returned raw text tool call(s) instead of structured tool_calls. "
+                            "The provider may not have parsed them. "
+                            f"Content preview: {response.content[:200]}"
+                        )
                     run.final_answer = response.content
                     run.steps.append(
                         AgentStep(
