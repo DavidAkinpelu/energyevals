@@ -1,9 +1,12 @@
 import json
 import os
+import re
 import time
+import uuid
 from collections.abc import AsyncIterator
 from typing import Any
 
+from loguru import logger
 from openai import AsyncOpenAI
 
 from energbench.agent.constants import MAX_TOKENS
@@ -15,6 +18,11 @@ from .base_provider import (
     ProviderResponse,
     ToolCall,
     ToolDefinition,
+)
+
+_LLAMA_TOOL_CALL_RE = re.compile(
+    r"<function=(\w+)(.*?)</function>",
+    re.DOTALL,
 )
 
 
@@ -89,6 +97,8 @@ class DeepInfraProvider(BaseProvider):
 
         tool_calls = None
         message = response.choices[0].message
+        content = message.content or ""
+
         if message.tool_calls:
             tool_calls = [
                 ToolCall(
@@ -99,12 +109,21 @@ class DeepInfraProvider(BaseProvider):
                 for tc in message.tool_calls
             ]
 
+        if not tool_calls and content:
+            tool_calls = self._parse_text_tool_calls(content)
+            if tool_calls:
+                logger.debug(
+                    f"Parsed {len(tool_calls)} tool call(s) from text content "
+                    f"(model used native <function=> format)"
+                )
+                content = _LLAMA_TOOL_CALL_RE.sub("", content).strip()
+
         cached_tokens = 0
         if response.usage and getattr(response.usage, "prompt_tokens_details", None):
             cached_tokens = getattr(response.usage.prompt_tokens_details, "cached_tokens", 0) or 0
 
         return ProviderResponse(
-            content=message.content or "",
+            content=content,
             tool_calls=tool_calls,
             input_tokens=response.usage.prompt_tokens if response.usage else 0,
             cached_tokens=cached_tokens,
@@ -223,3 +242,41 @@ class DeepInfraProvider(BaseProvider):
                         "image_url": {"url": url},
                     })
         return content_parts
+
+    @staticmethod
+    def _parse_text_tool_calls(content: str) -> list[ToolCall] | None:
+        """Parse Llama-style ``<function=name{...}</function>`` tool calls from text.
+
+        Some Llama models emit tool calls as plain text instead of using the
+        structured tool_calls response field.  This fallback detects that
+        pattern and converts matches into proper ToolCall objects.
+        """
+        matches = _LLAMA_TOOL_CALL_RE.findall(content)
+        if not matches:
+            return None
+
+        tool_calls: list[ToolCall] = []
+        for func_name, raw_args in matches:
+            raw_args = raw_args.strip().rstrip(">")
+            try:
+                arguments = json.loads(raw_args)
+            except json.JSONDecodeError:
+                if not raw_args.startswith("{"):
+                    raw_args = "{" + raw_args + "}"
+                try:
+                    arguments = json.loads(raw_args)
+                except json.JSONDecodeError:
+                    logger.warning(
+                        f"Could not parse arguments for text tool call '{func_name}': {raw_args[:200]}"
+                    )
+                    continue
+
+            tool_calls.append(
+                ToolCall(
+                    id=f"call_{uuid.uuid4().hex[:24]}",
+                    name=func_name,
+                    arguments=arguments if isinstance(arguments, dict) else {},
+                )
+            )
+
+        return tool_calls or None

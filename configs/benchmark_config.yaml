@@ -8,16 +8,10 @@
 # Multi-model format (recommended for comparing models):
 # Uncomment additional models to run benchmarks across multiple providers
 models:
-  - provider: openai
-    model: gpt-4o-mini
-  # - provider: openai
-  #   model: gpt-4o
-  # - provider: anthropic
-  #   model: claude-sonnet-4-20250514
-  # - provider: google
-  #   model: gemini-2.0-flash
-  # - provider: deepinfra
-  #   model: meta-llama/Llama-3.3-70B-Instruct-Turbo
+  #- provider: openai
+  #  model: gpt-4o-mini
+  - provider: deepinfra
+    model: meta-llama/Llama-3.3-70B-Instruct-Turbo
 
 # Per-model options (optional):
 # models:
@@ -40,7 +34,7 @@ questions_file: data/AI Evals New Questions.xlsx - Q&As - new.csv
 
 # Question selection (optional)
 # Leave empty or comment out to run all questions
-# questions: [1, 2, 3]              # Specific question IDs
+questions: [1, 2]              # Specific question IDs
 # questions: 1-5                     # Range of questions
 
 # =============================================================================
@@ -51,7 +45,7 @@ observability:
   enabled: true                      # Enable/disable tracing
   backend: json                      # json, langfuse, both, or auto
   output_dir: ./benchmark_traces     # Base directory for trace files
-  # run_name: with_tools             # Optional: subdirectory for organizing runs
+  run_name: with_tools             # Optional: subdirectory for organizing runs
                                      # e.g., "no_tools", "with_tools", "experiment_1"
                                      # Traces saved to: {output_dir}/{run_name}/{model}/
 
@@ -68,7 +62,7 @@ mcp:
 
 agent:
   max_iterations: 25                 # Maximum iterations per question
-  num_trials: 2                      # Independent trials per question (for statistical eval)
+  num_trials: 3                      # Independent trials per question (for statistical eval)
 
 # =============================================================================
 # Tools Configuration
