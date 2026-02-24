@@ -4,6 +4,7 @@ from typing import Any
 
 from energbench.agent.exceptions import ToolExecutionError
 from energbench.agent.schema import ToolDefinition, ToolExecutor
+from energbench.agent.schema.tools import ToolResult
 from energbench.mcp.client import MCPClient
 from energbench.tools.base_tool import ToolRegistry
 
@@ -138,6 +139,27 @@ def list_tools(std_registry: ToolRegistry, mcp_client: MCPClient | None = None) 
     return 0
 
 
+def _wrap_mcp_result(raw: str) -> str:
+    """Normalise raw MCP server output to the standard ToolResult JSON schema.
+
+    MCP servers return arbitrary text or JSON.  This wrapper converts the
+    raw output into the same ``{"success": ..., "data": ..., "error": ...,
+    "metadata": {...}}`` envelope that standard tools emit so the agent
+    always sees a consistent format regardless of tool origin.
+    """
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        # Plain-text response — wrap as successful string data
+        return ToolResult(success=True, data=raw).to_json()
+
+    # Bare MCP error envelope: {"error": "...", "tool": "..."}
+    if isinstance(parsed, dict) and "error" in parsed and len(parsed) <= 2:
+        return ToolResult(success=False, data=None, error=str(parsed["error"])).to_json()
+
+    return ToolResult(success=True, data=parsed).to_json()
+
+
 def build_tool_executor(
     std_registry: ToolRegistry,
     mcp_client: MCPClient | None = None,
@@ -151,7 +173,8 @@ def build_tool_executor(
             result = await std_registry.execute(tool_name, **arguments)
             return result.to_json()
         if mcp_client and tool_name in mcp_tools:
-            return await mcp_client.call_tool(tool_name, arguments)
+            raw = await mcp_client.call_tool(tool_name, arguments)
+            return _wrap_mcp_result(raw)
         raise ToolExecutionError(f"Unknown tool: {tool_name}", tool_name=tool_name)
 
     return executor

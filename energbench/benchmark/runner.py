@@ -6,20 +6,20 @@ from loguru import logger
 from energbench.agent.providers import get_provider
 from energbench.agent.react_agent import ReActAgent
 from energbench.agent.schema import AgentRun, ModelSpec, ToolDefinition, ToolExecutor
+from energbench.core.types import ProviderName
 from energbench.mcp import create_mcp_client
 from energbench.mcp.client import MCPClient
 from energbench.observability import BaseObserver, get_observer
 from energbench.tools import create_default_registry
 
-from energbench.core.types import ProviderName
-
-from .config import PROVIDERS, BenchmarkConfig, validate_api_keys
+from .config import BenchmarkConfig, validate_api_keys
 from .constants import QUESTION_LIST_PREVIEW_LENGTH
 from .data_loader import load_questions
 from .display import print_header, print_question, print_result
 from .models import BenchmarkResult, Question
 from .results import save_results
 from .tools import build_tool_executor, filter_tools, merge_tools
+
 
 def _trace_run(
     observer: BaseObserver | None,
@@ -263,6 +263,9 @@ async def _run_model_benchmark(
             tool_executor=executor,
             max_iterations=config.max_iterations,
             csv_threshold=config.csv_threshold,
+            tool_timeout=config.tool_timeout,
+            max_retries=config.max_retries,
+            retry_base_delay=config.retry_base_delay,
         )
 
         result = await run_question(
@@ -334,17 +337,12 @@ async def run_benchmark(config: BenchmarkConfig) -> int:
 
     print(f"  Loaded {len(questions)} questions")
 
-    actual_seed: int | None = None
-    if config.shuffle:
-        actual_seed = config.seed if config.seed is not None else random.randint(0, 2**32 - 1)
-        random.Random(actual_seed).shuffle(questions)
-        print(f"  Questions shuffled (seed={actual_seed})")
-
-    for model_spec in config.models:
-        if model_spec.provider not in PROVIDERS:
-            print(f"Error: Unknown provider '{model_spec.provider}'")
-            print(f"Available: {', '.join(PROVIDERS.keys())}")
-            return 1
+    trial_seeds: dict[int, int | None] = {}
+    base_seed: int | None = None
+    if config.shuffle and config.seeds is None and config.seed_mode in {"fixed", "rotate"}:
+        base_seed = config.seed if config.seed is not None else random.randint(0, 2**32 - 1)
+        if config.seed is None:
+            print(f"  Base shuffle seed auto-generated: {base_seed}")
 
     observer = await _setup_observer(config)
 
@@ -367,13 +365,32 @@ async def run_benchmark(config: BenchmarkConfig) -> int:
             if config.num_trials > 1:
                 print(f"\n  --- Trial {trial}/{config.num_trials} ---")
 
+            trial_questions = list(questions)
+            trial_seed: int | None = None
+            if config.shuffle:
+                if config.seeds is not None:
+                    trial_seed = config.seeds[trial - 1]
+                elif config.seed_mode == "random_per_trial":
+                    trial_seed = random.randint(0, 2**32 - 1)
+                elif config.seed_mode == "fixed":
+                    trial_seed = base_seed
+                else:  # rotate
+                    if base_seed is None:
+                        base_seed = config.seed if config.seed is not None else random.randint(0, 2**32 - 1)
+                    trial_seed = base_seed + (trial - 1)
+
+                random.Random(trial_seed).shuffle(trial_questions)
+                print(f"  Trial {trial} question shuffle seed: {trial_seed}")
+
+            trial_seeds[trial] = trial_seed
+
             if observer and hasattr(observer, "set_trial"):
                 observer.set_trial(trial if config.num_trials > 1 else None)
 
             for model_spec in config.models:
                 model_results = await _run_model_benchmark(
                     model_spec=model_spec,
-                    questions=questions,
+                    questions=trial_questions,
                     tools=tools,
                     executor=executor,
                     config=config,
@@ -411,7 +428,16 @@ async def run_benchmark(config: BenchmarkConfig) -> int:
         print(f"    Total tokens: {total_tokens:,}")
         print(f"    Total time: {total_duration:.1f}s")
 
-    output_paths = save_results(all_results, config, seed=actual_seed)
+    if observer:
+        all_flat = [r for trials in all_results.values() for results in trials.values() for r in results]
+        observer_failures = sum(1 for r in all_flat if r.trace_id is None)
+        if observer_failures > 0:
+            print(
+                f"\n  Warning: {observer_failures} trace(s) failed to record. "
+                "Check logs for details."
+            )
+
+    output_paths = save_results(all_results, config, trial_seeds=trial_seeds)
     print(f"\n  Results saved: {output_paths}")
 
     return 0 if total_failed == 0 else 1

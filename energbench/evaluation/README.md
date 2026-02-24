@@ -88,14 +88,14 @@ expert approach. It examines problem framing, data-source selection, analytical
 steps, and tool usage.
 
 - Raw scale: **1 -- 5** (5 = expert-like, 1 = wrong approach).
-- Normalized to **0 -- 1** in the final report: `(raw - 1) / 4`.
+- Used directly in the final report (no normalization).
 
 ### Accuracy
 
 `judge_accuracy` checks numerical and factual correctness against the expected
 answer, respecting configurable absolute and relative tolerances.
 
-- Raw scale: **0 -- 1** (used directly, no normalization needed).
+- Raw scale: **0 -- 1** (used directly).
 - Used for categories explicitly mapped to `accuracy` in the config's
   `strategy.categories` section.
 
@@ -115,7 +115,7 @@ equivalent).
 sources cited or implied in the agent's answer.
 
 - Raw scale: **1 -- 5** (5 = authoritative and well-aligned).
-- Normalized to **0 -- 1**: `(raw - 1) / 4`.
+- Used directly in the final report (no normalization).
 
 All judges use OpenAI structured outputs (`client.responses.parse`) with
 `temperature=0` for reproducibility. The judge model defaults to `gpt-4o` and

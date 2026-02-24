@@ -39,8 +39,14 @@ class AttributeAlignmentResult(BaseModel):
 # ---------------------------------------------------------------------------
 
 class JudgeScore(BaseModel):
-    """Normalized 0-1 score from a single judge call."""
-    score: float = Field(ge=0.0, le=1.0)
+    """Judge score from a single judge call.
+
+    Scale depends on the judge type:
+    - approach: 1-5
+    - sources: 1-5
+    - accuracy/attributes: 0-1
+    """
+    score: float = Field(ge=0.0, le=5.0)
     reasoning: str
     judge_type: str
 

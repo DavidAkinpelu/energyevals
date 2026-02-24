@@ -326,7 +326,7 @@ print(f'Approach reasoning: {q[\"approach\"][\"reasoning\"][:100]}...')
 - [ ] `report.json` exists and is valid JSON.
 - [ ] `summary.csv` exists with correct column headers.
 - [ ] `q1.json` exists with `approach`, `accuracy`, `sources` scores and reasoning.
-- [ ] All scores are in the range [0.0, 1.0].
+- [ ] Scores use expected ranges: `approach`/`sources` in [1.0, 5.0], `accuracy` in [0.0, 1.0].
 
 ---
 
@@ -491,7 +491,8 @@ head -5 evaluation_results/openai_gpt-4o-mini/summary.csv
 
 - [ ] Header row: `question_id,category,difficulty,strategy,approach_mean,approach_ci,accuracy_mean,accuracy_ci,sources_mean,sources_ci,tool_calls,tokens,duration_s`.
 - [ ] One data row per evaluated question.
-- [ ] All `*_mean` values are in [0.0, 1.0].
+- [ ] `approach_mean` and `sources_mean` are in [1.0, 5.0].
+- [ ] `accuracy_mean` is in [0.0, 1.0].
 
 ### 10c. Per-trial qN.json
 
@@ -507,7 +508,8 @@ for dim in ['approach', 'accuracy', 'sources']:
 "
 ```
 
-- [ ] Each dimension has `score` (0-1), `reasoning` (non-empty string), and `judge_type`.
+- [ ] Each dimension has `score`, `reasoning` (non-empty string), and `judge_type`.
+- [ ] `approach.score` and `sources.score` are in [1.0, 5.0], `accuracy.score` is in [0.0, 1.0].
 - [ ] `judge_type` for approach is `"approach"`, for sources is `"sources"`, for accuracy is either `"accuracy"` or `"attributes"` depending on category.
 
 ---
@@ -527,15 +529,22 @@ with open('evaluation_results/openai_gpt-4o-mini/report.json') as f:
 errors = []
 for q in r['questions']:
     qid = q['question_id']
+    ranges = {
+        'approach': (1.0, 5.0),
+        'accuracy': (0.0, 1.0),
+        'sources': (1.0, 5.0),
+    }
+
     for dim in ['approach', 'accuracy', 'sources']:
         stats = q[f'{dim}_stats']
         score_mean = stats['mean']
         ci_lo = stats['ci_lower']
         ci_hi = stats['ci_upper']
         std = stats['std']
+        lo, hi = ranges[dim]
 
-        if not (0.0 <= score_mean <= 1.0):
-            errors.append(f'Q{qid} {dim}: mean {score_mean} out of [0,1]')
+        if not (lo <= score_mean <= hi):
+            errors.append(f'Q{qid} {dim}: mean {score_mean} out of [{lo},{hi}]')
         if std < 0:
             errors.append(f'Q{qid} {dim}: negative std {std}')
         if ci_lo > score_mean:
@@ -546,8 +555,11 @@ for q in r['questions']:
     for t in q['trials']:
         for dim in ['approach', 'accuracy', 'sources']:
             s = t[dim]['score']
-            if not (0.0 <= s <= 1.0):
-                errors.append(f'Q{qid} trial {t[\"trial\"]} {dim}: score {s} out of [0,1]')
+            lo, hi = ranges[dim]
+            if not (lo <= s <= hi):
+                errors.append(
+                    f'Q{qid} trial {t[\"trial\"]} {dim}: score {s} out of [{lo},{hi}]'
+                )
 
 if errors:
     print(f'FAILED: {len(errors)} errors found')
@@ -560,9 +572,8 @@ else:
 
 ### What to check
 
-- [ ] All normalized scores are in [0.0, 1.0].
-- [ ] Approach and source scores (mapped from 1-5) are one of: 0.0, 0.25, 0.5, 0.75, 1.0.
-- [ ] Accuracy scores (from `judge_accuracy`) are continuous in [0.0, 1.0].
+- [ ] `approach` and `sources` scores are in [1.0, 5.0].
+- [ ] `accuracy` scores (from `judge_accuracy`) are continuous in [0.0, 1.0].
 - [ ] Attribute alignment scores (from `judge_attributes`) are continuous in [0.0, 1.0].
 - [ ] For every question: `ci_lower <= mean <= ci_upper`.
 - [ ] For every question: `std >= 0`.

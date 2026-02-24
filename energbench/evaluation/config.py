@@ -67,7 +67,7 @@ def load_eval_config(path: Path | str | None = None, base_path: Path | None = No
     judge_data = data.get("judge", {})
     judge = JudgeConfig(
         provider=judge_data.get("provider", "openai"),
-        model=judge_data.get("model", "gpt-4o"),
+        model=judge_data.get("model", "gpt-5-mini"),
         temperature=judge_data.get("temperature", 0.0),
         max_tokens=judge_data.get("max_tokens", 4096),
         reasoning_effort=judge_data.get("reasoning_effort"),

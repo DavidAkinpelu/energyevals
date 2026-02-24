@@ -4,8 +4,6 @@ import re
 from pathlib import Path
 from typing import Any
 
-_REQUIRED_EVAL_COLUMNS = {"S/N", "Question", "Answer", "Approach", "Category"}
-
 from .models import (
     BenchmarkResultEntry,
     CostEstimate,
@@ -13,6 +11,8 @@ from .models import (
     LatencyBreakdown,
     MetricScore,
 )
+
+_REQUIRED_EVAL_COLUMNS = {"S/N", "Question", "Answer", "Approach", "Category"}
 
 # ---------------------------------------------------------------------------
 # CSV loading

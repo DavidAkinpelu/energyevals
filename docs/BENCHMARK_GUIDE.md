@@ -323,6 +323,9 @@ tools:
 agent:
   max_iterations: 25
   num_trials: 3              # Run each question 3 times for statistical evaluation
+  shuffle: true
+  seed_mode: rotate
+  seed: 12345
 
 mcp:
   enabled: true
@@ -390,9 +393,19 @@ Available tool names: `battery`, `docket`, `gridstatus`, `openweather`, `renewab
 agent:
   max_iterations: 25       # Maximum ReAct loop iterations per question (default: 25)
   num_trials: 1            # Independent trials per question (default: 1)
+  shuffle: false           # Shuffle question order within each trial
+  seed_mode: rotate        # fixed | rotate | random_per_trial (ignored when shuffle=false)
+  seed: null               # Base seed for fixed/rotate when seeds is not provided
+  # seeds: [101, 202, 303] # Optional explicit per-trial seeds (length must equal num_trials)
 ```
 
 When `num_trials` is greater than 1, each question is run N independent times per model. Traces are stored in `trial_N/` subdirectories, and the results JSON groups answers by trial. This is designed for statistical evaluation -- the downstream evaluation pipeline uses multiple trials to compute confidence intervals and significance tests between models.
+
+When `shuffle: true`, per-trial seeds are resolved in this order:
+1. `seeds` list (explicit per-trial seeds).
+2. `seed_mode=fixed` uses one seed for all trials.
+3. `seed_mode=rotate` uses `seed + (trial - 1)`.
+4. `seed_mode=random_per_trial` draws a fresh seed every trial.
 
 ### `mcp`
 
@@ -810,7 +823,14 @@ When `num_trials` is 1 (the default), results are stored as a flat list per mode
     "questions_file": "data/AI Evals New Questions.xlsx - Q&As.csv",
     "mcp_enabled": true,
     "max_iterations": 25,
-    "num_trials": 1
+    "num_trials": 1,
+    "shuffle": false,
+    "seed": null,
+    "seed_mode": "rotate",
+    "seeds": null,
+    "trial_seeds": {
+      "trial_1": null
+    }
   },
   "summary": {
     "total_questions": 3,
@@ -866,7 +886,16 @@ When `num_trials > 1`, results are grouped by `trial_N` keys instead of a flat l
     "questions_file": "data/AI Evals New Questions.xlsx - Q&As.csv",
     "mcp_enabled": true,
     "max_iterations": 25,
-    "num_trials": 3
+    "num_trials": 3,
+    "shuffle": true,
+    "seed": 12345,
+    "seed_mode": "rotate",
+    "seeds": null,
+    "trial_seeds": {
+      "trial_1": 12345,
+      "trial_2": 12346,
+      "trial_3": 12347
+    }
   },
   "summary": {
     "total_questions": 3,
@@ -1188,6 +1217,8 @@ python scripts/run_benchmark.py \
   --provider openai \
   --model gpt-4o \
   --num-trials 3 \
+  --seed-mode rotate \
+  --seed 12345 \
   --questions 1-10
 ```
 
@@ -1197,6 +1228,9 @@ Or set it in the config file:
 agent:
   max_iterations: 25
   num_trials: 3
+  shuffle: true
+  seed_mode: rotate
+  seed: 12345
 
 observability:
   enabled: true
@@ -1302,7 +1336,7 @@ python scripts/run_benchmark.py
 
 **Symptom:** `ConfigurationError: Config file not found: configs/my_config.yaml`
 
-**Fix:** If you pass an explicit config path via `--config` / `-c`, the file must exist. Check the path for typos. If you want to run with defaults, omit the `--config` flag entirely.
+**Fix:** If you pass an explicit config path via `--config` / `-c`, the file must exist. Check the path for typos.
 
 ### ConfigurationError on startup
 

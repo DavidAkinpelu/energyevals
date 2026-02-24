@@ -10,6 +10,7 @@ from loguru import logger
 from openai import AsyncOpenAI
 
 from energbench.agent.constants import MAX_TOKENS
+from energbench.agent.exceptions import ProviderError
 from energbench.agent.schema.messages import ImageContent, TextContent
 
 from .base_provider import (
@@ -96,44 +97,51 @@ class DeepInfraProvider(BaseProvider):
 
         latency_ms = (time.time() - start_time) * 1000
 
-        tool_calls = None
-        message = response.choices[0].message
-        content = message.content or ""
+        try:
+            tool_calls = None
+            message = response.choices[0].message
+            content = message.content or ""
 
-        if message.tool_calls:
-            tool_calls = [
-                ToolCall(
-                    id=tc.id,
-                    name=tc.function.name,
-                    arguments=json.loads(tc.function.arguments),
-                )
-                for tc in message.tool_calls
-            ]
+            if message.tool_calls:
+                tool_calls = []
+                for tc in message.tool_calls:
+                    try:
+                        parsed_args = json.loads(tc.function.arguments)
+                    except (json.JSONDecodeError, TypeError):
+                        parsed_args = {}
+                    tool_calls.append(
+                        ToolCall(id=tc.id, name=tc.function.name, arguments=parsed_args)
+                    )
 
-        if not tool_calls and content:
-            tool_calls = self._parse_text_tool_calls(content)
-            if tool_calls:
-                logger.debug(
-                    f"Parsed {len(tool_calls)} tool call(s) from text content "
-                    f"(model used native <function=> format)"
-                )
-                content = _LLAMA_TOOL_CALL_RE.sub("", content).strip()
+            if not tool_calls and content:
+                tool_calls = self._parse_text_tool_calls(content)
+                if tool_calls:
+                    logger.debug(
+                        f"Parsed {len(tool_calls)} tool call(s) from text content "
+                        f"(model used native <function=> format)"
+                    )
+                    content = _LLAMA_TOOL_CALL_RE.sub("", content).strip()
 
-        cached_tokens = 0
-        if response.usage and getattr(response.usage, "prompt_tokens_details", None):
-            cached_tokens = getattr(response.usage.prompt_tokens_details, "cached_tokens", 0) or 0
+            cached_tokens = 0
+            if response.usage and getattr(response.usage, "prompt_tokens_details", None):
+                cached_tokens = getattr(response.usage.prompt_tokens_details, "cached_tokens", 0) or 0
 
-        return ProviderResponse(
-            content=content,
-            tool_calls=tool_calls,
-            input_tokens=response.usage.prompt_tokens if response.usage else 0,
-            cached_tokens=cached_tokens,
-            output_tokens=response.usage.completion_tokens if response.usage else 0,
-            latency_ms=latency_ms,
-            model=response.model,
-            finish_reason=response.choices[0].finish_reason,
-            raw_response=response,
-        )
+            return ProviderResponse(
+                content=content,
+                tool_calls=tool_calls,
+                input_tokens=response.usage.prompt_tokens if response.usage else 0,
+                cached_tokens=cached_tokens,
+                output_tokens=response.usage.completion_tokens if response.usage else 0,
+                latency_ms=latency_ms,
+                model=response.model,
+                finish_reason=response.choices[0].finish_reason,
+                raw_response=response,
+            )
+        except (KeyError, AttributeError, IndexError, TypeError) as exc:
+            raise ProviderError(
+                f"Malformed API response: {exc}. Raw: {response!r}",
+                provider=self.provider_name,
+            ) from exc
 
     async def stream(
         self,

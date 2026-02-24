@@ -101,6 +101,20 @@ class BatteryOptimizationTool(BaseTool):
             "saved_csv": saved file path for the output csv
 
         """
+        if battery_size_mw <= 0:
+            return json.dumps({"error": "battery_size_mw must be positive."})
+        if battery_duration <= 0:
+            return json.dumps({"error": "battery_duration must be positive."})
+        if timestep_in_hours <= 0:
+            return json.dumps({"error": "timestep_in_hours must be positive."})
+        if not (0 < round_trip_efficiency <= 1):
+            return json.dumps({"error": "round_trip_efficiency must be in (0, 1]."})
+        if not (0 <= minimum_state_of_charge < 1):
+            return json.dumps({"error": "minimum_state_of_charge must be in [0, 1)."})
+        if not (0 < maximum_state_of_charge <= 1):
+            return json.dumps({"error": "maximum_state_of_charge must be in (0, 1]."})
+        if minimum_state_of_charge >= maximum_state_of_charge:
+            return json.dumps({"error": "minimum_state_of_charge must be less than maximum_state_of_charge."})
         try:
             df = self._load_csv(csv_path)
             if energy_price_column not in df.columns:

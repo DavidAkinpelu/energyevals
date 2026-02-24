@@ -144,7 +144,7 @@ class RenewablesTool(BaseTool):
         timestamp = generate_timestamp()
         save_csv_path = f"solar_profile_{timestamp}.csv"
 
-        if "error" in result:
+        if isinstance(result, dict) and "error" in result:
             return json.dumps(result)
 
         if format.lower() == "csv":
@@ -511,7 +511,7 @@ class RenewablesTool(BaseTool):
 
         result = self._make_request("data/wind", params)
 
-        if "error" in result:
+        if isinstance(result, dict) and "error" in result:
             return json.dumps(result)
 
         timestamp = generate_timestamp()

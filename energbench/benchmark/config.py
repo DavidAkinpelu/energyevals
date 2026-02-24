@@ -5,60 +5,18 @@ from typing import Self
 
 import yaml
 
-from energbench.agent.constants import CSV_THRESHOLD
+from energbench.agent.constants import (
+    CSV_THRESHOLD,
+    PROVIDER_MAX_RETRIES,
+    PROVIDER_RETRY_BASE_DELAY,
+    TOOL_TIMEOUT,
+)
 from energbench.agent.schema import ModelSpec
 from energbench.benchmark.constants import DEFAULT_MAX_ITERATIONS
 from energbench.core.errors import ConfigurationError
 from energbench.core.types import ProviderName, ensure_path
 
-DEFAULT_CONFIG = {
-    "models": [
-        {
-            "provider": "openai",
-            "model": "gpt-4o-mini",
-        }
-    ],
-    "questions_file": "data/AI Evals New Questions.xlsx - Q&As.csv",
-    "questions": None,
-    "observability": {
-        "enabled": True,
-        "backend": "json",
-        "output_dir": "./benchmark_traces",
-        "run_name": None,
-    },
-    "mcp": {
-        "enabled": True,
-    },
-    "agent": {
-        "max_iterations": DEFAULT_MAX_ITERATIONS,
-    },
-    "output": {
-        "results_dir": "./benchmark_results",
-        "save_answers": True,
-    },
-}
-
-PROVIDERS: dict[ProviderName, dict] = {
-    ProviderName.OPENAI: {
-        "default_model": "gpt-4o-mini",
-        "models": ["gpt-4o", "gpt-4o-mini"],
-    },
-    ProviderName.ANTHROPIC: {
-        "default_model": "claude-sonnet-4-20250514",
-        "models": ["claude-sonnet-4-20250514", "claude-opus-4-20250514"],
-    },
-    ProviderName.GOOGLE: {
-        "default_model": "gemini-2.0-flash",
-        "models": ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"],
-    },
-    ProviderName.DEEPINFRA: {
-        "default_model": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-        "models": [
-            "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-            "meta-llama/Meta-Llama-3.1-405B-Instruct",
-        ],
-    },
-}
+VALID_SEED_MODES = {"fixed", "rotate", "random_per_trial"}
 
 PROVIDER_ENV_VARS: dict[ProviderName, str] = {
     ProviderName.OPENAI: "OPENAI_API_KEY",
@@ -114,7 +72,12 @@ class BenchmarkConfig:
     num_trials: int = 1
     shuffle: bool = False
     seed: int | None = None
+    seed_mode: str = "rotate"
+    seeds: list[int] | None = None
     csv_threshold: int = CSV_THRESHOLD
+    tool_timeout: float = TOOL_TIMEOUT
+    max_retries: int = PROVIDER_MAX_RETRIES
+    retry_base_delay: float = PROVIDER_RETRY_BASE_DELAY
     tools_config: ToolsConfig = field(default_factory=ToolsConfig)
     config_path: Path | None = None
 
@@ -141,15 +104,16 @@ class BenchmarkConfig:
         if not self.models:
             errors.append("At least one model must be specified")
 
+        provider_names = {p.value for p in ProviderName}
         for model in self.models:
             if not model.provider:
                 errors.append(f"Model provider is required: {model}")
             if not model.model:
                 errors.append(f"Model name is required: {model}")
-            if model.provider not in PROVIDERS:
+            if model.provider not in provider_names:
                 errors.append(
                     f"Unknown provider '{model.provider}'. "
-                    f"Available: {', '.join(PROVIDERS.keys())}"
+                    f"Available: {', '.join(sorted(provider_names))}"
                 )
 
         if not self.questions_file.exists():
@@ -168,8 +132,37 @@ class BenchmarkConfig:
         if self.csv_threshold < 1:
             errors.append(f"csv_threshold must be at least 1, got {self.csv_threshold}")
 
+        if self.tool_timeout <= 0:
+            errors.append(f"tool_timeout must be positive, got {self.tool_timeout}")
+
+        if self.max_retries < 0:
+            errors.append(f"max_retries must be non-negative, got {self.max_retries}")
+
+        if self.retry_base_delay <= 0:
+            errors.append(f"retry_base_delay must be positive, got {self.retry_base_delay}")
+
         if self.num_trials < 1:
             errors.append(f"num_trials must be at least 1, got {self.num_trials}")
+
+        if self.seed is not None and not isinstance(self.seed, int):
+            errors.append(f"seed must be an integer, got {type(self.seed).__name__}")
+
+        if self.seed_mode not in VALID_SEED_MODES:
+            errors.append(
+                f"seed_mode must be one of {sorted(VALID_SEED_MODES)}, got {self.seed_mode!r}"
+            )
+
+        if self.seeds is not None:
+            if not isinstance(self.seeds, list):
+                errors.append(f"seeds must be a list of integers, got {type(self.seeds).__name__}")
+            elif not all(isinstance(s, int) for s in self.seeds):
+                errors.append("seeds must contain only integers")
+            elif len(self.seeds) != self.num_trials:
+                errors.append(
+                    f"seeds length ({len(self.seeds)}) must match num_trials ({self.num_trials})"
+                )
+            if not self.shuffle:
+                errors.append("seeds requires shuffle=true")
 
         if self.questions is not None:
             if not isinstance(self.questions, list):
@@ -209,9 +202,9 @@ class BenchmarkConfig:
         if questions:
             questions = cls._parse_questions(questions)
 
-        questions_file = base_path / str(data.get(
-            "questions_file", DEFAULT_CONFIG["questions_file"]
-        ))
+        if "questions_file" not in data:
+            raise ConfigurationError("Configuration must include 'questions_file'")
+        questions_file = base_path / str(data["questions_file"])
 
         tools_config = ToolsConfig(
             enabled=tools.get("enabled", True),
@@ -234,7 +227,12 @@ class BenchmarkConfig:
             num_trials=agent.get("num_trials", 1),
             shuffle=agent.get("shuffle", False),
             seed=agent.get("seed"),
+            seed_mode=agent.get("seed_mode", "rotate"),
+            seeds=agent.get("seeds"),
             csv_threshold=agent.get("csv_threshold", CSV_THRESHOLD),
+            tool_timeout=agent.get("tool_timeout", TOOL_TIMEOUT),
+            max_retries=agent.get("max_retries", PROVIDER_MAX_RETRIES),
+            retry_base_delay=agent.get("retry_base_delay", PROVIDER_RETRY_BASE_DELAY),
             tools_config=tools_config,
         )
 
@@ -259,27 +257,26 @@ class BenchmarkConfig:
 
 
 def load_config(config_path: Path | None, base_path: Path) -> BenchmarkConfig:
-    """Load configuration from YAML file or use defaults.
+    """Load configuration from a YAML file.
 
     Args:
-        config_path: Path to YAML config file, or None to use defaults.
+        config_path: Path to YAML config file.
         base_path: Base directory for resolving relative paths.
 
     Returns:
         Parsed BenchmarkConfig.
 
     Raises:
-        ConfigurationError: If config_path is provided but does not exist.
+        ConfigurationError: If config_path is None or does not exist.
     """
-    if config_path is not None:
-        if not config_path.exists():
-            raise ConfigurationError(f"Config file not found: {config_path}")
-        with open(config_path) as f:
-            data = yaml.safe_load(f)
-        print(f"Loaded config from: {config_path}")
-        config = BenchmarkConfig.from_dict(data, base_path)
-        config.config_path = config_path
-        return config
-    else:
-        print("Using default configuration")
-        return BenchmarkConfig.from_dict(DEFAULT_CONFIG, base_path)
+    if config_path is None:
+        raise ConfigurationError("A benchmark config file path is required")
+
+    if not config_path.exists():
+        raise ConfigurationError(f"Config file not found: {config_path}")
+    with open(config_path) as f:
+        data = yaml.safe_load(f)
+    print(f"Loaded config from: {config_path}")
+    config = BenchmarkConfig.from_dict(data, base_path)
+    config.config_path = config_path
+    return config

@@ -6,6 +6,7 @@ from typing import Any
 from anthropic import AsyncAnthropic
 
 from energbench.agent.constants import MAX_TOKENS
+from energbench.agent.exceptions import ProviderError
 
 from .base_provider import (
     BaseProvider,
@@ -82,36 +83,42 @@ class AnthropicProvider(BaseProvider):
 
         latency_ms = (time.time() - start_time) * 1000
 
-        content = ""
-        tool_calls = None
+        try:
+            content = ""
+            tool_calls = None
 
-        for block in response.content:
-            if block.type == "text":
-                content += block.text
-            elif block.type == "tool_use":
-                if tool_calls is None:
-                    tool_calls = []
-                tool_calls.append(
-                    ToolCall(
-                        id=block.id,
-                        name=block.name,
-                        arguments=block.input if isinstance(block.input, dict) else {},
+            for block in response.content:
+                if block.type == "text":
+                    content += block.text
+                elif block.type == "tool_use":
+                    if tool_calls is None:
+                        tool_calls = []
+                    tool_calls.append(
+                        ToolCall(
+                            id=block.id,
+                            name=block.name,
+                            arguments=block.input if isinstance(block.input, dict) else {},
+                        )
                     )
-                )
 
-        cached_tokens = getattr(response.usage, "cache_read_input_tokens", 0) or 0
+            cached_tokens = getattr(response.usage, "cache_read_input_tokens", 0) or 0
 
-        return ProviderResponse(
-            content=content,
-            tool_calls=tool_calls,
-            input_tokens=response.usage.input_tokens,
-            cached_tokens=cached_tokens,
-            output_tokens=response.usage.output_tokens,
-            latency_ms=latency_ms,
-            model=response.model,
-            finish_reason=response.stop_reason,
-            raw_response=response,
-        )
+            return ProviderResponse(
+                content=content,
+                tool_calls=tool_calls,
+                input_tokens=response.usage.input_tokens,
+                cached_tokens=cached_tokens,
+                output_tokens=response.usage.output_tokens,
+                latency_ms=latency_ms,
+                model=response.model,
+                finish_reason=response.stop_reason,
+                raw_response=response,
+            )
+        except (KeyError, AttributeError, IndexError, TypeError) as exc:
+            raise ProviderError(
+                f"Malformed API response: {exc}. Raw: {response!r}",
+                provider=self.provider_name,
+            ) from exc
 
     async def stream(
         self,

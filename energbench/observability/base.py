@@ -15,6 +15,8 @@ class TraceMetadata(TypedDict, total=False):
     model: str
     question_id: str | int
     trial: int
+    category: str
+    difficulty: str
 
 
 class BaseObserver(ABC):

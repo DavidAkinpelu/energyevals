@@ -6,7 +6,6 @@ import yaml
 
 from energbench.agent.schema import ModelSpec, ToolDefinition
 from energbench.benchmark.config import (
-    PROVIDERS,
     BenchmarkConfig,
     ToolsConfig,
     load_config,
@@ -88,11 +87,10 @@ class TestBenchmarkConfig:
         with pytest.raises(ConfigurationError, match="Config file not found"):
             load_config(Path("nonexistent.yaml"), Path("."))
 
-    def test_load_config_none_uses_defaults(self):
-        """Test loading config with None path uses defaults."""
-        config = load_config(None, Path("."))
-        assert config.models[0].provider == "openai"
-        assert config.models[0].model == "gpt-4o-mini"
+    def test_load_config_none_raises(self):
+        """Test loading config with None path raises (no implicit defaults)."""
+        with pytest.raises(ConfigurationError, match="config file path is required"):
+            load_config(None, Path("."))
 
     def test_from_dict_missing_models_raises(self, tmp_path):
         """Test that from_dict raises when 'models' key is missing."""
@@ -103,6 +101,76 @@ class TestBenchmarkConfig:
         data = {"provider": "openai", "model": "gpt-4o-mini"}
         with pytest.raises(ConfigurationError, match="must include a 'models' list"):
             BenchmarkConfig.from_dict(data, tmp_path)
+
+    def test_validate_invalid_seed_mode(self, tmp_path):
+        """Invalid seed_mode should fail validation."""
+        questions_file = tmp_path / "test.csv"
+        questions_file.write_text(
+            "S/N,Category,Question type,Difficulty level,Question\n1,Test,Type,Easy,Test?"
+        )
+        with pytest.raises(ConfigurationError, match="seed_mode must be one of"):
+            BenchmarkConfig(
+                models=[ModelSpec(provider="openai", model="gpt-4o-mini")],
+                questions_file=questions_file,
+                questions=None,
+                observability_enabled=False,
+                observability_backend="json",
+                observability_output_dir=Path("."),
+                observability_run_name=None,
+                mcp_enabled=False,
+                max_iterations=10,
+                results_dir=tmp_path,
+                save_answers=True,
+                seed_mode="bad_mode",
+            )
+
+    def test_validate_seeds_length_matches_trials(self, tmp_path):
+        """seeds list length must match num_trials."""
+        questions_file = tmp_path / "test.csv"
+        questions_file.write_text(
+            "S/N,Category,Question type,Difficulty level,Question\n1,Test,Type,Easy,Test?"
+        )
+        with pytest.raises(ConfigurationError, match="seeds length"):
+            BenchmarkConfig(
+                models=[ModelSpec(provider="openai", model="gpt-4o-mini")],
+                questions_file=questions_file,
+                questions=None,
+                observability_enabled=False,
+                observability_backend="json",
+                observability_output_dir=Path("."),
+                observability_run_name=None,
+                mcp_enabled=False,
+                max_iterations=10,
+                results_dir=tmp_path,
+                save_answers=True,
+                shuffle=True,
+                num_trials=3,
+                seeds=[1, 2],
+            )
+
+    def test_validate_seeds_requires_shuffle(self, tmp_path):
+        """Providing seeds requires shuffle=true."""
+        questions_file = tmp_path / "test.csv"
+        questions_file.write_text(
+            "S/N,Category,Question type,Difficulty level,Question\n1,Test,Type,Easy,Test?"
+        )
+        with pytest.raises(ConfigurationError, match="seeds requires shuffle=true"):
+            BenchmarkConfig(
+                models=[ModelSpec(provider="openai", model="gpt-4o-mini")],
+                questions_file=questions_file,
+                questions=None,
+                observability_enabled=False,
+                observability_backend="json",
+                observability_output_dir=Path("."),
+                observability_run_name=None,
+                mcp_enabled=False,
+                max_iterations=10,
+                results_dir=tmp_path,
+                save_answers=True,
+                shuffle=False,
+                num_trials=2,
+                seeds=[1, 2],
+            )
 
 
 class TestQuestionModels:
@@ -325,21 +393,48 @@ class TestResultsSaving:
         assert "anthropic/claude-sonnet-4-20250514" in data["results_by_model"]
 
 
-class TestProviders:
-    """Tests for PROVIDERS constant."""
+class TestProviderValidation:
+    """Tests for provider validation in BenchmarkConfig."""
 
-    def test_providers_structure(self):
-        """Test PROVIDERS dict has correct structure."""
-        assert "openai" in PROVIDERS
-        assert "anthropic" in PROVIDERS
-        assert "google" in PROVIDERS
-        assert "deepinfra" in PROVIDERS
+    def test_known_provider_is_accepted(self, tmp_path):
+        questions_file = tmp_path / "test.csv"
+        questions_file.write_text(
+            "S/N,Category,Question type,Difficulty level,Question\n1,Test,Type,Easy,Test?"
+        )
+        config = BenchmarkConfig(
+            models=[ModelSpec(provider="openai", model="gpt-4o-mini")],
+            questions_file=questions_file,
+            questions=None,
+            observability_enabled=False,
+            observability_backend="json",
+            observability_output_dir=Path("."),
+            observability_run_name=None,
+            mcp_enabled=False,
+            max_iterations=10,
+            results_dir=tmp_path,
+            save_answers=True,
+        )
+        assert config.models[0].provider == "openai"
 
-        for provider_name, provider_info in PROVIDERS.items():
-            assert "default_model" in provider_info
-            assert "models" in provider_info
-            assert isinstance(provider_info["models"], list)
-            assert len(provider_info["models"]) > 0
+    def test_unknown_provider_is_rejected(self, tmp_path):
+        questions_file = tmp_path / "test.csv"
+        questions_file.write_text(
+            "S/N,Category,Question type,Difficulty level,Question\n1,Test,Type,Easy,Test?"
+        )
+        with pytest.raises(ConfigurationError, match="Unknown provider"):
+            BenchmarkConfig(
+                models=[ModelSpec(provider="unknown-provider", model="whatever")],
+                questions_file=questions_file,
+                questions=None,
+                observability_enabled=False,
+                observability_backend="json",
+                observability_output_dir=Path("."),
+                observability_run_name=None,
+                mcp_enabled=False,
+                max_iterations=10,
+                results_dir=tmp_path,
+                save_answers=True,
+            )
 
 
 class TestToolGroupFiltering:

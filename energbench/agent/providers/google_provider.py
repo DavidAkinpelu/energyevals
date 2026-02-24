@@ -4,6 +4,7 @@ import time
 from collections.abc import AsyncIterator
 from typing import Any
 
+from energbench.agent.exceptions import ProviderError
 from energbench.agent.schema.messages import ImageContent, TextContent
 
 from .base_provider import (
@@ -93,65 +94,71 @@ class GoogleProvider(BaseProvider):
 
         latency_ms = (time.time() - start_time) * 1000
 
-        content = ""
-        tool_calls: list[ToolCall] | None = None
+        try:
+            content = ""
+            tool_calls: list[ToolCall] | None = None
 
-        if response.candidates and len(response.candidates) > 0:
-            candidate = response.candidates[0]
-            if candidate.content and candidate.content.parts:
-                for part in candidate.content.parts:
-                    if part.text:
-                        content += part.text
-                    elif part.function_call:
-                        if tool_calls is None:
-                            tool_calls = []
-                        fc = part.function_call
-                        thought_signature = None
-                        if getattr(part, "thought_signature", None):
-                            if isinstance(part.thought_signature, bytes):
-                                thought_signature = base64.b64encode(
-                                    part.thought_signature
-                                ).decode("ascii")
-                            else:
-                                thought_signature = str(part.thought_signature)
-                        tool_calls.append(
-                            ToolCall(
-                                id=f"call_{len(tool_calls)}",
-                                name=str(fc.name),
-                                arguments=dict(fc.args) if fc.args else {},
-                                thought_signature=thought_signature,
+            if response.candidates and len(response.candidates) > 0:
+                candidate = response.candidates[0]
+                if candidate.content and candidate.content.parts:
+                    for part in candidate.content.parts:
+                        if part.text:
+                            content += part.text
+                        elif part.function_call:
+                            if tool_calls is None:
+                                tool_calls = []
+                            fc = part.function_call
+                            thought_signature = None
+                            if getattr(part, "thought_signature", None):
+                                if isinstance(part.thought_signature, bytes):
+                                    thought_signature = base64.b64encode(
+                                        part.thought_signature
+                                    ).decode("ascii")
+                                else:
+                                    thought_signature = str(part.thought_signature)
+                            tool_calls.append(
+                                ToolCall(
+                                    id=f"call_{len(tool_calls)}",
+                                    name=str(fc.name),
+                                    arguments=dict(fc.args) if fc.args else {},
+                                    thought_signature=thought_signature,
+                                )
                             )
-                        )
 
-        input_tokens = 0
-        output_tokens = 0
-        reasoning_tokens = 0
-        if response.usage_metadata:
-            input_tokens = response.usage_metadata.prompt_token_count or 0
-            output_tokens = response.usage_metadata.candidates_token_count or 0
-            reasoning_tokens = (
-                getattr(response.usage_metadata, "thoughts_token_count", 0) or 0
+            input_tokens = 0
+            output_tokens = 0
+            reasoning_tokens = 0
+            if response.usage_metadata:
+                input_tokens = response.usage_metadata.prompt_token_count or 0
+                output_tokens = response.usage_metadata.candidates_token_count or 0
+                reasoning_tokens = (
+                    getattr(response.usage_metadata, "thoughts_token_count", 0) or 0
+                )
+
+            finish_reason = "stop"
+            if response.candidates and len(response.candidates) > 0:
+                candidate = response.candidates[0]
+                if candidate.finish_reason:
+                    fr_str = str(candidate.finish_reason)
+                    finish_reason = fr_str.rsplit(".", 1)[-1].lower()
+
+            return ProviderResponse(
+                content=content,
+                tool_calls=tool_calls,
+                input_tokens=input_tokens,
+                cached_tokens=0,
+                output_tokens=output_tokens,
+                reasoning_tokens=reasoning_tokens,
+                latency_ms=latency_ms,
+                model=self.model,
+                finish_reason=finish_reason,
+                raw_response=response,
             )
-
-        finish_reason = "stop"
-        if response.candidates and len(response.candidates) > 0:
-            candidate = response.candidates[0]
-            if candidate.finish_reason:
-                fr_str = str(candidate.finish_reason)
-                finish_reason = fr_str.rsplit(".", 1)[-1].lower()
-
-        return ProviderResponse(
-            content=content,
-            tool_calls=tool_calls,
-            input_tokens=input_tokens,
-            cached_tokens=0,
-            output_tokens=output_tokens,
-            reasoning_tokens=reasoning_tokens,
-            latency_ms=latency_ms,
-            model=self.model,
-            finish_reason=finish_reason,
-            raw_response=response,
-        )
+        except (KeyError, AttributeError, IndexError, TypeError) as exc:
+            raise ProviderError(
+                f"Malformed API response: {exc}. Raw: {response!r}",
+                provider=self.provider_name,
+            ) from exc
 
     async def stream(
         self,
