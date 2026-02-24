@@ -66,7 +66,7 @@ class TestGenerateTimestamp:
         minute = int(ts[11:13])
         second = int(ts[13:15])
 
-        assert 2020 <= year <= 2030
+        assert year >= 2020
         assert 1 <= month <= 12
         assert 1 <= day <= 31
         assert 0 <= hour <= 23

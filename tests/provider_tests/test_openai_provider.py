@@ -1,9 +1,11 @@
 import os
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from energbench.agent.providers import Message, ToolDefinition
 from energbench.agent.providers.openai_provider import OpenAIProvider
+from energbench.agent.schema.messages import TextContent
 
 
 class TestOpenAIProviderUnit:
@@ -51,6 +53,100 @@ class TestOpenAIProviderUnit:
         assert len(formatted) == 1
         assert formatted[0]["type"] == "function"
         assert formatted[0]["name"] == "test_tool"
+
+    @pytest.mark.asyncio
+    async def test_system_prompt_not_truncated(self):
+        """Full system prompt string must reach the API, not just the first character."""
+        provider = OpenAIProvider(model="gpt-4o-mini", api_key="test")
+
+        full_prompt = "You are a helpful energy analyst assistant."
+        messages = [
+            Message(role="system", content=full_prompt),
+            Message(role="user", content="Hi"),
+        ]
+
+        mock_output = MagicMock()
+        mock_output.type = "message"
+        mock_output.content = [MagicMock(type="output_text", text="Hello")]
+
+        mock_response = MagicMock()
+        mock_response.output = [mock_output]
+        mock_response.usage = MagicMock(input_tokens=10, output_tokens=5)
+        mock_response.model = "gpt-4o-mini"
+        mock_response.id = "resp_test"
+
+        provider.client = MagicMock()
+        provider.client.responses = MagicMock()
+        provider.client.responses.create = AsyncMock(return_value=mock_response)
+
+        await provider.complete(messages)
+
+        call_kwargs = provider.client.responses.create.call_args[1]
+        assert call_kwargs["instructions"] == full_prompt
+
+    @pytest.mark.asyncio
+    async def test_system_prompt_from_content_parts(self):
+        """System prompt should fall back to content_parts when content is empty."""
+        provider = OpenAIProvider(model="gpt-4o-mini", api_key="test")
+
+        messages = [
+            Message(
+                role="system",
+                content="",
+                content_parts=[TextContent(text="Part A"), TextContent(text="Part B")],
+            ),
+            Message(role="user", content="Hi"),
+        ]
+
+        mock_output = MagicMock()
+        mock_output.type = "message"
+        mock_output.content = [MagicMock(type="output_text", text="Hello")]
+
+        mock_response = MagicMock()
+        mock_response.output = [mock_output]
+        mock_response.usage = MagicMock(input_tokens=10, output_tokens=5)
+        mock_response.model = "gpt-4o-mini"
+        mock_response.id = "resp_test"
+
+        provider.client = MagicMock()
+        provider.client.responses = MagicMock()
+        provider.client.responses.create = AsyncMock(return_value=mock_response)
+
+        await provider.complete(messages)
+
+        call_kwargs = provider.client.responses.create.call_args[1]
+        assert call_kwargs["instructions"] == "Part A\nPart B"
+
+
+class TestOpenAIProviderComplete:
+    """Mocked unit tests for OpenAIProvider.complete()."""
+
+    @pytest.mark.asyncio
+    async def test_complete_returns_text_response(self, monkeypatch):
+        """complete() maps a mocked response to a ProviderResponse correctly."""
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
+        provider = OpenAIProvider(model="gpt-4o-mini")
+
+        mock_resp = MagicMock()
+        mock_resp.output_text = "Hello world"
+        mock_resp.output = []
+        mock_resp.usage = MagicMock(
+            input_tokens=10,
+            output_tokens=5,
+            input_tokens_details=MagicMock(cached_tokens=0),
+            output_tokens_details=MagicMock(reasoning_tokens=0),
+        )
+        mock_resp.model = "gpt-4o-mini"
+        mock_resp.status = "completed"
+
+        provider.client = MagicMock()
+        provider.client.responses.create = AsyncMock(return_value=mock_resp)
+
+        result = await provider.complete([Message(role="user", content="Hi")])
+
+        assert result.content == "Hello world"
+        assert result.input_tokens == 10
+        assert result.output_tokens == 5
 
 
 @pytest.mark.integration

@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from datetime import datetime, timezone
 from html import unescape
@@ -49,9 +50,13 @@ class NewYorkDocketTool(DocketBaseTool):
         """
         try:
             base = "https://documents.dps.ny.gov/public"
-            # TODO: Move this token to environment variables or configuration.
-            # See: https://documents.dps.ny.gov/public - NY DPS public API token
-            token = "17-02256"
+            token = os.environ.get("NY_DPS_TOKEN")
+            if not token:
+                return json.dumps({
+                    "error": "NY_DPS_TOKEN environment variable is not set. "
+                    "Please set it to use the New York DPS search.",
+                    "source": "New York PSC",
+                })
             timestamp = generate_timestamp()
             save_csv_path = f"new_york_dps_{mode}_{timestamp}.csv"
 

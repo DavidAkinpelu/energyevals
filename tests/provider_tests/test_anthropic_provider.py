@@ -1,9 +1,40 @@
 import os
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from energbench.agent.providers import Message
 from energbench.agent.providers.anthropic_provider import AnthropicProvider
+
+
+class TestAnthropicProviderUnit:
+    """Mocked unit tests for AnthropicProvider.complete()."""
+
+    @pytest.mark.asyncio
+    async def test_complete_returns_text_response(self, monkeypatch):
+        """complete() maps a mocked response to a ProviderResponse correctly."""
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+        provider = AnthropicProvider(model="claude-sonnet-4-20250514")
+
+        mock_block = MagicMock()
+        mock_block.type = "text"
+        mock_block.text = "Hi"
+
+        mock_resp = MagicMock()
+        mock_resp.content = [mock_block]
+        mock_resp.usage = MagicMock(input_tokens=10, output_tokens=5)
+        mock_resp.usage.cache_read_input_tokens = 0
+        mock_resp.model = "claude-sonnet-4-20250514"
+        mock_resp.stop_reason = "end_turn"
+
+        provider.client = MagicMock()
+        provider.client.messages.create = AsyncMock(return_value=mock_resp)
+
+        result = await provider.complete([Message(role="user", content="Hi")])
+
+        assert result.content == "Hi"
+        assert result.input_tokens == 10
+        assert result.output_tokens == 5
 
 
 @pytest.mark.integration

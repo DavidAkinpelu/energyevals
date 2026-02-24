@@ -83,7 +83,7 @@ agent:
 # Pattern 1: Run all tools (default - currently active)
 tools:
   enabled: true
-  include: [system, search, openweather, gridstatus_api_tool]
+  include: []
   exclude: []
 
 # Pattern 2: Run only specific tools (recommended for faster benchmarks)

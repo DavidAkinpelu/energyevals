@@ -1,12 +1,27 @@
 import csv
 import json
 import os
+import re
 from pathlib import Path
+from typing import Any
 
 from loguru import logger
 
 from energbench.agent.constants import CSV_THRESHOLD, PREVIEW_ROWS
 from energbench.utils import generate_timestamp
+
+_FORMULA_PREFIXES = ("=", "+", "-", "@")
+_SAFE_FILENAME_RE = re.compile(r"[^a-zA-Z0-9_-]")
+
+
+def _sanitize_csv_value(value: Any) -> Any:
+    """Prepend a single quote to strings that start with formula-injection prefixes.
+
+    Prevents spreadsheet applications from interpreting cell values as formulas.
+    """
+    if isinstance(value, str) and value.startswith(_FORMULA_PREFIXES):
+        return "'" + value
+    return value
 
 
 class CSVProcessor:
@@ -53,6 +68,10 @@ class CSVProcessor:
         except json.JSONDecodeError:
             return result, None
 
+        # Tool already saved its own CSV — nothing to do
+        if isinstance(data, dict) and data.get("saved_csv"):
+            return result, None
+
         rows = None
         columns = None
 
@@ -68,21 +87,28 @@ class CSVProcessor:
         if row_count <= self.threshold:
             return result, None
 
+        safe_tool_name = _SAFE_FILENAME_RE.sub("_", tool_name)[:64]
         timestamp = generate_timestamp()
-        csv_filename = f"{tool_name}_{timestamp}.csv"
+        csv_filename = f"{safe_tool_name}_{timestamp}.csv"
         csv_path = self.output_dir / csv_filename
 
         try:
             with open(csv_path, "w", newline="") as f:
                 if rows and isinstance(rows[0], dict):
-                    fieldnames = list(rows[0].keys())
+                    fieldnames = [_sanitize_csv_value(k) for k in rows[0].keys()]
+                    sanitized_rows = [
+                        {_sanitize_csv_value(k): _sanitize_csv_value(v) for k, v in row.items()}
+                        for row in rows
+                    ]
                     dict_writer = csv.DictWriter(f, fieldnames=fieldnames)
                     dict_writer.writeheader()
-                    dict_writer.writerows(rows)
+                    dict_writer.writerows(sanitized_rows)
                 elif columns:
                     list_writer = csv.writer(f)
-                    list_writer.writerow(columns)
-                    list_writer.writerows(rows)
+                    list_writer.writerow([_sanitize_csv_value(c) for c in columns])
+                    list_writer.writerows(
+                        [[_sanitize_csv_value(cell) for cell in row] for row in rows]
+                    )
                 else:
                     return result, None
 

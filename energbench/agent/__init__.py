@@ -6,7 +6,7 @@ from .providers import (
     OpenAIProvider,
     get_provider,
 )
-from .react_agent import AgentBuilder, ReActAgent
+from .react_agent import ReActAgent
 from .schema import (
     AgentConfig,
     AgentRun,
@@ -25,7 +25,6 @@ from .schema import (
 __all__ = [
     # Agent
     "ReActAgent",
-    "AgentBuilder",
     "AgentRun",
     "AgentStep",
     "AgentConfig",

@@ -13,11 +13,13 @@ class ToolCall:
         id: Unique identifier for this tool call.
         name: Name of the tool being called.
         arguments: Arguments passed to the tool.
+        thought_signature: Base64-encoded thought signature (Gemini function calls).
     """
 
     id: str
     name: str
     arguments: dict[str, Any]
+    thought_signature: str | None = None
 
 
 @dataclass
@@ -59,6 +61,25 @@ class ToolResult:
     row_count: int = 0
     csv_path: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_json(self) -> str:
+        """Serialize the result to a JSON string.
+
+        Returns:
+            JSON representation with success, data, error, and metadata fields.
+        """
+        import json
+
+        return json.dumps(
+            {
+                "success": self.success,
+                "data": self.data,
+                "error": self.error,
+                "metadata": self.metadata,
+            },
+            indent=2,
+            default=str,
+        )
 
     def to_context_string(self, csv_threshold: int = CSV_THRESHOLD) -> str:
         """Convert result to a string suitable for LLM context.

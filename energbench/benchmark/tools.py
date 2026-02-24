@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Any
 
+from energbench.agent.exceptions import ToolExecutionError
 from energbench.agent.schema import ToolDefinition, ToolExecutor
 from energbench.mcp.client import MCPClient
 from energbench.tools.base_tool import ToolRegistry
@@ -13,12 +14,41 @@ from .display import print_header
 logger = logging.getLogger(__name__)
 
 
-def filter_tools(all_tools: list[ToolDefinition], config: ToolsConfig) -> list[ToolDefinition]:
+def _build_tool_groups(registry: ToolRegistry) -> dict[str, set[str]]:
+    """Build a mapping of parent tool names to their method names from the registry."""
+    groups: dict[str, set[str]] = {}
+    for method_name, parent_name in registry._method_to_tool.items():
+        groups.setdefault(parent_name, set()).add(method_name)
+    return groups
+
+
+def _expand_names(names: list[str], groups: dict[str, set[str]]) -> set[str]:
+    """Expand a mix of group names and individual tool names into a flat set."""
+    expanded: set[str] = set()
+    for name in names:
+        if name in groups:
+            expanded |= groups[name]
+        else:
+            expanded.add(name)
+    return expanded
+
+
+def filter_tools(
+    all_tools: list[ToolDefinition],
+    config: ToolsConfig,
+    registry: ToolRegistry | None = None,
+) -> list[ToolDefinition]:
     """Filter tools based on include/exclude configuration.
+
+    Both parent tool names (e.g. ``"search"``, ``"openweather"``) and individual
+    tool method names (e.g. ``"search_web"``) are accepted in include/exclude
+    lists.  Parent tool names are resolved dynamically from the *registry*.
 
     Args:
         all_tools: List of all available tools
         config: Tools configuration with include/exclude lists
+        registry: Optional tool registry used to resolve group names.
+            When ``None``, names are matched against individual method names only.
 
     Returns:
         Filtered list of tools
@@ -26,19 +56,52 @@ def filter_tools(all_tools: list[ToolDefinition], config: ToolsConfig) -> list[T
     if not config.enabled:
         return []
 
+    groups = _build_tool_groups(registry) if registry else {}
+
     if config.include:
-        included_names = set(config.include)
+        included_names = _expand_names(config.include, groups)
         tools = [t for t in all_tools if t.name in included_names]
-        logger.info(f"Including only specified tools: {config.include}")
+        logger.info(f"Including only specified tools: {config.include} -> {included_names}")
     else:
         if config.exclude:
-            excluded_names = set(config.exclude)
+            excluded_names = _expand_names(config.exclude, groups)
             tools = [t for t in all_tools if t.name not in excluded_names]
-            logger.info(f"Excluding tools: {config.exclude}")
+            logger.info(f"Excluding tools: {config.exclude} -> {excluded_names}")
         else:
             tools = all_tools
 
     return tools
+
+
+def merge_tools(
+    std_tools: list[ToolDefinition],
+    mcp_tools: list[ToolDefinition],
+) -> list[ToolDefinition]:
+    """Merge standard and MCP tools with MCP-first ordering and std-wins deduplication.
+
+    Result ordering: [MCP-unique tools...] + [all standard tools...]
+
+    On a name collision the standard tool is kept and the MCP version is dropped.
+    A warning is logged for each collision so operators can identify unexpected overlaps.
+
+    Args:
+        std_tools: Standard tools (retained on name collision).
+        mcp_tools: MCP tools (listed first; dropped on name collision with std).
+
+    Returns:
+        Deduplicated list with MCP-unique tools first, followed by all standard tools.
+    """
+    std_names = {t.name for t in std_tools}
+    mcp_unique: list[ToolDefinition] = []
+    for tool in mcp_tools:
+        if tool.name in std_names:
+            logger.warning(
+                f"Tool name conflict: '{tool.name}' exists in both MCP and standard tools. "
+                "Standard tool takes priority."
+            )
+        else:
+            mcp_unique.append(tool)
+    return mcp_unique + std_tools
 
 
 def list_tools(std_registry: ToolRegistry, mcp_client: MCPClient | None = None) -> int:
@@ -89,6 +152,6 @@ def build_tool_executor(
             return result.to_json()
         if mcp_client and tool_name in mcp_tools:
             return await mcp_client.call_tool(tool_name, arguments)
-        return json.dumps({"error": f"Unknown tool: {tool_name}"})
+        raise ToolExecutionError(f"Unknown tool: {tool_name}", tool_name=tool_name)
 
     return executor

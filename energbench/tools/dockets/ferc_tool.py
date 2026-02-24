@@ -117,7 +117,7 @@ class FERCDocketTool(DocketBaseTool):
             }
 
             headers = {"Content-Type": "application/json", "Accept": "application/json"}
-            response = requests.post(url, json=payload, headers=headers)
+            response = requests.post(url, json=payload, headers=headers, timeout=30)
             response.raise_for_status()
             data = response.json()
 
@@ -132,7 +132,7 @@ class FERCDocketTool(DocketBaseTool):
                     "docket_numbers": hit.get("docketNumbers", []),
                     "category": hit.get("category"),
                     "libraries": hit.get("libraries", []),
-                    "accession_number": hit.get("acesssionNumber"),
+                    "accession_number": hit.get("accessionNumber"),
                     "pdf_files": [],
                     "affiliations": [
                         f"{a.get('afType')}: {a.get('affiliation')}"

@@ -233,9 +233,9 @@ class MCPClient:
                 result = await session.call_tool(tool_name, arguments)
 
                 if result.content:
-                    for content in result.content:
-                        if hasattr(content, "text"):
-                            return str(content.text)
+                    parts = [str(c.text) for c in result.content if hasattr(c, "text")]
+                    if parts:
+                        return "".join(parts)
 
                 return json.dumps({"result": "Tool executed successfully"})
 

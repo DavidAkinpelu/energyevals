@@ -3,7 +3,13 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from energbench.agent.constants import CSV_THRESHOLD, MAX_ITERATIONS
+from energbench.agent.constants import (
+    CSV_THRESHOLD,
+    MAX_ITERATIONS,
+    PROVIDER_MAX_RETRIES,
+    PROVIDER_RETRY_BASE_DELAY,
+    TOOL_TIMEOUT,
+)
 
 
 class StepType(Enum):
@@ -23,6 +29,7 @@ class AgentStep:
     Attributes:
         step_type: The type of step (thought, action, observation, answer, error).
         content: The content or description of this step.
+        iteration: 0-based index of the ReAct iteration this step belongs to.
         tool_name: Name of the tool called (for action/observation steps).
         tool_input: Input arguments passed to the tool.
         tool_output: Output returned from the tool.
@@ -33,6 +40,7 @@ class AgentStep:
 
     step_type: StepType
     content: str
+    iteration: int = 0
     tool_name: str | None = None
     tool_input: dict[str, Any] | None = None
     tool_output: str | None = None
@@ -105,3 +113,6 @@ class AgentConfig:
     csv_threshold: int = CSV_THRESHOLD
     csv_output_dir: str = "./agent_outputs"
     system_prompt: str | None = None
+    tool_timeout: float = TOOL_TIMEOUT
+    max_retries: int = PROVIDER_MAX_RETRIES
+    retry_base_delay: float = PROVIDER_RETRY_BASE_DELAY

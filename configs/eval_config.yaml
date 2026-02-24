@@ -7,9 +7,10 @@
 
 judge:
   provider: openai
-  model: gpt-4o
+  model: gpt-5-mini
   temperature: 0.0
   max_tokens: 4096
+  # reasoning_effort: medium  # Only used with OpenAI reasoning models (o1, o3)
 
 # =============================================================================
 # Paths
@@ -56,6 +57,13 @@ tolerances:
 statistics:
   confidence_level: 0.95
   significance_alpha: 0.05
+
+# =============================================================================
+# Comparisons (optional)
+# =============================================================================
+
+# Run paired cross-model significance tests when true
+# compare: true
 
 # =============================================================================
 # Scope (optional)

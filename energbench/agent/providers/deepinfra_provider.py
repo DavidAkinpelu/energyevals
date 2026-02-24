@@ -60,6 +60,7 @@ class DeepInfraProvider(BaseProvider):
             api_key=self.api_key,
             base_url=self.base_url,
         )
+        del self.api_key
 
     @property
     def provider_name(self) -> str:
@@ -216,7 +217,7 @@ class DeepInfraProvider(BaseProvider):
     def _format_multimodal_content(self, msg: Message) -> list[dict[str, Any]]:
         """Format multi-modal content (text + images) for OpenAI-compatible API."""
         content_parts: list[dict[str, Any]] = []
-        for part in msg.content_parts or []:
+        for part in self._extract_content_parts(msg.content_parts or []):
             if isinstance(part, TextContent):
                 content_parts.append({"type": "text", "text": part.text})
             elif isinstance(part, ImageContent):
@@ -231,15 +232,6 @@ class DeepInfraProvider(BaseProvider):
                         "image_url": {
                             "url": f"data:{part.media_type};base64,{part.image_base64}"
                         },
-                    })
-            elif isinstance(part, dict):
-                if part.get("type") == "text":
-                    content_parts.append({"type": "text", "text": part.get("text", "")})
-                elif part.get("type") == "image":
-                    url = part.get("image_url") or f"data:{part.get('media_type', 'image/jpeg')};base64,{part.get('image_base64', '')}"
-                    content_parts.append({
-                        "type": "image_url",
-                        "image_url": {"url": url},
                     })
         return content_parts
 
@@ -261,21 +253,23 @@ class DeepInfraProvider(BaseProvider):
             try:
                 arguments = json.loads(raw_args)
             except json.JSONDecodeError:
-                if not raw_args.startswith("{"):
-                    raw_args = "{" + raw_args + "}"
-                try:
-                    arguments = json.loads(raw_args)
-                except json.JSONDecodeError:
-                    logger.warning(
-                        f"Could not parse arguments for text tool call '{func_name}': {raw_args[:200]}"
-                    )
-                    continue
+                logger.warning(
+                    f"Skipping malformed arguments for tool '{func_name}': {raw_args[:500]!r}"
+                )
+                continue
+
+            if not isinstance(arguments, dict):
+                logger.warning(
+                    f"Tool '{func_name}' arguments are not a dict "
+                    f"(got {type(arguments).__name__}), skipping"
+                )
+                continue
 
             tool_calls.append(
                 ToolCall(
                     id=f"call_{uuid.uuid4().hex[:24]}",
                     name=func_name,
-                    arguments=arguments if isinstance(arguments, dict) else {},
+                    arguments=arguments,
                 )
             )
 

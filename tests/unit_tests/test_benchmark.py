@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from energbench.agent.schema import ModelSpec
+from energbench.agent.schema import ModelSpec, ToolDefinition
 from energbench.benchmark.config import (
     PROVIDERS,
     BenchmarkConfig,
@@ -14,7 +14,9 @@ from energbench.benchmark.config import (
 from energbench.benchmark.data_loader import load_questions
 from energbench.benchmark.models import BenchmarkResult, Question
 from energbench.benchmark.results import save_results
+from energbench.benchmark.tools import _build_tool_groups, _expand_names, filter_tools, merge_tools
 from energbench.core.errors import ConfigurationError
+from energbench.tools.base_tool import ToolRegistry
 
 
 class TestBenchmarkConfig:
@@ -239,7 +241,7 @@ class TestResultsSaving:
             save_answers=True,
         )
 
-        all_results = {"openai/gpt-4o-mini": results}
+        all_results = {"openai/gpt-4o-mini": {1: results}}
         output_path = save_results(all_results, config)
 
         assert output_path.exists()
@@ -306,8 +308,8 @@ class TestResultsSaving:
         )
 
         all_results = {
-            "openai/gpt-4o-mini": results_openai,
-            "anthropic/claude-sonnet-4-20250514": results_anthropic,
+            "openai/gpt-4o-mini": {1: results_openai},
+            "anthropic/claude-sonnet-4-20250514": {1: results_anthropic},
         }
         output_path = save_results(all_results, config)
 
@@ -338,3 +340,127 @@ class TestProviders:
             assert "models" in provider_info
             assert isinstance(provider_info["models"], list)
             assert len(provider_info["models"]) > 0
+
+
+class TestToolGroupFiltering:
+    """Tests for group-based tool filtering (Issue #7)."""
+
+    @pytest.fixture
+    def mock_registry(self):
+        """Build a ToolRegistry with a pre-populated _method_to_tool mapping."""
+        reg = ToolRegistry()
+        reg._method_to_tool = {
+            "search_web": "search",
+            "get_page_contents": "search",
+            "battery_revenue_optimization": "battery_optimization",
+            "list_gridstatus_datasets": "gridstatus_api_tool",
+            "query_gridstatus_dataset": "gridstatus_api_tool",
+        }
+        return reg
+
+    @pytest.fixture
+    def sample_tools(self):
+        return [
+            ToolDefinition(name="search_web", description="Search the web"),
+            ToolDefinition(name="get_page_contents", description="Get page"),
+            ToolDefinition(name="battery_revenue_optimization", description="Battery opt"),
+            ToolDefinition(name="list_gridstatus_datasets", description="List datasets"),
+            ToolDefinition(name="query_gridstatus_dataset", description="Query data"),
+        ]
+
+    def test_include_group(self, sample_tools, mock_registry):
+        cfg = ToolsConfig(enabled=True, include=["search"], exclude=[])
+        result = filter_tools(sample_tools, cfg, registry=mock_registry)
+        names = {t.name for t in result}
+        assert names == {"search_web", "get_page_contents"}
+
+    def test_exclude_group(self, sample_tools, mock_registry):
+        cfg = ToolsConfig(enabled=True, include=[], exclude=["gridstatus_api_tool"])
+        result = filter_tools(sample_tools, cfg, registry=mock_registry)
+        names = {t.name for t in result}
+        assert "list_gridstatus_datasets" not in names
+        assert "query_gridstatus_dataset" not in names
+        assert "search_web" in names
+
+    def test_mix_group_and_individual(self, sample_tools, mock_registry):
+        cfg = ToolsConfig(enabled=True, include=["search", "battery_revenue_optimization"], exclude=[])
+        result = filter_tools(sample_tools, cfg, registry=mock_registry)
+        names = {t.name for t in result}
+        assert names == {"search_web", "get_page_contents", "battery_revenue_optimization"}
+
+    def test_expand_names_group(self, mock_registry):
+        groups = _build_tool_groups(mock_registry)
+        expanded = _expand_names(["battery_optimization"], groups)
+        assert expanded == {"battery_revenue_optimization"}
+
+    def test_expand_names_individual(self, mock_registry):
+        groups = _build_tool_groups(mock_registry)
+        expanded = _expand_names(["search_web"], groups)
+        assert expanded == {"search_web"}
+
+    def test_expand_names_mixed(self, mock_registry):
+        groups = _build_tool_groups(mock_registry)
+        expanded = _expand_names(["battery_optimization", "search_web"], groups)
+        assert expanded == {"battery_revenue_optimization", "search_web"}
+
+    def test_build_tool_groups(self, mock_registry):
+        groups = _build_tool_groups(mock_registry)
+        assert groups["search"] == {"search_web", "get_page_contents"}
+        assert groups["battery_optimization"] == {"battery_revenue_optimization"}
+        assert groups["gridstatus_api_tool"] == {"list_gridstatus_datasets", "query_gridstatus_dataset"}
+
+
+class TestMergeTools:
+    """Tests for merge_tools() — MCP-first ordering with std-wins deduplication."""
+
+    @pytest.fixture
+    def std_tools(self):
+        return [
+            ToolDefinition(name="std_only", description="Standard exclusive tool"),
+            ToolDefinition(name="shared_tool", description="Standard version of shared tool"),
+        ]
+
+    @pytest.fixture
+    def mcp_tools(self):
+        return [
+            ToolDefinition(name="mcp_only", description="MCP exclusive tool"),
+            ToolDefinition(name="shared_tool", description="MCP version of shared tool"),
+        ]
+
+    def test_no_collision_mcp_first(self):
+        """MCP-unique tools appear before standard tools when no name collision."""
+        std = [ToolDefinition(name="std_a", description="std")]
+        mcp = [ToolDefinition(name="mcp_a", description="mcp")]
+        result = merge_tools(std, mcp)
+        names = [t.name for t in result]
+        assert names.index("mcp_a") < names.index("std_a")
+
+    def test_std_wins_on_collision(self, std_tools, mcp_tools):
+        """On name collision the standard ToolDefinition is kept; MCP version is absent."""
+        result = merge_tools(std_tools, mcp_tools)
+        names = [t.name for t in result]
+        # collision name appears exactly once
+        assert names.count("shared_tool") == 1
+        # total length == unique names
+        assert len(result) == 3  # mcp_only, std_only, shared_tool
+        # the retained object is the std version
+        shared = next(t for t in result if t.name == "shared_tool")
+        assert shared.description == "Standard version of shared tool"
+
+    def test_collision_logs_warning(self, std_tools, mcp_tools, caplog):
+        """A warning containing the colliding tool name is emitted for each collision."""
+        import logging
+        with caplog.at_level(logging.WARNING, logger="energbench.benchmark.tools"):
+            merge_tools(std_tools, mcp_tools)
+        assert any("shared_tool" in record.message for record in caplog.records)
+        assert any("Standard tool takes priority" in record.message for record in caplog.records)
+
+    def test_empty_mcp(self, std_tools):
+        """With no MCP tools the result equals std_tools in original order."""
+        result = merge_tools(std_tools, [])
+        assert result == std_tools
+
+    def test_empty_std(self, mcp_tools):
+        """With no standard tools the result equals mcp_tools in original order."""
+        result = merge_tools([], mcp_tools)
+        assert result == mcp_tools

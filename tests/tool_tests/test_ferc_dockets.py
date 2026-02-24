@@ -42,7 +42,7 @@ class TestFERCDocketToolUnit:
                     "docketNumbers": ["ER25-1234"],
                     "category": "Electric",
                     "libraries": ["eLibrary"],
-                    "acesssionNumber": "20250110-5001",
+                    "accessionNumber": "20250110-5001",
                     "affiliations": [
                         {"afType": "Applicant", "affiliation": "Test Energy Corp"},
                     ],

@@ -21,3 +21,6 @@ BATTERY_INITIAL_SOC_FRACTION: float = 0.5 # Initial state of charge as fraction 
 DATA_PREVIEW_SIZE: int = 10 # Number of sample data items to include in API response previews.
 
 CSV_PREVIEW_ROWS: int = 5 # Number of rows to preview when displaying CSV data.
+
+BATTERY_CSV_MAX_FILE_SIZE_MB: int = 200  # Maximum input CSV size for battery optimization.
+BATTERY_CSV_MAX_ROWS: int = 100_000      # Maximum rows loaded from battery optimization CSV.

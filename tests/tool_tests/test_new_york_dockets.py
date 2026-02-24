@@ -1,4 +1,5 @@
 import json
+import os
 from unittest.mock import MagicMock, Mock
 
 import pytest
@@ -28,8 +29,9 @@ class TestNewYorkDocketToolUnit:
         assert "end_date" in tools[0].parameters["required"]
         assert "mode" in tools[0].parameters["properties"]
 
-    def test_search_new_york_success(self, mocker):
+    def test_search_new_york_success(self, mocker, monkeypatch):
         """Test successful NY DPS search with mocked session (two-step flow)."""
+        monkeypatch.setenv("NY_DPS_TOKEN", "test-token")
         # Step 1: search results page returns HTML with hidden fields
         search_html = """
         <html><body>
@@ -135,6 +137,20 @@ class TestNewYorkDocketToolUnit:
         result_data = json.loads(result)
         assert "error" in result_data
 
+    def test_search_new_york_missing_token(self, monkeypatch):
+        """Missing NY_DPS_TOKEN should return a clear error."""
+        monkeypatch.delenv("NY_DPS_TOKEN", raising=False)
+
+        tool = NewYorkDocketTool()
+        result = tool.search_new_york(
+            start_date="01/01/2025",
+            end_date="01/31/2025",
+        )
+
+        result_data = json.loads(result)
+        assert "error" in result_data
+        assert "NY_DPS_TOKEN" in result_data["error"]
+
     def test_search_new_york_exception_handling(self, mocker):
         """Test generic exception handling in NY DPS search."""
         mock_session_instance = MagicMock()
@@ -163,6 +179,8 @@ class TestNewYorkDocketToolIntegration:
 
     def test_search_new_york_real_api(self):
         """Test NY DPS search against the real website."""
+        if not os.getenv("NY_DPS_TOKEN"):
+            pytest.skip("NY_DPS_TOKEN not set")
         tool = NewYorkDocketTool()
         try:
             result = tool.search_new_york(

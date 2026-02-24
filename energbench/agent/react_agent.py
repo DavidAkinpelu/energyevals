@@ -1,18 +1,22 @@
+import asyncio
 import json
 import re
 import time
-from typing import Any, Self
+from typing import Any
 
 from loguru import logger
 
 from .constants import (
     CSV_THRESHOLD,
     MAX_ITERATIONS,
+    PROVIDER_MAX_RETRIES,
+    PROVIDER_RETRY_BASE_DELAY,
     QUERY_TRUNCATE_LENGTH,
-    TOOL_RESULT_PREVIEW_LENGTH,
+    TOOL_TIMEOUT,
 )
 
 _RAW_TOOL_CALL_RE = re.compile(r"<function=\w+.*?</function>", re.DOTALL)
+from .exceptions import ProviderError, ToolExecutionError
 from .processors import ResultProcessor
 from .prompts import get_system_prompt
 from .providers import BaseProvider, ProviderResponse, ToolDefinition
@@ -46,6 +50,9 @@ class ReActAgent:
         csv_threshold: int = CSV_THRESHOLD,
         csv_output_dir: str = "./agent_outputs",
         result_processor: ResultProcessor | None = None,
+        tool_timeout: float = TOOL_TIMEOUT,
+        max_retries: int = PROVIDER_MAX_RETRIES,
+        retry_base_delay: float = PROVIDER_RETRY_BASE_DELAY,
     ):
         """Initialize the ReAct agent.
 
@@ -58,6 +65,9 @@ class ReActAgent:
             csv_threshold: Row count threshold for saving results to CSV (default: 20).
             csv_output_dir: Directory to save CSV files (default: "./agent_outputs").
             result_processor: Custom result processor. If None, creates default.
+            tool_timeout: Seconds before a stalled tool call is cancelled (default: 60).
+            max_retries: Maximum retries for provider complete() on transient errors (default: 3).
+            retry_base_delay: Base delay in seconds for exponential backoff (default: 1.0).
         """
         self.provider = provider
         self.tools = tools or []
@@ -69,6 +79,9 @@ class ReActAgent:
             csv_output_dir=csv_output_dir,
         )
         self._tool_registry: dict[str, ToolDefinition] = {t.name: t for t in self.tools}
+        self.tool_timeout = tool_timeout
+        self.max_retries = max_retries
+        self.retry_base_delay = retry_base_delay
 
     def register_tool(self, tool: ToolDefinition) -> None:
         self.tools.append(tool)
@@ -111,7 +124,7 @@ class ReActAgent:
 
                 if response.tool_calls:
                     await self._process_tool_calls(
-                        response, messages, run
+                        response, messages, run, iteration
                     )
                 else:
                     if response.content and _RAW_TOOL_CALL_RE.search(response.content):
@@ -125,6 +138,7 @@ class ReActAgent:
                         AgentStep(
                             step_type=StepType.ANSWER,
                             content=response.content,
+                            iteration=iteration,
                             tokens_used=response.input_tokens + response.output_tokens,
                             latency_ms=response.latency_ms,
                         )
@@ -190,17 +204,38 @@ class ReActAgent:
         return full_prompt
 
     async def _get_response(self, messages: list[Message]) -> ProviderResponse:
-        return await self.provider.complete(
+        return await self._retry_complete(
             messages=messages,
             tools=self.tools if self.tools else None,
-            temperature=0.0,
         )
+
+    async def _retry_complete(
+        self,
+        messages: list[Message],
+        tools: list[ToolDefinition] | None,
+    ) -> ProviderResponse:
+        last_error: Exception | None = None
+        for attempt in range(1 + self.max_retries):
+            try:
+                return await self.provider.complete(messages, tools=tools, temperature=0.0)
+            except Exception as e:
+                last_error = e
+                if attempt >= self.max_retries:
+                    break
+                delay = self.retry_base_delay * (2 ** attempt)
+                logger.warning(
+                    f"Provider call failed (attempt {attempt + 1}/{1 + self.max_retries}), "
+                    f"retrying in {delay:.1f}s: {e}"
+                )
+                await asyncio.sleep(delay)
+        raise ProviderError(str(last_error), provider=self.provider.provider_name)
 
     async def _process_tool_calls(
         self,
         response: ProviderResponse,
         messages: list[Message],
         run: AgentRun,
+        iteration: int = 0,
     ) -> None:
         messages.append(
             Message(
@@ -211,6 +246,7 @@ class ReActAgent:
                         "id": tc.id,
                         "name": tc.name,
                         "arguments": tc.arguments,
+                        "thought_signature": tc.thought_signature,
                     }
                     for tc in response.tool_calls
                 ]
@@ -219,15 +255,33 @@ class ReActAgent:
             )
         )
 
+        # Log the model's reasoning as a THOUGHT step (owns the LLM latency + tokens).
+        if response.content:
+            run.steps.append(
+                AgentStep(
+                    step_type=StepType.THOUGHT,
+                    content=response.content,
+                    iteration=iteration,
+                    tokens_used=response.input_tokens + response.output_tokens,
+                    latency_ms=response.latency_ms,
+                )
+            )
+
+        llm_call_timestamp = time.time()
+
         for tool_call in response.tool_calls or []:
             run.tool_calls_count += 1
 
             action_step = AgentStep(
                 step_type=StepType.ACTION,
                 content=f"Calling {tool_call.name}",
+                iteration=iteration,
                 tool_name=tool_call.name,
                 tool_input=tool_call.arguments,
-                latency_ms=response.latency_ms,
+                # Latency belongs to the THOUGHT step (the LLM call); tool
+                # execution latency is captured on the OBSERVATION step.
+                latency_ms=0.0,
+                timestamp=llm_call_timestamp,
             )
             run.steps.append(action_step)
 
@@ -238,9 +292,14 @@ class ReActAgent:
                 tool_result = await self._execute_tool(
                     tool_call.name, tool_call.arguments
                 )
+            except asyncio.TimeoutError:
+                error_payload = {"error": f"Tool '{tool_call.name}' timed out after {self.tool_timeout}s"}
+                logger.error(error_payload["error"])
+                tool_result = json.dumps(error_payload)
             except Exception as e:
-                tool_result = json.dumps({"error": str(e)})
-                logger.error(f"Tool execution failed: {e}")
+                error_payload = {"error": str(e), "tool": tool_call.name, "error_type": type(e).__name__}
+                logger.error(f"Tool '{tool_call.name}' failed: {e}", exc_info=True)
+                tool_result = json.dumps(error_payload)
 
             execution_time = (time.time() - start_time) * 1000
 
@@ -248,14 +307,14 @@ class ReActAgent:
                 tool_call.name, tool_result
             )
 
-            log_preview = tool_result[:TOOL_RESULT_PREVIEW_LENGTH] + "..." if len(tool_result) > TOOL_RESULT_PREVIEW_LENGTH else tool_result
-            logger.debug(f"Tool {tool_call.name} result (truncated): {log_preview}")
+            logger.debug(f"Tool {tool_call.name} returned {len(tool_result)} chars")
             if csv_path:
                 logger.info(f"Large result saved to CSV: {csv_path}")
 
             obs_step = AgentStep(
                 step_type=StepType.OBSERVATION,
                 content=context_result,
+                iteration=iteration,
                 tool_name=tool_call.name,
                 tool_output=tool_result,
                 latency_ms=execution_time,
@@ -318,12 +377,12 @@ class ReActAgent:
         arguments: dict[str, Any],
     ) -> str:
         if tool_name not in self._tool_registry:
-            return json.dumps({"error": f"Unknown tool: {tool_name}"})
+            raise ToolExecutionError(f"Unknown tool: {tool_name}", tool_name=tool_name)
 
         result = self.tool_executor(tool_name, arguments)
 
         if hasattr(result, "__await__"):
-            result = await result
+            result = await asyncio.wait_for(result, timeout=self.tool_timeout)
 
         if isinstance(result, dict):
             return json.dumps(result, indent=2, default=str)
@@ -343,78 +402,3 @@ class ReActAgent:
             }
         )
 
-
-class AgentBuilder:
-    """Builder pattern for creating ReAct agents."""
-
-    def __init__(self) -> None:
-        self._provider: BaseProvider | None = None
-        self._tools: list[ToolDefinition] = []
-        self._tool_executor: ToolExecutor | None = None
-        self._max_iterations: int = MAX_ITERATIONS
-        self._system_prompt: str | None = None
-        self._csv_threshold: int = CSV_THRESHOLD
-        self._csv_output_dir: str = "./agent_outputs"
-
-    def with_provider(self, provider: BaseProvider) -> Self:
-        """Set the LLM provider."""
-        self._provider = provider
-        return self
-
-    def with_tool(self, tool: ToolDefinition) -> Self:
-        """Add a tool to the agent."""
-        self._tools.append(tool)
-        return self
-
-    def with_tools(self, tools: list[ToolDefinition]) -> Self:
-        """Add multiple tools to the agent."""
-        self._tools.extend(tools)
-        return self
-
-    def with_tool_executor(self, executor: ToolExecutor) -> Self:
-        """Set the tool executor function."""
-        self._tool_executor = executor
-        return self
-
-    def with_max_iterations(self, max_iterations: int) -> Self:
-        """Set the maximum number of iterations."""
-        self._max_iterations = max_iterations
-        return self
-
-    def with_system_prompt(self, prompt: str) -> Self:
-        """Set a custom system prompt."""
-        self._system_prompt = prompt
-        return self
-
-    def with_csv_threshold(self, threshold: int) -> Self:
-        """Set the row count threshold for saving results to CSV."""
-        self._csv_threshold = threshold
-        return self
-
-    def with_csv_output_dir(self, directory: str) -> Self:
-        """Set the directory for CSV output files."""
-        self._csv_output_dir = directory
-        return self
-
-    def with_config(self, config: AgentConfig) -> Self:
-        """Apply configuration from an AgentConfig object."""
-        self._max_iterations = config.max_iterations
-        self._csv_threshold = config.csv_threshold
-        self._csv_output_dir = config.csv_output_dir
-        self._system_prompt = config.system_prompt
-        return self
-
-    def build(self) -> ReActAgent:
-        """Build the configured agent."""
-        if self._provider is None:
-            raise ValueError("Provider is required")
-
-        return ReActAgent(
-            provider=self._provider,
-            tools=self._tools,
-            tool_executor=self._tool_executor,
-            max_iterations=self._max_iterations,
-            system_prompt=self._system_prompt,
-            csv_threshold=self._csv_threshold,
-            csv_output_dir=self._csv_output_dir,
-        )
