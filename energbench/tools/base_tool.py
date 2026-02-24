@@ -1,16 +1,15 @@
 import inspect
-import json
 import re as _re
 import types
 from abc import ABC
 from collections.abc import Callable
-from dataclasses import dataclass, field
 from importlib.metadata import entry_points
 from typing import Any, Literal, Union, get_args, get_origin, get_type_hints
 
 from loguru import logger
 
 from energbench.agent.providers import ToolDefinition
+from energbench.agent.schema.tools import ToolResult
 from energbench.core.errors import APIError, ToolError
 
 # ---------------------------------------------------------------------------
@@ -44,32 +43,6 @@ def tool_method(
         return func
 
     return decorator
-
-
-# ---------------------------------------------------------------------------
-# ToolResult
-# ---------------------------------------------------------------------------
-
-@dataclass
-class ToolResult:
-    """Result from a tool execution."""
-
-    success: bool
-    data: Any
-    error: str | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-    def to_json(self) -> str:
-        return json.dumps(
-            {
-                "success": self.success,
-                "data": self.data,
-                "error": self.error,
-                "metadata": self.metadata,
-            },
-            indent=2,
-            default=str,
-        )
 
 
 # ---------------------------------------------------------------------------

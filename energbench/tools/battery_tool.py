@@ -19,6 +19,8 @@ from energbench.utils import generate_timestamp
 
 from .base_tool import BaseTool, tool_method
 from .constants import (
+    BATTERY_CSV_MAX_FILE_SIZE_MB,
+    BATTERY_CSV_MAX_ROWS,
     BATTERY_INITIAL_SOC_FRACTION,
     BATTERY_ROUNDING_PROFILE,
     BATTERY_ROUNDING_SUMMARY,
@@ -38,7 +40,19 @@ class BatteryOptimizationTool(BaseTool):
     def _load_csv(csv_path: str) -> pd.DataFrame:
         if not os.path.exists(csv_path):
             raise FileNotFoundError(f"CSV file not found at path: {csv_path}")
-        return pd.read_csv(csv_path)
+        size_bytes = os.path.getsize(csv_path)
+        max_bytes = BATTERY_CSV_MAX_FILE_SIZE_MB * 1024 * 1024
+        if size_bytes > max_bytes:
+            raise ValueError(
+                f"CSV file is {size_bytes / 1024 / 1024:.1f} MB, "
+                f"exceeding the {BATTERY_CSV_MAX_FILE_SIZE_MB} MB limit."
+            )
+        df = pd.read_csv(csv_path)
+        if len(df) > BATTERY_CSV_MAX_ROWS:
+            raise ValueError(
+                f"CSV has {len(df):,} rows, exceeding the {BATTERY_CSV_MAX_ROWS:,} row limit."
+            )
+        return df
 
     @tool_method()
     def battery_revenue_optimization(
@@ -94,6 +108,15 @@ class BatteryOptimizationTool(BaseTool):
 
             energy_price = df[energy_price_column].values
             horizon = int(days * 24 / timestep_in_hours)
+
+            if horizon > len(energy_price):
+                return json.dumps({
+                    "error": (
+                        f"Requested horizon ({horizon} intervals = {days} days) "
+                        f"exceeds available price data ({len(energy_price)} intervals). "
+                        f"Reduce 'days' or provide a longer CSV."
+                    ),
+                })
 
             battery_size_mwh = battery_size_mw * battery_duration
             charge_eff = np.sqrt(round_trip_efficiency)
@@ -210,7 +233,7 @@ class BatteryOptimizationTool(BaseTool):
                     "total_revenue": round(total_revenue, BATTERY_ROUNDING_SUMMARY),
                     "charging_cost": round(charging_cost, BATTERY_ROUNDING_SUMMARY),
                     "degradation_penalty": round(degradation_penalty, BATTERY_ROUNDING_SUMMARY),
-                    "rows": output_rows,
+                    "row_count": len(output_rows),
                     "saved_csv": save_csv_path,
                 },
                 indent=2,

@@ -54,6 +54,7 @@ class GoogleProvider(BaseProvider):
 
         self.client = genai.Client(api_key=self.api_key)
         self._types = types
+        del self.api_key
 
     @property
     def provider_name(self) -> str:
@@ -75,6 +76,8 @@ class GoogleProvider(BaseProvider):
         config_kwargs: dict[str, Any] = {
             "temperature": temperature,
         }
+        if max_tokens:
+            config_kwargs["max_output_tokens"] = max_tokens
         if system_msg:
             config_kwargs["system_instruction"] = system_msg
         if tools:
@@ -103,11 +106,20 @@ class GoogleProvider(BaseProvider):
                         if tool_calls is None:
                             tool_calls = []
                         fc = part.function_call
+                        thought_signature = None
+                        if getattr(part, "thought_signature", None):
+                            if isinstance(part.thought_signature, bytes):
+                                thought_signature = base64.b64encode(
+                                    part.thought_signature
+                                ).decode("ascii")
+                            else:
+                                thought_signature = str(part.thought_signature)
                         tool_calls.append(
                             ToolCall(
                                 id=f"call_{len(tool_calls)}",
                                 name=str(fc.name),
                                 arguments=dict(fc.args) if fc.args else {},
+                                thought_signature=thought_signature,
                             )
                         )
 
@@ -155,6 +167,8 @@ class GoogleProvider(BaseProvider):
         config_kwargs: dict[str, Any] = {
             "temperature": temperature,
         }
+        if max_tokens:
+            config_kwargs["max_output_tokens"] = max_tokens
         if system_msg:
             config_kwargs["system_instruction"] = system_msg
         if tools:
@@ -223,7 +237,10 @@ class GoogleProvider(BaseProvider):
         }
 
         if "enum" in prop:
-            schema_kwargs["enum"] = prop["enum"]
+            enum_values = prop["enum"]
+            # google-genai Schema.enum currently only accepts strings.
+            if all(isinstance(value, str) for value in enum_values):
+                schema_kwargs["enum"] = enum_values
 
         if prop_type == "array" and "items" in prop:
             schema_kwargs["items"] = self._convert_property_to_gemini(prop["items"])
@@ -240,7 +257,7 @@ class GoogleProvider(BaseProvider):
         """Format multi-modal content (text + images) for Gemini."""
         types = self._types
         parts: list[Any] = []
-        for part in msg.content_parts or []:
+        for part in self._extract_content_parts(msg.content_parts or []):
             if isinstance(part, TextContent):
                 parts.append(types.Part.from_text(text=part.text))
             elif isinstance(part, ImageContent):
@@ -249,16 +266,6 @@ class GoogleProvider(BaseProvider):
                         types.Part.from_bytes(
                             data=base64.b64decode(part.image_base64),
                             mime_type=part.media_type,
-                        )
-                    )
-            elif isinstance(part, dict):
-                if part.get("type") == "text":
-                    parts.append(types.Part.from_text(text=part.get("text", "")))
-                elif part.get("type") == "image":
-                    parts.append(
-                        types.Part.from_bytes(
-                            data=base64.b64decode(part.get("image_base64", "")),
-                            mime_type=part.get("media_type", "image/jpeg"),
                         )
                     )
         return parts
@@ -294,12 +301,19 @@ class GoogleProvider(BaseProvider):
                 if msg.content:
                     parts.append(types.Part.from_text(text=msg.content))
                 for tc in msg.tool_calls:
-                    parts.append(
-                        types.Part.from_function_call(
-                            name=tc["name"],
-                            args=tc["arguments"],
-                        )
+                    part = types.Part.from_function_call(
+                        name=tc["name"],
+                        args=tc["arguments"],
                     )
+                    thought_signature = tc.get("thought_signature") or tc.get("thoughtSignature")
+                    if thought_signature is not None:
+                        # thought_signature is stored as a base64 str in ToolCall,
+                        # but Google's Part expects bytes.
+                        if isinstance(thought_signature, str):
+                            part.thought_signature = base64.b64decode(thought_signature)
+                        else:
+                            part.thought_signature = thought_signature
+                    parts.append(part)
                 formatted.append(types.Content(role="model", parts=parts))
             elif msg.content_parts and msg.has_images:
                 parts = self._format_multimodal_content(msg)

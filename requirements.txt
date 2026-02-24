@@ -15,3 +15,4 @@ requests>=2.31
 beautifulsoup4>=4.12
 aiohttp>=3.9
 loguru>=0.7
+scipy>=1.10

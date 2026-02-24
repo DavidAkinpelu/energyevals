@@ -1,7 +1,6 @@
 from typing import Any  # noqa: E402
 
 from .agent import (
-    AgentBuilder,
     AgentRun,
     AnthropicProvider,
     BaseProvider,
@@ -69,7 +68,6 @@ __all__ = [
     "PathLike",
     "ensure_path",
     "ReActAgent",
-    "AgentBuilder",
     "AgentRun",
     "BaseProvider",
     "OpenAIProvider",

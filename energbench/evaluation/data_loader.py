@@ -4,6 +4,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+_REQUIRED_EVAL_COLUMNS = {"S/N", "Question", "Answer", "Approach", "Category"}
+
 from .models import (
     BenchmarkResultEntry,
     CostEstimate,
@@ -31,6 +33,15 @@ def load_eval_data(csv_path: Path | str) -> list[dict[str, Any]]:
         reader = csv.DictReader(f)
         for row in reader:
             rows.append(dict(row))
+
+    if rows:
+        missing = _REQUIRED_EVAL_COLUMNS - set(rows[0].keys())
+        if missing:
+            raise ValueError(
+                f"Dataset CSV '{csv_path}' is missing required columns: {sorted(missing)}. "
+                f"Use eval_samples_with_answers.csv, not eval_samples.csv."
+            )
+
     return rows
 
 
@@ -97,7 +108,12 @@ def _resolve_trace_file(trace_dir: Path, question_num: int) -> Path:
 
 
 def _parse_latency_breakdown(steps: list[dict]) -> LatencyBreakdown:
-    """Compute latency breakdown from trace steps."""
+    """Compute latency breakdown from trace steps.
+
+    LLM thinking time is read from ``thought`` steps (one per iteration).
+    Tool execution time is read from ``observation`` steps.
+    Final answer latency is included in ``llm_thinking_ms``.
+    """
     llm_ms = 0.0
     tool_ms = 0.0
     per_tool: dict[str, float] = {}
@@ -105,12 +121,15 @@ def _parse_latency_breakdown(steps: list[dict]) -> LatencyBreakdown:
     for step in steps:
         lat = step.get("latency_ms") or 0.0
         stype = step.get("step_type", "")
-        if stype == "action":
+
+        if stype == "thought":
             llm_ms += lat
         elif stype == "observation":
             tool_ms += lat
             tool_name = step.get("tool_name") or "unknown"
             per_tool[tool_name] = per_tool.get(tool_name, 0.0) + lat
+        elif stype == "answer":
+            llm_ms += lat
 
     return LatencyBreakdown(
         wall_clock_ms=llm_ms + tool_ms,

@@ -10,9 +10,10 @@ from .strategy import VALID_STRATEGIES
 class JudgeConfig:
     """LLM judge settings."""
     provider: str = "openai"
-    model: str = "gpt-4o"
+    model: str = "gpt-5-mini"
     temperature: float = 0.0
     max_tokens: int = 4096
+    reasoning_effort: str | None = None
 
 
 @dataclass
@@ -69,6 +70,7 @@ def load_eval_config(path: Path | str | None = None, base_path: Path | None = No
         model=judge_data.get("model", "gpt-4o"),
         temperature=judge_data.get("temperature", 0.0),
         max_tokens=judge_data.get("max_tokens", 4096),
+        reasoning_effort=judge_data.get("reasoning_effort"),
     )
 
     strategy_data = data.get("strategy", {})
@@ -116,4 +118,5 @@ def load_eval_config(path: Path | str | None = None, base_path: Path | None = No
         rel_tol=tolerances.get("rel_tol", 0.5),
         confidence_level=stats.get("confidence_level", 0.95),
         significance_alpha=stats.get("significance_alpha", 0.05),
+        compare=bool(data.get("compare", False)),
     )

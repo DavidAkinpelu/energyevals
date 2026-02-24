@@ -6,6 +6,7 @@ from energbench.agent.schema import (
     ToolCall,
     ToolDefinition,
 )
+from energbench.core.types import ProviderName
 
 from .anthropic_provider import AnthropicProvider
 from .base_provider import BaseProvider
@@ -17,6 +18,7 @@ __all__ = [
     # Base classes
     "BaseProvider",
     "Message",
+    "ProviderName",
     "ProviderResponse",
     "ToolCall",
     "ToolDefinition",
@@ -46,11 +48,11 @@ def get_provider(
     Raises:
         ValueError: If provider_name is not recognized.
     """
-    providers: dict[str, type[BaseProvider]] = {
-        "openai": OpenAIProvider,
-        "anthropic": AnthropicProvider,
-        "google": GoogleProvider,
-        "deepinfra": DeepInfraProvider,
+    providers: dict[ProviderName, type[BaseProvider]] = {
+        ProviderName.OPENAI: OpenAIProvider,
+        ProviderName.ANTHROPIC: AnthropicProvider,
+        ProviderName.GOOGLE: GoogleProvider,
+        ProviderName.DEEPINFRA: DeepInfraProvider,
     }
 
     if provider_name not in providers:
@@ -59,7 +61,7 @@ def get_provider(
             f"Available providers: {list(providers.keys())}"
         )
 
-    provider_class = providers[provider_name]
+    provider_class = providers[provider_name]  # type: ignore[index]
 
     if model:
         return provider_class(model=model, **kwargs)

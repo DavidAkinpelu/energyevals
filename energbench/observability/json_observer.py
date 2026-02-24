@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -14,8 +15,19 @@ from loguru import logger
 
 from energbench.agent.schema import AgentRun, AgentStep, StepType
 
-from .base import BaseObserver
+from .base import BaseObserver, TraceMetadata
 from .constants import ERROR_PREVIEW_LENGTH, RAW_ERROR_LENGTH
+
+_SAFE_NAME_RE = re.compile(r"[^a-zA-Z0-9._-]")
+
+
+def _sanitize_path_component(value: str) -> str:
+    """Sanitize a string for safe use as a path component.
+
+    Replaces any character that is not alphanumeric, dot, underscore, or dash
+    with an underscore and truncates to 128 characters.
+    """
+    return _SAFE_NAME_RE.sub("_", value)[:128]
 
 
 class JSONFileObserver(BaseObserver):
@@ -88,7 +100,7 @@ class JSONFileObserver(BaseObserver):
     def trace_agent_run(
         self,
         run: AgentRun,
-        metadata: dict[str, Any] | None = None,
+        metadata: "TraceMetadata | None" = None,
         tags: list[str] | None = None,
         user_id: str | None = None,
         session_id: str | None = None,
@@ -139,7 +151,7 @@ class JSONFileObserver(BaseObserver):
         self,
         trace_id: str,
         run: AgentRun,
-        metadata: dict[str, Any] | None,
+        metadata: "TraceMetadata | None",
         tags: list[str] | None,
         user_id: str | None,
         session_id: str | None,
@@ -232,6 +244,7 @@ class JSONFileObserver(BaseObserver):
         """Serialize a single step with complete data."""
         step_data = {
             "index": index,
+            "iteration": step.iteration,
             "step_type": step.step_type.value,
             "timestamp": datetime.fromtimestamp(step.timestamp).isoformat() if step.timestamp else None,
             "timestamp_unix": step.timestamp,
@@ -269,7 +282,7 @@ class JSONFileObserver(BaseObserver):
         self,
         trace_id: str,
         trace_data: dict[str, Any],
-        metadata: dict[str, Any] | None = None,
+        metadata: "TraceMetadata | None" = None,
     ) -> None:
         """Write trace to file.
 
@@ -281,12 +294,15 @@ class JSONFileObserver(BaseObserver):
             {output_dir}/trace_{trace_id}.json
         """
         if metadata and all(k in metadata for k in ("provider", "model", "question_id")):
-            model_dir = f"{metadata['provider']}_{metadata['model']}"
+            provider = _sanitize_path_component(str(metadata["provider"]))
+            model = _sanitize_path_component(str(metadata["model"]))
+            question_id = _sanitize_path_component(str(metadata["question_id"]))
+            model_dir = f"{provider}_{model}"
             trace_output_dir = self.output_dir / model_dir
             if self._trial is not None:
                 trace_output_dir = trace_output_dir / f"trial_{self._trial}"
             trace_output_dir.mkdir(parents=True, exist_ok=True)
-            filename = f"trace_q{metadata['question_id']}_{trace_id}.json"
+            filename = f"trace_q{question_id}_{trace_id}.json"
         else:
             trace_output_dir = self.output_dir
             filename = f"trace_{trace_id}.json"
@@ -301,6 +317,7 @@ class JSONFileObserver(BaseObserver):
                 finally:
                     if _HAS_FCNTL:
                         fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            filepath.chmod(0o600)
             logger.debug(f"Appended trace to {filepath}")
         else:
             filepath = trace_output_dir / filename
@@ -309,6 +326,7 @@ class JSONFileObserver(BaseObserver):
                     json.dump(trace_data, f, indent=2, default=str, ensure_ascii=False)
                 else:
                     json.dump(trace_data, f, default=str, ensure_ascii=False)
+            filepath.chmod(0o600)
             logger.debug(f"Wrote trace to {filepath}")
 
     def flush(self) -> None:

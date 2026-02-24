@@ -88,29 +88,28 @@ Copy `.env.example` for a template.
 
 ### MCP Servers
 
-MCP servers provide RAG and database access. They run locally by default.
-
-**Local Setup:**
-
-```bash
-# Install servers
-pip install ./mcp-servers/rag-server
-pip install ./mcp-servers/database-server
-
-# Configure credentials in mcp-servers/*/.env
-# Servers are auto-discovered by the agent
-```
-
-**Remote Setup:**
-
-To use deployed servers, add URLs to your `.env`:
+MCP servers provide RAG and database access. They connect via remote URLs configured
+in your `.env` file. Set the URL env vars below to enable them; if neither is set,
+MCP is effectively disabled even with `mcp.enabled: true`.
 
 ```bash
 RAG_SERVER_URL=https://your-rag-server.com/sse
 DATABASE_SERVER_URL=https://your-db-server.com/sse
 ```
 
-MCP servers are maintained in a separate repository. See `mcp-servers/DEPLOYMENT_GUIDE.md` for deployment instructions.
+**Local server setup (advanced):**
+
+Local stdio servers are supported but must be configured manually — they are not
+auto-discovered. Install the servers first, then construct `MCPServerConfig` objects
+with a `command` field instead of a `url` field (see `docs/MCP_CLIENT_USAGE.md`).
+
+```bash
+# Install local servers
+pip install ./mcp-servers/rag-server
+pip install ./mcp-servers/database-server
+```
+
+See `mcp-servers/DEPLOYMENT_GUIDE.md` for remote deployment instructions.
 
 ## Usage
 

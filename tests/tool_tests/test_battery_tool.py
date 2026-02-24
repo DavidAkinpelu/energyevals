@@ -98,6 +98,25 @@ class TestBatteryOptimizationToolUnit:
         assert "not found" in result_data["error"].lower()
 
     @pytest.mark.asyncio
+    async def test_horizon_exceeds_csv_length(self, price_csv):
+        """Requesting more days than the CSV contains must return a clear error."""
+        tool = BatteryOptimizationTool()
+
+        result = tool.battery_revenue_optimization(
+            run_description="test",
+            csv_path=price_csv,
+            energy_price_column="price",
+            battery_size_mw=1.0,
+            battery_duration=2.0,
+            timestep_in_hours=1.0,
+            days=5.0,  # 120 intervals, but CSV only has 24
+        )
+
+        result_data = json.loads(result)
+        assert "error" in result_data
+        assert "horizon" in result_data["error"].lower() or "exceeds" in result_data["error"].lower()
+
+    @pytest.mark.asyncio
     async def test_load_csv_helper(self, price_csv):
         """Test the _load_csv helper method."""
         tool = BatteryOptimizationTool()

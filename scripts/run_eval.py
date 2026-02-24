@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import asyncio
 import sys
 from pathlib import Path
 
@@ -123,7 +124,7 @@ def main() -> int:
     print(f"  Compare:       {config.compare}")
     print(f"  Strategy:      default={config.default_strategy}, categories={config.category_strategies or '{}'}")
 
-    reports = run_evaluation(config)
+    reports = asyncio.run(run_evaluation(config))
 
     if not reports:
         print("\n  No reports generated. Check your paths and trace directories.")

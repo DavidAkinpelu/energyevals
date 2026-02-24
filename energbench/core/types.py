@@ -1,6 +1,20 @@
+from enum import StrEnum
 from pathlib import Path
 
 PathLike = str | Path
+
+
+class ProviderName(StrEnum):
+    """Known LLM provider identifiers.
+
+    Using StrEnum so values compare equal to plain strings — existing code that
+    checks ``model_spec.provider == "openai"`` continues to work without changes.
+    """
+
+    OPENAI = "openai"
+    ANTHROPIC = "anthropic"
+    GOOGLE = "google"
+    DEEPINFRA = "deepinfra"
 
 
 def ensure_path(p: PathLike) -> Path:

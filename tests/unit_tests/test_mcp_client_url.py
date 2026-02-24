@@ -110,22 +110,21 @@ class TestMCPClientConnection:
 
         client = MCPClient([config])
 
-        # Mock the _connect_stdio method
-        client._connect_stdio = AsyncMock()
-        client._connect_sse = AsyncMock()
-
         # Mock session and tools
         mock_session = MagicMock()
         mock_tools_result = MagicMock()
         mock_tools_result.tools = []
         mock_session.list_tools = AsyncMock(return_value=mock_tools_result)
-        client._sessions["test-server"] = mock_session
+
+        # Mock the transport-level methods (what _connect_server actually calls)
+        client._open_stdio = AsyncMock(return_value=mock_session)
+        client._open_sse = AsyncMock(return_value=mock_session)
 
         await client.connect()
 
         # Verify stdio was called, not SSE
-        client._connect_stdio.assert_called_once()
-        client._connect_sse.assert_not_called()
+        client._open_stdio.assert_called_once()
+        client._open_sse.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_connect_routes_to_sse(self):
@@ -137,38 +136,35 @@ class TestMCPClientConnection:
 
         client = MCPClient([config])
 
-        # Mock the connection methods
-        client._connect_stdio = AsyncMock()
-        client._connect_sse = AsyncMock()
-
         # Mock session and tools
         mock_session = MagicMock()
         mock_tools_result = MagicMock()
         mock_tools_result.tools = []
         mock_session.list_tools = AsyncMock(return_value=mock_tools_result)
-        client._sessions["test-server"] = mock_session
+
+        # Mock the transport-level methods (what _connect_server actually calls)
+        client._open_stdio = AsyncMock(return_value=mock_session)
+        client._open_sse = AsyncMock(return_value=mock_session)
 
         await client.connect()
 
         # Verify SSE was called, not stdio
-        client._connect_sse.assert_called_once()
-        client._connect_stdio.assert_not_called()
+        client._open_sse.assert_called_once()
+        client._open_stdio.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_disconnect_cleans_up_connections(self):
         """Test that disconnect cleans up sessions and tools."""
         client = MCPClient([])
 
-        # Mock a session
+        # Mock a session and per-server exit stack (current API uses _server_stacks)
         mock_session = MagicMock()
-
-        # Mock exit stack
         mock_exit_stack = MagicMock()
         mock_exit_stack.aclose = AsyncMock()
 
         client._sessions["test-server"] = mock_session
         client._tools["test-tool"] = {"name": "test", "description": "test", "parameters": {}}
-        client._exit_stack = mock_exit_stack
+        client._server_stacks["test-server"] = mock_exit_stack
         client._connected = True
 
         await client.disconnect()
@@ -176,7 +172,7 @@ class TestMCPClientConnection:
         # Verify cleanup
         assert len(client._sessions) == 0
         assert len(client._tools) == 0
-        assert client._exit_stack is None
+        assert len(client._server_stacks) == 0
         assert not client._connected
         mock_exit_stack.aclose.assert_called_once()
 

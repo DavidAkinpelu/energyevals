@@ -1,9 +1,46 @@
 import os
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from energbench.agent.providers import Message
 from energbench.agent.providers.deepinfra_provider import DeepInfraProvider
+
+
+class TestDeepInfraProviderUnit:
+    """Mocked unit tests for DeepInfraProvider.complete()."""
+
+    @pytest.mark.asyncio
+    async def test_complete_returns_text_response(self, monkeypatch):
+        """complete() maps a mocked response to a ProviderResponse correctly."""
+        monkeypatch.setenv("DEEPINFRA_API_KEY", "test")
+        provider = DeepInfraProvider(model="meta-llama/Llama-3.3-70B-Instruct-Turbo")
+
+        mock_message = MagicMock()
+        mock_message.content = "Hi"
+        mock_message.tool_calls = None
+
+        mock_choice = MagicMock()
+        mock_choice.message = mock_message
+        mock_choice.finish_reason = "stop"
+
+        mock_resp = MagicMock()
+        mock_resp.choices = [mock_choice]
+        mock_resp.model = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+        mock_resp.usage = MagicMock(
+            prompt_tokens=10,
+            completion_tokens=5,
+            prompt_tokens_details=None,
+        )
+
+        provider.client = MagicMock()
+        provider.client.chat.completions.create = AsyncMock(return_value=mock_resp)
+
+        result = await provider.complete([Message(role="user", content="Hi")])
+
+        assert result.content == "Hi"
+        assert result.input_tokens == 10
+        assert result.output_tokens == 5
 
 
 @pytest.mark.integration

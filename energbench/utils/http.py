@@ -1,5 +1,6 @@
 import os
 import ssl
+import time
 from functools import lru_cache
 from typing import Any
 
@@ -98,19 +99,26 @@ class HTTPClient:
             elif self.auth_method == "param":
                 params[self.auth_param_name] = api_key
 
-        try:
-            response = self.session.get(
-                url,
-                params=params,
-                headers=headers,
-                timeout=self.timeout,
-            )
-            response.raise_for_status()
-            result: dict[str, Any] = response.json()
-            return result
-        except requests.exceptions.RequestException as e:
-            logger.error(f"HTTP request failed: {e}")
-            raise
+        last_error: requests.exceptions.RequestException | None = None
+        for attempt in range(1 + self.retries):
+            try:
+                response = self.session.get(
+                    url,
+                    params=params,
+                    headers=headers,
+                    timeout=self.timeout,
+                )
+                response.raise_for_status()
+                result: dict[str, Any] = response.json()
+                return result
+            except requests.exceptions.RequestException as e:
+                last_error = e
+                if attempt < self.retries:
+                    delay = 2 ** attempt
+                    logger.warning(f"HTTP GET failed (attempt {attempt + 1}/{1 + self.retries}), retrying in {delay}s: {e}")
+                    time.sleep(delay)
+        logger.error(f"HTTP request failed after {1 + self.retries} attempts: {last_error}")
+        raise last_error  # type: ignore[misc]
 
     def post(
         self,
@@ -145,17 +153,24 @@ class HTTPClient:
             elif self.auth_method == "param":
                 params[self.auth_param_name] = api_key
 
-        try:
-            response = self.session.post(
-                url,
-                params=params,
-                headers=headers,
-                json=json_data,
-                timeout=self.timeout,
-            )
-            response.raise_for_status()
-            result: dict[str, Any] = response.json()
-            return result
-        except requests.exceptions.RequestException as e:
-            logger.error(f"HTTP request failed: {e}")
-            raise
+        last_error: requests.exceptions.RequestException | None = None
+        for attempt in range(1 + self.retries):
+            try:
+                response = self.session.post(
+                    url,
+                    params=params,
+                    headers=headers,
+                    json=json_data,
+                    timeout=self.timeout,
+                )
+                response.raise_for_status()
+                result: dict[str, Any] = response.json()
+                return result
+            except requests.exceptions.RequestException as e:
+                last_error = e
+                if attempt < self.retries:
+                    delay = 2 ** attempt
+                    logger.warning(f"HTTP POST failed (attempt {attempt + 1}/{1 + self.retries}), retrying in {delay}s: {e}")
+                    time.sleep(delay)
+        logger.error(f"HTTP request failed after {1 + self.retries} attempts: {last_error}")
+        raise last_error  # type: ignore[misc]

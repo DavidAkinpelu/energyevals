@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from openai import OpenAI
+from energbench.agent.providers import BaseProvider
 
 from .config import EvalConfig
 from .data_loader import (
@@ -10,7 +10,13 @@ from .data_loader import (
     load_eval_data,
     load_ground_truth,
 )
-from .judges import judge_accuracy, judge_approach, judge_attributes, judge_sources
+from .judges import (
+    create_judge_provider,
+    judge_accuracy,
+    judge_approach,
+    judge_attributes,
+    judge_sources,
+)
 from .models import (
     EvaluationReport,
     JudgeScore,
@@ -69,8 +75,8 @@ def _discover_model_dirs(results_path: Path, run_name: str | None) -> list[Path]
 # Core evaluation logic
 # ---------------------------------------------------------------------------
 
-def _evaluate_trial(
-    client: OpenAI,
+async def _evaluate_trial(
+    provider: BaseProvider,
     question_num: int,
     question_text: str,
     expected_answer: str,
@@ -85,13 +91,13 @@ def _evaluate_trial(
     entry = load_benchmark_result(trace_base, question_num, trial)
     agent_answer = entry.answer or ""
     agent_steps = entry.steps_trace
-    model = config.judge.model
+    jcfg = config.judge
 
-    raw_approach = judge_approach(
-        client, question_text, suggested_steps, agent_steps, model=model,
+    raw_approach = await judge_approach(
+        provider, question_text, suggested_steps, agent_steps, judge_config=jcfg,
     )
-    raw_sources = judge_sources(
-        client, question_text, suggested_steps, agent_answer, model=model,
+    raw_sources = await judge_sources(
+        provider, question_text, suggested_steps, agent_answer, judge_config=jcfg,
     )
 
     strategy = get_strategy(category, config.category_strategies, config.default_strategy)
@@ -99,16 +105,16 @@ def _evaluate_trial(
     raw_attributes = None
 
     if strategy == "accuracy":
-        raw_accuracy = judge_accuracy(
-            client, question_text, expected_answer, agent_answer,
-            abs_tol=config.abs_tol, rel_tol=config.rel_tol, model=model,
+        raw_accuracy = await judge_accuracy(
+            provider, question_text, expected_answer, agent_answer,
+            abs_tol=config.abs_tol, rel_tol=config.rel_tol, judge_config=jcfg,
         )
         accuracy_score = raw_accuracy.accuracy_score
         accuracy_reasoning = raw_accuracy.reasoning
     else:
-        raw_attributes = judge_attributes(
-            client, question_text, expected_answer, agent_answer,
-            abs_tol=config.abs_tol, rel_tol=config.rel_tol, model=model,
+        raw_attributes = await judge_attributes(
+            provider, question_text, expected_answer, agent_answer,
+            abs_tol=config.abs_tol, rel_tol=config.rel_tol, judge_config=jcfg,
         )
         accuracy_score = raw_attributes.alignment_score
         accuracy_reasoning = raw_attributes.reasoning
@@ -138,8 +144,8 @@ def _evaluate_trial(
     )
 
 
-def _evaluate_model(
-    client: OpenAI,
+async def _evaluate_model(
+    provider: BaseProvider,
     model_dir: Path,
     ground_truths: dict[int, object],
     eval_data: list[dict],
@@ -157,6 +163,15 @@ def _evaluate_model(
             continue
         question_nums.append(qnum)
 
+    # Pre-flight: warn about questions with no ground truth
+    missing_gt = [q for q in question_nums if q not in ground_truths]
+    if missing_gt:
+        print(
+            f"  Warning: {len(missing_gt)} question(s) have no ground truth and will be "
+            f"skipped: {missing_gt}"
+        )
+
+    rows_by_id = {int(r["S/N"]): r for r in eval_data}
     question_evals: list[QuestionEval] = []
 
     for qnum in question_nums:
@@ -164,7 +179,7 @@ def _evaluate_model(
         if gt is None:
             continue
 
-        row = eval_data[qnum - 1]
+        row = rows_by_id[qnum]
         question_text = row["Question"]
         expected_answer = row.get("Answer", "")
         suggested_steps = row.get("Approach", "")
@@ -176,8 +191,8 @@ def _evaluate_model(
         for trial in trials:
             trial_index = trial if trial is not None else 1
             try:
-                te = _evaluate_trial(
-                    client=client,
+                te = await _evaluate_trial(
+                    provider=provider,
                     question_num=qnum,
                     question_text=question_text,
                     expected_answer=expected_answer,
@@ -372,7 +387,7 @@ def _print_comparisons(comparisons: list[ModelComparison]) -> None:
 # Public API
 # ---------------------------------------------------------------------------
 
-def run_evaluation(config: EvalConfig) -> dict[str, EvaluationReport]:
+async def run_evaluation(config: EvalConfig) -> dict[str, EvaluationReport]:
     """Run the full evaluation pipeline.
 
     1. Load ground truth from the dataset CSV.
@@ -385,7 +400,7 @@ def run_evaluation(config: EvalConfig) -> dict[str, EvaluationReport]:
     Returns:
         Mapping of model name to its EvaluationReport.
     """
-    client = OpenAI()
+    provider = create_judge_provider(config.judge)
 
     eval_data = load_eval_data(config.dataset_path)
     ground_truths = load_ground_truth(config.dataset_path)
@@ -410,7 +425,7 @@ def run_evaluation(config: EvalConfig) -> dict[str, EvaluationReport]:
 
     for model_dir in model_dirs:
         print(f"\n  Evaluating model: {model_dir.name}")
-        report = _evaluate_model(client, model_dir, ground_truths, eval_data, config)
+        report = await _evaluate_model(provider, model_dir, ground_truths, eval_data, config)
         report.config_snapshot = {
             "judge_model": config.judge.model,
             "abs_tol": config.abs_tol,

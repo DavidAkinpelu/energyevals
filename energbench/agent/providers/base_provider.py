@@ -63,6 +63,8 @@ class BaseProvider(ABC):
         tools: list[ToolDefinition] | None = None,
         temperature: float = 0.0,
         max_tokens: int | None = MAX_TOKENS,
+        system_prompt: str | None = None,
+        stop_sequences: list[str] | None = None,
         **kwargs: Any,
     ) -> ProviderResponse:
         """Generate a completion from the model.
@@ -72,7 +74,10 @@ class BaseProvider(ABC):
             tools: Optional list of tools available to the model.
             temperature: Sampling temperature (0.0 to 1.0).
             max_tokens: Maximum tokens to generate.
-            **kwargs: Additional provider-specific parameters.
+            system_prompt: Optional system prompt override (provider-specific handling).
+            stop_sequences: Optional list of stop sequences.
+            **kwargs: Additional provider-specific parameters (e.g. ``reasoning_effort``
+                for OpenAI reasoning models, ``tool_choice`` for OpenAI/DeepInfra).
 
         Returns:
             ProviderResponse containing the model's response.
@@ -115,10 +120,9 @@ class BaseProvider(ABC):
         """
         pass
 
+    @abstractmethod
     def format_messages(self, messages: list[Message]) -> list[dict[str, Any]]:
         """Format messages for this provider's API format.
-
-        Default implementation that can be overridden by specific providers.
 
         Args:
             messages: List of messages in standard format.
@@ -126,20 +130,43 @@ class BaseProvider(ABC):
         Returns:
             Messages formatted for the provider's API.
         """
-        formatted = []
-        for msg in messages:
-            formatted_msg: dict[str, Any] = {
-                "role": msg.role,
-                "content": msg.content,
-            }
-            if msg.tool_calls:
-                formatted_msg["tool_calls"] = msg.tool_calls
-            if msg.tool_call_id:
-                formatted_msg["tool_call_id"] = msg.tool_call_id
-            if msg.name:
-                formatted_msg["name"] = msg.name
-            formatted.append(formatted_msg)
-        return formatted
+
+    @staticmethod
+    def _extract_content_parts(content: list) -> list["TextContent | ImageContent"]:
+        """Normalize a content_parts list into typed TextContent/ImageContent objects.
+
+        Handles both already-typed objects and raw dicts so providers share the
+        parsing logic and only need to implement provider-specific formatting.
+
+        Args:
+            content: List that may contain TextContent, ImageContent, or raw dicts.
+
+        Returns:
+            List of TextContent and ImageContent objects.
+        """
+        parts: list[TextContent | ImageContent] = []
+        for part in content:
+            if isinstance(part, (TextContent, ImageContent)):
+                parts.append(part)
+            elif isinstance(part, dict):
+                if part.get("type") == "text":
+                    parts.append(TextContent(text=part.get("text", "")))
+                elif part.get("type") == "image":
+                    parts.append(ImageContent(
+                        image_base64=part.get("image_base64", ""),
+                        media_type=part.get("media_type", "image/jpeg"),
+                        image_url=part.get("image_url"),
+                    ))
+        return parts
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(model={self.model!r})"
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __getstate__(self) -> dict:
+        """Exclude api_key from pickle serialization."""
+        state = self.__dict__.copy()
+        state.pop("api_key", None)
+        return state

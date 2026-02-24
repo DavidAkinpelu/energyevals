@@ -1,13 +1,15 @@
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Self
 
 import yaml
 
+from energbench.agent.constants import CSV_THRESHOLD
 from energbench.agent.schema import ModelSpec
 from energbench.benchmark.constants import DEFAULT_MAX_ITERATIONS
 from energbench.core.errors import ConfigurationError
-from energbench.core.types import ensure_path
+from energbench.core.types import ProviderName, ensure_path
 
 DEFAULT_CONFIG = {
     "models": [
@@ -36,20 +38,20 @@ DEFAULT_CONFIG = {
     },
 }
 
-PROVIDERS = {
-    "openai": {
+PROVIDERS: dict[ProviderName, dict] = {
+    ProviderName.OPENAI: {
         "default_model": "gpt-4o-mini",
         "models": ["gpt-4o", "gpt-4o-mini"],
     },
-    "anthropic": {
+    ProviderName.ANTHROPIC: {
         "default_model": "claude-sonnet-4-20250514",
         "models": ["claude-sonnet-4-20250514", "claude-opus-4-20250514"],
     },
-    "google": {
+    ProviderName.GOOGLE: {
         "default_model": "gemini-2.0-flash",
         "models": ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"],
     },
-    "deepinfra": {
+    ProviderName.DEEPINFRA: {
         "default_model": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
         "models": [
             "meta-llama/Llama-3.3-70B-Instruct-Turbo",
@@ -57,6 +59,32 @@ PROVIDERS = {
         ],
     },
 }
+
+PROVIDER_ENV_VARS: dict[ProviderName, str] = {
+    ProviderName.OPENAI: "OPENAI_API_KEY",
+    ProviderName.ANTHROPIC: "ANTHROPIC_API_KEY",
+    ProviderName.GOOGLE: "GOOGLE_API_KEY",
+    ProviderName.DEEPINFRA: "DEEPINFRA_API_KEY",
+}
+
+
+def validate_api_keys(config: "BenchmarkConfig") -> None:
+    """Raise ConfigurationError if any required API key env vars are absent.
+
+    Checks only the providers actually used in config.models so that
+    unrelated keys are not required.
+    """
+    missing = []
+    for model_spec in config.models:
+        env_var = PROVIDER_ENV_VARS.get(model_spec.provider)
+        if env_var and not os.getenv(env_var):
+            missing.append(f"  - {model_spec.provider}: ${env_var}")
+    if missing:
+        raise ConfigurationError(
+            "Missing required API key(s):\n" +
+            "\n".join(missing) +
+            "\nSet these environment variables (e.g. in .env) before running."
+        )
 
 
 @dataclass
@@ -84,6 +112,9 @@ class BenchmarkConfig:
     results_dir: Path
     save_answers: bool
     num_trials: int = 1
+    shuffle: bool = False
+    seed: int | None = None
+    csv_threshold: int = CSV_THRESHOLD
     tools_config: ToolsConfig = field(default_factory=ToolsConfig)
     config_path: Path | None = None
 
@@ -124,7 +155,7 @@ class BenchmarkConfig:
         if not self.questions_file.exists():
             errors.append(f"Questions file not found: {self.questions_file}")
 
-        valid_backends = ["json", "langfuse"]
+        valid_backends = ["json", "langfuse", "both", "auto"]
         if self.observability_backend not in valid_backends:
             errors.append(
                 f"Invalid observability backend '{self.observability_backend}'. "
@@ -133,6 +164,9 @@ class BenchmarkConfig:
 
         if self.max_iterations < 1:
             errors.append(f"max_iterations must be at least 1, got {self.max_iterations}")
+
+        if self.csv_threshold < 1:
+            errors.append(f"csv_threshold must be at least 1, got {self.csv_threshold}")
 
         if self.num_trials < 1:
             errors.append(f"num_trials must be at least 1, got {self.num_trials}")
@@ -198,6 +232,9 @@ class BenchmarkConfig:
             results_dir=Path(output.get("results_dir", "./benchmark_results")),
             save_answers=output.get("save_answers", True),
             num_trials=agent.get("num_trials", 1),
+            shuffle=agent.get("shuffle", False),
+            seed=agent.get("seed"),
+            csv_threshold=agent.get("csv_threshold", CSV_THRESHOLD),
             tools_config=tools_config,
         )
 

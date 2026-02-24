@@ -1,7 +1,20 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, TypedDict
 
 from energbench.agent.schema import AgentRun
+
+
+class TraceMetadata(TypedDict, total=False):
+    """Typed metadata attached to an agent-run trace.
+
+    All fields are optional (``total=False``).  Additional arbitrary keys
+    are permitted at runtime since TypedDict is structural.
+    """
+
+    provider: str
+    model: str
+    question_id: str | int
+    trial: int
 
 
 class BaseObserver(ABC):
@@ -15,7 +28,7 @@ class BaseObserver(ABC):
     def trace_agent_run(
         self,
         run: AgentRun,
-        metadata: dict[str, Any] | None = None,
+        metadata: "TraceMetadata | None" = None,
         tags: list[str] | None = None,
         user_id: str | None = None,
         session_id: str | None = None,
@@ -24,7 +37,7 @@ class BaseObserver(ABC):
 
         Args:
             run: The AgentRun to trace (includes all steps, metrics, errors).
-            metadata: Additional metadata to attach to the trace.
+            metadata: Typed metadata to attach to the trace (see TraceMetadata).
             tags: Tags for filtering/categorizing traces.
             user_id: User identifier for the trace.
             session_id: Session identifier for grouping related traces.

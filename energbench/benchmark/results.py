@@ -23,6 +23,7 @@ def _serialize_result(r: BenchmarkResult) -> dict:
 def save_results(
     all_results: dict[str, dict[int, list[BenchmarkResult]]],
     config: BenchmarkConfig,
+    seed: int | None = None,
 ) -> Path:
     """Save benchmark results to JSON.
 
@@ -80,6 +81,8 @@ def save_results(
             "mcp_enabled": config.mcp_enabled,
             "max_iterations": config.max_iterations,
             "num_trials": config.num_trials,
+            "shuffle": config.shuffle,
+            "seed": seed,
         },
         "summary": {
             "total_questions": len(first_results),
@@ -90,5 +93,6 @@ def save_results(
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+    output_path.chmod(0o600)
 
     return output_path

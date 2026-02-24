@@ -91,10 +91,120 @@ class OpenAIProvider(BaseProvider):
             api_key=self.api_key,
             base_url=self.base_url,
         )
+        del self.api_key
 
     @property
     def provider_name(self) -> str:
         return "openai"
+
+    def _build_input_items(
+        self, messages: list[Message]
+    ) -> tuple[str | None, list[dict[str, Any]]]:
+        """Convert internal Message list to OpenAI Responses API `input` format.
+
+        Returns:
+            (system_text, input_items) where system_text is extracted from
+            any system-role messages and input_items is the formatted list.
+        """
+        system_text: str | None = None
+        input_items: list[dict[str, Any]] = []
+
+        for msg in messages:
+            if msg.role == "system":
+                content_text = msg.content or ""
+                if not content_text and msg.content_parts:
+                    parts = []
+                    for part in msg.content_parts:
+                        if isinstance(part, TextContent):
+                            parts.append(part.text)
+                        elif isinstance(part, dict) and part.get("type") == "text":
+                            parts.append(part.get("text", ""))
+                    content_text = "\n".join(parts)
+                system_text = f"{system_text}\n\n{content_text}" if system_text else content_text
+                continue
+
+            if msg.role == "tool":
+                if not msg.tool_call_id:
+                    continue
+                input_items.append({
+                    "type": "function_call_output",
+                    "call_id": msg.tool_call_id,
+                    "output": msg.text_content or msg.content or "",
+                })
+                continue
+
+            role = msg.role if msg.role in {"user", "assistant", "developer"} else "assistant"
+            text_type = "output_text" if role == "assistant" else "input_text"
+            content_items: list[dict[str, Any]] = []
+
+            msg_parts: list[TextContent | ImageContent] = (
+                msg.content_parts if msg.content_parts else [TextContent(text=msg.content or "")]
+            )
+            for item in msg_parts:
+                if isinstance(item, TextContent):
+                    content_items.append({"type": text_type, "text": item.text})
+                elif isinstance(item, ImageContent):
+                    if item.image_url:
+                        content_items.append({"type": "input_image", "image_url": item.image_url})
+                    elif item.image_base64:
+                        content_items.append({
+                            "type": "input_image",
+                            "image_url": f"data:{item.media_type};base64,{item.image_base64}",
+                        })
+                else:
+                    content_items.append({"type": text_type, "text": str(item)})
+
+            if content_items:
+                input_items.append({"role": role, "content": content_items})
+
+            if msg.tool_calls:
+                for tc in msg.tool_calls:
+                    call_id = tc.get("id") if isinstance(tc, dict) else None
+                    name = tc.get("name") if isinstance(tc, dict) else None
+                    arguments = tc.get("arguments") if isinstance(tc, dict) else {}
+                    if call_id and name:
+                        input_items.append({
+                            "type": "function_call",
+                            "call_id": call_id,
+                            "name": name,
+                            "arguments": json.dumps(arguments),
+                        })
+
+        return system_text, input_items
+
+    def _build_request_kwargs(
+        self,
+        input_items: list[dict[str, Any]],
+        system_text: str | None,
+        tools: list[ToolDefinition] | None,
+        temperature: float,
+        max_tokens: int | None,
+        reasoning_effort: str | None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Build the request_kwargs dict for responses.create / responses.stream."""
+        request_kwargs: dict[str, Any] = {
+            "model": self.model,
+            "input": input_items,
+        }
+
+        if self.is_reasoning_model:
+            request_kwargs["reasoning"] = {"effort": reasoning_effort or self.reasoning_effort}
+        else:
+            request_kwargs["temperature"] = temperature
+        request_kwargs["max_output_tokens"] = max_tokens
+
+        if system_text:
+            request_kwargs["instructions"] = system_text
+
+        if tools:
+            request_kwargs["tools"] = self.format_tools(tools)
+            request_kwargs["tool_choice"] = kwargs.get("tool_choice", "auto")
+
+        excluded = {"tool_choice", "reasoning_effort"}
+        request_kwargs.update({k: v for k, v in kwargs.items() if k not in request_kwargs and k not in excluded})
+
+        return request_kwargs
 
     async def complete(
         self,
@@ -121,105 +231,10 @@ class OpenAIProvider(BaseProvider):
         """
         start_time = time.time()
 
-        system_text = None
-        input_items: list[dict[str, Any]] = []
-        for msg in messages:
-            if msg.role == "system":
-                content_text = ""
-                if msg.content:
-                    first = msg.content[0]
-                    if isinstance(first, TextContent):
-                        content_text = first.text
-                    else:
-                        content_text = str(first)
-                if system_text:
-                    system_text = f"{system_text}\n\n{content_text}"
-                else:
-                    system_text = content_text
-                continue
-
-            if msg.role == "tool":
-                if not msg.tool_call_id:
-                    continue
-                tool_output = msg.text_content or msg.content or ""
-                input_items.append(
-                    {
-                        "type": "function_call_output",
-                        "call_id": msg.tool_call_id,
-                        "output": tool_output,
-                    }
-                )
-                continue
-
-            role = msg.role if msg.role in {"user", "assistant", "developer"} else "assistant"
-            is_assistant = role == "assistant"
-            text_type = "output_text" if is_assistant else "input_text"
-            content_items: list[dict[str, Any]] = []
-
-            msg_parts: list[TextContent | ImageContent] = (
-                msg.content_parts if msg.content_parts else [TextContent(text=msg.content or "")]
-            )
-            for item in msg_parts:
-                if isinstance(item, TextContent):
-                    content_items.append({"type": text_type, "text": item.text})
-                elif isinstance(item, ImageContent):
-                    if item.image_url:
-                        content_items.append({"type": "input_image", "image_url": item.image_url})
-                    elif item.image_base64:
-                        data_url = f"data:{item.media_type};base64,{item.image_base64}"
-                        content_items.append({"type": "input_image", "image_url": data_url})
-                else:
-                    content_items.append({"type": text_type, "text": str(item)})
-
-            if content_items:
-                input_items.append({"role": role, "content": content_items})
-
-            if msg.tool_calls:
-                for tool_call in msg.tool_calls:
-                    call_id = tool_call.get("id") if isinstance(tool_call, dict) else None
-                    name = tool_call.get("name") if isinstance(tool_call, dict) else None
-                    arguments = tool_call.get("arguments") if isinstance(tool_call, dict) else {}
-                    if call_id and name:
-                        input_items.append(
-                            {
-                                "type": "function_call",
-                                "call_id": call_id,
-                                "name": name,
-                                "arguments": json.dumps(arguments),
-                            }
-                        )
-
-        request_kwargs: dict[str, Any] = {
-            "model": self.model,
-            "input": input_items,
-        }
-
-        if self.is_reasoning_model:
-            effort = reasoning_effort or self.reasoning_effort
-            request_kwargs["reasoning"] = {"effort": effort}
-            request_kwargs["max_output_tokens"] = max_tokens
-        else:
-            request_kwargs["temperature"] = temperature
-            request_kwargs["max_output_tokens"] = max_tokens
-
-        if system_text:
-            request_kwargs["instructions"] = system_text
-
-        if tools:
-            request_kwargs["tools"] = [
-                {
-                    "type": "function",
-                    "name": tool.name,
-                    "description": tool.description,
-                    "parameters": tool.parameters,
-                }
-                for tool in tools
-            ]
-            request_kwargs["tool_choice"] = kwargs.get("tool_choice", "auto")
-
-        excluded_keys = {"tool_choice", "reasoning_effort"}
-        request_kwargs.update({k: v for k, v in kwargs.items() if k not in request_kwargs and k not in excluded_keys})
-
+        system_text, input_items = self._build_input_items(messages)
+        request_kwargs = self._build_request_kwargs(
+            input_items, system_text, tools, temperature, max_tokens, reasoning_effort, **kwargs
+        )
         response = await self.client.responses.create(**request_kwargs)
 
         latency_ms = (time.time() - start_time) * 1000
@@ -289,108 +304,21 @@ class OpenAIProvider(BaseProvider):
         Note: Reasoning models (o1/o3/o4/gpt-5) have limited streaming support.
         The full response may be returned at once after reasoning completes.
         """
-        system_text = None
-        input_items: list[dict[str, Any]] = []
-        for msg in messages:
-            if msg.role == "system":
-                content_text = ""
-                if msg.content:
-                    first = msg.content[0] if isinstance(msg.content, list) else msg.content
-                    if isinstance(first, TextContent):
-                        content_text = first.text
-                    else:
-                        content_text = str(first)
-                if system_text:
-                    system_text = f"{system_text}\n\n{content_text}"
-                else:
-                    system_text = content_text
-                continue
-
-            if msg.role == "tool":
-                if not msg.tool_call_id:
-                    continue
-                tool_output = msg.text_content or msg.content or ""
-                input_items.append(
-                    {
-                        "type": "function_call_output",
-                        "call_id": msg.tool_call_id,
-                        "output": tool_output,
-                    }
-                )
-                continue
-
-            role = msg.role if msg.role in {"user", "assistant", "developer"} else "assistant"
-            is_assistant = role == "assistant"
-            text_type = "output_text" if is_assistant else "input_text"
-            content_items: list[dict[str, Any]] = []
-
-            stream_parts: list[TextContent | ImageContent] = (
-                msg.content_parts if msg.content_parts else [TextContent(text=msg.content or "")]
-            )
-            for item in stream_parts:
-                if isinstance(item, TextContent):
-                    content_items.append({"type": text_type, "text": item.text})
-                elif isinstance(item, ImageContent):
-                    if item.image_url:
-                        content_items.append({"type": "input_image", "image_url": item.image_url})
-                    elif item.image_base64:
-                        data_url = f"data:{item.media_type};base64,{item.image_base64}"
-                        content_items.append({"type": "input_image", "image_url": data_url})
-                else:
-                    content_items.append({"type": text_type, "text": str(item)})
-
-            if content_items:
-                input_items.append({"role": role, "content": content_items})
-
-            if msg.tool_calls:
-                for tool_call in msg.tool_calls:
-                    call_id = tool_call.get("id") if isinstance(tool_call, dict) else None
-                    name = tool_call.get("name") if isinstance(tool_call, dict) else None
-                    arguments = tool_call.get("arguments") if isinstance(tool_call, dict) else {}
-                    if call_id and name:
-                        input_items.append(
-                            {
-                                "type": "function_call",
-                                "call_id": call_id,
-                                "name": name,
-                                "arguments": json.dumps(arguments),
-                            }
-                        )
-
-        request_kwargs: dict[str, Any] = {
-            "model": self.model,
-            "input": input_items,
-        }
-
-        if self.is_reasoning_model:
-            effort = reasoning_effort or self.reasoning_effort
-            request_kwargs["reasoning"] = {"effort": effort}
-            request_kwargs["max_output_tokens"] = max_tokens
-        else:
-            request_kwargs["temperature"] = temperature
-            request_kwargs["max_output_tokens"] = max_tokens
-
-        if system_text:
-            request_kwargs["instructions"] = system_text
-
-        if tools:
-            request_kwargs["tools"] = [
-                {
-                    "type": "function",
-                    "name": tool.name,
-                    "description": tool.description,
-                    "parameters": tool.parameters,
-                }
-                for tool in tools
-            ]
-            request_kwargs["tool_choice"] = kwargs.get("tool_choice", "auto")
-
+        system_text, input_items = self._build_input_items(messages)
+        request_kwargs = self._build_request_kwargs(
+            input_items, system_text, tools, temperature, max_tokens, reasoning_effort, **kwargs
+        )
         async with self.client.responses.stream(**request_kwargs) as stream:
             async for event in stream:
                 if getattr(event, "type", None) == "response.output_text.delta":
                     delta: str = getattr(event, "delta", "")
                     if delta:
                         yield delta
+
+    def format_messages(self, messages: list[Message]) -> list[dict[str, Any]]:
+        """Format messages for OpenAI's responses.create API."""
+        _, items = self._build_input_items(messages)
+        return items
 
     def format_tools(self, tools: list[ToolDefinition]) -> list[dict[str, Any]]:
         """Format tools for OpenAI's responses.create API."""

@@ -44,6 +44,7 @@ class AnthropicProvider(BaseProvider):
             api_key=self.api_key,
             base_url=self.base_url,
         )
+        del self.api_key
 
     @property
     def provider_name(self) -> str:
@@ -86,7 +87,7 @@ class AnthropicProvider(BaseProvider):
 
         for block in response.content:
             if block.type == "text":
-                content = block.text
+                content += block.text
             elif block.type == "tool_use":
                 if tool_calls is None:
                     tool_calls = []
@@ -205,7 +206,7 @@ class AnthropicProvider(BaseProvider):
         """Format multi-modal content (text + images) for Anthropic."""
         content_blocks: list[dict[str, Any]] = []
 
-        for part in msg.content_parts or []:
+        for part in self._extract_content_parts(msg.content_parts or []):
             if isinstance(part, TextContent):
                 content_blocks.append({
                     "type": "text",
@@ -220,21 +221,6 @@ class AnthropicProvider(BaseProvider):
                         "data": part.image_base64,
                     },
                 })
-            elif isinstance(part, dict):
-                if part.get("type") == "text":
-                    content_blocks.append({
-                        "type": "text",
-                        "text": part.get("text", ""),
-                    })
-                elif part.get("type") == "image":
-                    content_blocks.append({
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": part.get("media_type", "image/jpeg"),
-                            "data": part.get("image_base64", ""),
-                        },
-                    })
 
         return content_blocks
 

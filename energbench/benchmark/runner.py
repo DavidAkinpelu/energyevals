@@ -1,4 +1,7 @@
+import random
 import shutil
+
+from loguru import logger
 
 from energbench.agent.providers import get_provider
 from energbench.agent.react_agent import ReActAgent
@@ -8,13 +11,15 @@ from energbench.mcp.client import MCPClient
 from energbench.observability import BaseObserver, get_observer
 from energbench.tools import create_default_registry
 
-from .config import PROVIDERS, BenchmarkConfig
+from energbench.core.types import ProviderName
+
+from .config import PROVIDERS, BenchmarkConfig, validate_api_keys
 from .constants import QUESTION_LIST_PREVIEW_LENGTH
 from .data_loader import load_questions
 from .display import print_header, print_question, print_result
 from .models import BenchmarkResult, Question
 from .results import save_results
-from .tools import build_tool_executor, filter_tools
+from .tools import build_tool_executor, filter_tools, merge_tools
 
 def _trace_run(
     observer: BaseObserver | None,
@@ -49,7 +54,8 @@ def _trace_run(
             },
             tags=["benchmark", question.category, question.difficulty],
         )
-    except Exception:
+    except Exception as exc:
+        logger.warning(f"Observer trace failed, benchmark data may be incomplete: {exc}")
         return None
 
 
@@ -190,7 +196,7 @@ async def _setup_tools(config: BenchmarkConfig) -> tuple[list[ToolDefinition], M
     std_registry = create_default_registry()
     all_std_tools = std_registry.get_all_tools()
 
-    std_tools = filter_tools(all_std_tools, config.tools_config)
+    std_tools = filter_tools(all_std_tools, config.tools_config, registry=std_registry)
 
     mcp_client = None
     mcp_tools = []
@@ -198,12 +204,19 @@ async def _setup_tools(config: BenchmarkConfig) -> tuple[list[ToolDefinition], M
         try:
             mcp_client = await create_mcp_client()
             mcp_tools = mcp_client.list_tools()
-            print(f"  MCP tools: {len(mcp_tools)} loaded")
         except Exception as e:
-            print(f"  Warning: MCP unavailable: {e}")
+            raise RuntimeError(
+                f"MCP setup failed (mcp.enabled=true): {e}\n"
+                "Set mcp.enabled: false in your config or pass --no-mcp to run without MCP tools."
+            ) from e
 
-    tools = std_tools + mcp_tools
-    print(f"  Standard tools: {len(std_tools)}/{len(all_std_tools)}")
+    tools = merge_tools(std_tools, mcp_tools)
+
+    std_names = ", ".join(t.name for t in std_tools) if std_tools else "(none)"
+    print(f"  Standard tools ({len(std_tools)}/{len(all_std_tools)}): {std_names}")
+    if config.mcp_enabled:
+        mcp_names = ", ".join(t.name for t in mcp_tools) if mcp_tools else "(none)"
+        print(f"  MCP tools ({len(mcp_tools)}): {mcp_names}")
     print(f"  Total tools available: {len(tools)}")
 
     executor = build_tool_executor(std_registry, mcp_client)
@@ -235,20 +248,21 @@ async def _run_model_benchmark(
     print_header(f"Evaluating: {model_spec.display_name}")
 
     provider_kwargs = {}
-    if model_spec.is_reasoning_model is not None and model_spec.provider == "openai":
+    if model_spec.is_reasoning_model is not None and model_spec.provider == ProviderName.OPENAI:
         provider_kwargs["is_reasoning_model_override"] = model_spec.is_reasoning_model
-    provider = get_provider(model_spec.provider, model=model_spec.model, **provider_kwargs)
 
     model_results: list[BenchmarkResult] = []
 
     for i, question in enumerate(questions, 1):
         print_question(question, i, len(questions))
 
+        provider = get_provider(model_spec.provider, model=model_spec.model, **provider_kwargs)
         agent = ReActAgent(
             provider=provider,
             tools=tools,
             tool_executor=executor,
             max_iterations=config.max_iterations,
+            csv_threshold=config.csv_threshold,
         )
 
         result = await run_question(
@@ -301,6 +315,8 @@ async def run_benchmark(config: BenchmarkConfig) -> int:
     Returns:
         Exit code (0 for success, 1 for failure)
     """
+    validate_api_keys(config)
+
     if not config.questions_file.exists():
         print(f"Error: Questions file not found: {config.questions_file}")
         return 1
@@ -317,6 +333,12 @@ async def run_benchmark(config: BenchmarkConfig) -> int:
             return 1
 
     print(f"  Loaded {len(questions)} questions")
+
+    actual_seed: int | None = None
+    if config.shuffle:
+        actual_seed = config.seed if config.seed is not None else random.randint(0, 2**32 - 1)
+        random.Random(actual_seed).shuffle(questions)
+        print(f"  Questions shuffled (seed={actual_seed})")
 
     for model_spec in config.models:
         if model_spec.provider not in PROVIDERS:
@@ -389,7 +411,7 @@ async def run_benchmark(config: BenchmarkConfig) -> int:
         print(f"    Total tokens: {total_tokens:,}")
         print(f"    Total time: {total_duration:.1f}s")
 
-    output_paths = save_results(all_results, config)
+    output_paths = save_results(all_results, config, seed=actual_seed)
     print(f"\n  Results saved: {output_paths}")
 
     return 0 if total_failed == 0 else 1
