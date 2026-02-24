@@ -54,6 +54,7 @@ benchmark_results/
 benchmark_traces/
 evaluation_results/
 agent_outputs/
+data/
 *.json.bak
 
 # Logs

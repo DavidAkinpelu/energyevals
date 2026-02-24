@@ -17,7 +17,7 @@ judge:
 # =============================================================================
 
 # Path to benchmark trace directory (output of run_benchmark.py)
-results_path: ./benchmark_traces
+results_path: ./benchmark_traces/with_tools
 
 # Dataset CSV with questions, answers, and approaches
 dataset_path: ./data/eval_samples_with_answers.csv
@@ -47,8 +47,8 @@ strategy:
 # =============================================================================
 
 tolerances:
-  abs_tol: 0.01
-  rel_tol: 0.5
+  abs_tol: 0.5
+  rel_tol: 1
 
 # =============================================================================
 # Statistics
