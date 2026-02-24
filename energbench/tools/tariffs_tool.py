@@ -42,16 +42,22 @@ class TariffsTool(BaseTool):
         return_format: Literal["json"] = "json",
         detail: Literal["full"] = "full",
         version: Literal[7] = 7,
+        eia_id = None,
         active_only: bool = True,
     ) -> str:
         """Call the OpenEI utility rates API and return tariff records for a specific address and customer sector.
 
         Args:
-            address: str representing detailed address, including state and zip code of the building
+            address: str representing detailed address, including state and zip code of the building. Set a empty string
+                     if not used
             sector: str representing building type. Can be one of "Residential", "Commercial", "Industrial", or "Lighting"
             return_format: fixed as json
             detail: tag fixed as full to get detailed responses from the api
             version: fixed at 7 which is the current latest version of the api
+            eia_id: Optional input to specify the eia id of the assocaited utility if known. Default is None
+                    For example, 13781 is the EIA Utility ID for Northern States Power Company - Wisconsin (NSPW), 
+                    which is the Xcel Energy entity that serves Michigan.
+
             active_only: default is True. Selects only existing tariffs. Can be set to False to include retired tariffs
 
         Returns:
@@ -68,6 +74,8 @@ class TariffsTool(BaseTool):
             "address": address,
             "detail": detail,
         }
+        if eia_id != None:
+            params["eia"] = eia_id
 
         try:
             response = requests.get(self.BASE_URL, params=params, timeout=30)

@@ -13,8 +13,10 @@ models:
   #   model: claude-3-5-sonnet-20260219
   # - provider: google
   #   model: gemini-3-pro-preview
+  # - provider: openai
+  #    model: gpt-4o-mini
     - provider: openai
-      model: gpt-4o-mini
+      model: gpt-4.1-mini
   # - provider: deepinfra
   #   model: meta-llama/Llama-3.3-70B-Instruct-Turbo
 
@@ -35,11 +37,11 @@ models:
 # =============================================================================
 
 # Questions file
-questions_file: data/AI Evals New Questions.xlsx - Q&As - new.csv
+questions_file: data/eval_samples.csv
 
 # Question selection (optional)
 # Leave empty or comment out to run all questions
-questions: [1, 2]              # Specific question IDs
+# questions: [1, 2]              # Specific question IDs
 # questions: 1-5                     # Range of questions
 
 # =============================================================================
@@ -50,7 +52,7 @@ observability:
   enabled: true                      # Enable/disable tracing
   backend: json                      # json, langfuse, both, or auto
   output_dir: ./benchmark_traces     # Base directory for trace files
-  run_name: without_tools             # Optional: subdirectory for organizing runs
+  run_name: with_tools             # Optional: subdirectory for organizing runs
                                      # e.g., "no_tools", "with_tools", "experiment_1"
                                      # Traces saved to: {output_dir}/{run_name}/{model}/
 
@@ -89,7 +91,7 @@ agent:
 # Pattern 1: Run all tools (default - currently active)
 tools:
   enabled: true
-  include: [system, search, openweather, gridstatus_api_tool]
+  include: [system, search, openweather, gridstatus_api_tool, battery_optimization]
   exclude: []
 
 # Pattern 2: Run only specific tools (recommended for faster benchmarks)
