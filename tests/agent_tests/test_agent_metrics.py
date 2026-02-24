@@ -75,7 +75,7 @@ class TestAgentMetricsCollection:
     @pytest.mark.asyncio
     async def test_basic_metrics_tracking(self, mock_provider, test_tool):
         """Test that agent collects all metrics correctly."""
-        agent = ReActAgent(provider=mock_provider, tools=[test_tool])
+        agent = ReActAgent(provider=mock_provider, tools=test_tool.get_tools())
         run = await agent.run("Test query")
 
         assert run.total_input_tokens == 125
@@ -89,28 +89,41 @@ class TestAgentMetricsCollection:
     @pytest.mark.asyncio
     async def test_step_recording(self, mock_provider, test_tool):
         """Test that agent records steps correctly."""
-        agent = ReActAgent(provider=mock_provider, tools=[test_tool])
+        agent = ReActAgent(provider=mock_provider, tools=test_tool.get_tools())
         run = await agent.run("Test query")
 
-        assert len(run.steps) == 3
+        assert len(run.steps) == 4
 
         step1 = run.steps[0]
-        assert step1.step_type == StepType.ACTION
-        assert step1.tool_name == "get_answer"
+        assert step1.step_type == StepType.THOUGHT
         assert step1.latency_ms == 100
 
         step2 = run.steps[1]
-        assert step2.step_type == StepType.OBSERVATION
+        assert step2.step_type == StepType.ACTION
         assert step2.tool_name == "get_answer"
 
         step3 = run.steps[2]
-        assert step3.step_type == StepType.ANSWER
-        assert step3.content is not None
+        assert step3.step_type == StepType.OBSERVATION
+        assert step3.tool_name == "get_answer"
+
+        step4 = run.steps[3]
+        assert step4.step_type == StepType.ANSWER
+        assert step4.content is not None
+
+    @pytest.mark.asyncio
+    async def test_tool_turn_with_empty_text_still_records_thought(self, mock_provider, test_tool):
+        """Tool-call turns without assistant text should still record LLM latency on THOUGHT."""
+        agent = ReActAgent(provider=mock_provider, tools=test_tool.get_tools())
+        run = await agent.run("Test query")
+
+        thought_steps = [s for s in run.steps if s.step_type == StepType.THOUGHT]
+        assert thought_steps
+        assert thought_steps[0].latency_ms == 100
 
     @pytest.mark.asyncio
     async def test_token_accumulation(self, mock_provider, test_tool):
         """Test that tokens accumulate correctly across steps."""
-        agent = ReActAgent(provider=mock_provider, tools=[test_tool])
+        agent = ReActAgent(provider=mock_provider, tools=test_tool.get_tools())
         run = await agent.run("Test query")
 
         assert run.total_input_tokens == 125
@@ -120,7 +133,7 @@ class TestAgentMetricsCollection:
     @pytest.mark.asyncio
     async def test_latency_accumulation(self, mock_provider, test_tool):
         """Test that latency accumulates correctly across steps."""
-        agent = ReActAgent(provider=mock_provider, tools=[test_tool])
+        agent = ReActAgent(provider=mock_provider, tools=test_tool.get_tools())
         run = await agent.run("Test query")
 
         assert run.total_latency_ms == 220
@@ -128,11 +141,11 @@ class TestAgentMetricsCollection:
     @pytest.mark.asyncio
     async def test_iteration_count(self, mock_provider, test_tool):
         """Test that iteration count is correct."""
-        agent = ReActAgent(provider=mock_provider, tools=[test_tool])
+        agent = ReActAgent(provider=mock_provider, tools=test_tool.get_tools())
         run = await agent.run("Test query")
 
         assert run.iterations == 2
-        assert len(run.steps) == 3
+        assert len(run.steps) == 4
 
 
 class TestAgentMetricsEdgeCases:
@@ -183,12 +196,12 @@ class TestAgentMetricsEdgeCases:
         mock.model = "mock"
         mock.provider_name = "mock"
 
-        agent = ReActAgent(provider=mock, tools=[test_tool], max_iterations=3)
+        agent = ReActAgent(provider=mock, tools=test_tool.get_tools(), max_iterations=3)
         run = await agent.run("Query")
 
         assert run.iterations == 3
         assert run.success is False
-        assert len(run.steps) == 6
+        assert len(run.steps) == 9
         assert "max iterations" in run.error.lower()
 
     @pytest.mark.asyncio

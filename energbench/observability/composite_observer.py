@@ -4,7 +4,7 @@ from loguru import logger
 
 from energbench.agent.schema import AgentRun
 
-from .base import BaseObserver
+from .base import BaseObserver, TraceMetadata
 
 
 class CompositeObserver(BaseObserver):
@@ -43,7 +43,7 @@ class CompositeObserver(BaseObserver):
     def trace_agent_run(
         self,
         run: AgentRun,
-        metadata: dict[str, Any] | None = None,
+        metadata: "TraceMetadata | None" = None,
         tags: list[str] | None = None,
         user_id: str | None = None,
         session_id: str | None = None,

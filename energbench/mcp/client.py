@@ -7,10 +7,10 @@ from typing import Any
 from loguru import logger
 from mcp import ClientSession
 from mcp.client.sse import sse_client
-from mcp.client.stdio import StdioServerParameters, stdio_client
 
 from energbench.agent.providers import ToolDefinition
 from energbench.agent.schema import MCPServerConfig
+from energbench.core.retry import retry_with_backoff
 
 
 class MCPClient:
@@ -57,7 +57,7 @@ class MCPClient:
     async def connect(self) -> None:
         """Connect to all configured MCP servers.
 
-        Supports both stdio (local) and SSE (remote) transports.
+        Supports remote SSE transports.
         """
         for server in self.servers:
             try:
@@ -78,10 +78,7 @@ class MCPClient:
         await stack.__aenter__()
 
         try:
-            if server.url:
-                session = await self._open_sse(stack, server)
-            else:
-                session = await self._open_stdio(stack, server)
+            session = await self._open_sse(stack, server)
         except Exception:
             await stack.aclose()
             raise
@@ -100,28 +97,8 @@ class MCPClient:
             }
 
         logger.info(
-            f"Connected to MCP server '{server.name}' "
-            f"({'SSE' if server.url else 'stdio'}) "
-            f"with {len(tools_result.tools)} tools"
+            f"Connected to MCP server '{server.name}' (SSE) with {len(tools_result.tools)} tools"
         )
-
-    async def _open_stdio(self, stack: AsyncExitStack, server: MCPServerConfig) -> ClientSession:
-        """Open a stdio transport and return an initialised session.
-
-        Args:
-            stack: The exit stack that owns the connection lifetime.
-            server: Server configuration with command.
-        """
-        params = StdioServerParameters(
-            command=server.command,
-            args=server.args,
-            env=server.env,
-        )
-
-        read, write = await stack.enter_async_context(stdio_client(params))
-        session = await stack.enter_async_context(ClientSession(read, write))
-        await session.initialize()
-        return session
 
     async def _open_sse(self, stack: AsyncExitStack, server: MCPServerConfig) -> ClientSession:
         """Open an SSE transport and return an initialised session.
@@ -138,20 +115,16 @@ class MCPClient:
     async def _reconnect_server(self, server_name: str) -> None:
         """Tear down and re-establish the connection for a single server.
 
-        Only SSE servers are reconnected; stdio failures are not retried.
-
         Args:
             server_name: Name of the server to reconnect.
 
         Raises:
-            ValueError: If the server is unknown or uses stdio transport.
+            ValueError: If the server is unknown.
             Exception: If the reconnection itself fails.
         """
         config = self._server_configs.get(server_name)
         if not config:
             raise ValueError(f"No config stored for server '{server_name}'")
-        if not config.url:
-            raise ValueError(f"Reconnection is only supported for SSE servers ('{server_name}' uses stdio)")
 
         old_stack = self._server_stacks.pop(server_name, None)
         if old_stack:
@@ -219,46 +192,45 @@ class MCPClient:
         server_config = self._server_configs.get(server_name)
         is_sse = server_config is not None and server_config.url is not None
 
-        last_error: Exception | None = None
-        attempts = 1 + (self.max_retries if is_sse else 0)
+        session = self._sessions.get(server_name)
+        if not session:
+            return json.dumps({"error": f"Server not connected: {server_name}"})
 
-        for attempt in range(attempts):
-            session = self._sessions.get(server_name)
-            if not session:
-                if attempt == 0:
-                    return json.dumps({"error": f"Server not connected: {server_name}"})
-                break
+        max_retries = self.max_retries if is_sse else 0
+        total_attempts = 1 + max_retries
 
+        async def call_once() -> str:
+            s = self._sessions.get(server_name)
+            if not s:
+                raise RuntimeError(f"Server not connected: {server_name}")
+            result = await s.call_tool(tool_name, arguments)
+            if result.content:
+                parts = [str(c.text) for c in result.content if hasattr(c, "text")]
+                if parts:
+                    return "".join(parts)
+            return json.dumps({"result": "Tool executed successfully"})
+
+        async def on_retry(attempt: int, exc: Exception, delay: float) -> None:
+            logger.warning(
+                f"Tool call '{tool_name}' failed (attempt {attempt + 1}/{total_attempts}), "
+                f"reconnecting to '{server_name}' in {delay:.1f}s: {exc}"
+            )
+            await asyncio.sleep(delay)
             try:
-                result = await session.call_tool(tool_name, arguments)
+                await self._reconnect_server(server_name)
+            except Exception as re_err:
+                logger.error(f"Reconnection to '{server_name}' failed: {re_err}")
 
-                if result.content:
-                    parts = [str(c.text) for c in result.content if hasattr(c, "text")]
-                    if parts:
-                        return "".join(parts)
-
-                return json.dumps({"result": "Tool executed successfully"})
-
-            except Exception as e:
-                last_error = e
-                if not is_sse or attempt >= self.max_retries:
-                    break
-
-                delay = self.retry_base_delay * (2 ** attempt)
-                logger.warning(
-                    f"Tool call '{tool_name}' failed (attempt {attempt + 1}/{attempts}), "
-                    f"reconnecting to '{server_name}' in {delay:.1f}s: {e}"
-                )
-                await asyncio.sleep(delay)
-
-                try:
-                    await self._reconnect_server(server_name)
-                except Exception as re_err:
-                    logger.error(f"Reconnection to '{server_name}' failed: {re_err}")
-                    break
-
-        logger.error(f"Tool call failed: {tool_name} - {last_error}")
-        return json.dumps({"error": str(last_error), "tool": tool_name})
+        try:
+            return await retry_with_backoff(
+                call_once,
+                max_retries=max_retries,
+                base_delay=self.retry_base_delay,
+                on_retry=on_retry,
+            )
+        except Exception as last_error:
+            logger.error(f"Tool call failed: {tool_name} - {last_error}")
+            return json.dumps({"error": str(last_error), "tool": tool_name})
 
     def get_executor(self) -> Any:
         """Get a tool executor function for use with ReActAgent.
@@ -313,14 +285,14 @@ class MCPToolAdapter:
 def get_default_mcp_servers() -> list[MCPServerConfig]:
     """Get default MCP server configurations.
 
-    Checks for remote URLs in environment variables first, then falls back to local commands.
+    Checks for remote URLs in environment variables.
 
     Environment variables:
         - RAG_SERVER_URL: URL for remote RAG server (e.g., https://example.com/sse)
         - DATABASE_SERVER_URL: URL for remote Database server
 
     Returns:
-        List of MCP server configs for RAG and Database servers.
+        List of remote MCP server configs for RAG and Database servers.
     """
     rag_url = os.getenv("RAG_SERVER_URL")
     db_url = os.getenv("DATABASE_SERVER_URL")
@@ -366,6 +338,11 @@ async def create_mcp_client(
     """
     if servers is None:
         servers = get_default_mcp_servers()
+    if not servers:
+        raise RuntimeError(
+            "MCP is enabled but no remote MCP servers are configured. "
+            "Set RAG_SERVER_URL and/or DATABASE_SERVER_URL."
+        )
 
     client = MCPClient(servers)
     await client.connect()

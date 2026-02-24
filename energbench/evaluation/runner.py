@@ -18,8 +18,10 @@ from .judges import (
     judge_sources,
 )
 from .models import (
+    CostEstimate,
     EvaluationReport,
     JudgeScore,
+    LatencyBreakdown,
     MetricScore,
     ModelComparison,
     QuestionEval,
@@ -32,25 +34,36 @@ from .strategy import get_strategy
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _normalize_approach(raw_score: int) -> float:
-    """Convert 1-5 approach score to 0-1 range."""
-    return (raw_score - 1) / 4.0
-
-
-def _normalize_source(raw_score: int) -> float:
-    """Convert 1-5 source validity score to 0-1 range."""
-    return (raw_score - 1) / 4.0
-
 
 def _aggregate_metrics(metrics_list: list[MetricScore]) -> MetricScore:
     """Average operational metrics across trials."""
     n = len(metrics_list)
     if n == 0:
         return MetricScore()
+
+    all_tool_keys = set().union(*(m.latency.per_tool_ms.keys() for m in metrics_list))
+    per_tool_avg = {
+        k: sum(m.latency.per_tool_ms.get(k, 0.0) for m in metrics_list) / n
+        for k in all_tool_keys
+    }
+
     return MetricScore(
         tool_calls=round(sum(m.tool_calls for m in metrics_list) / n),
         total_tokens=round(sum(m.total_tokens for m in metrics_list) / n),
         duration_seconds=sum(m.duration_seconds for m in metrics_list) / n,
+        latency=LatencyBreakdown(
+            wall_clock_ms=sum(m.latency.wall_clock_ms for m in metrics_list) / n,
+            llm_thinking_ms=sum(m.latency.llm_thinking_ms for m in metrics_list) / n,
+            tool_execution_ms=sum(m.latency.tool_execution_ms for m in metrics_list) / n,
+            per_tool_ms=per_tool_avg,
+        ),
+        cost=CostEstimate(
+            input_tokens=round(sum(m.cost.input_tokens for m in metrics_list) / n),
+            output_tokens=round(sum(m.cost.output_tokens for m in metrics_list) / n),
+            cached_tokens=round(sum(m.cost.cached_tokens for m in metrics_list) / n),
+            reasoning_tokens=round(sum(m.cost.reasoning_tokens for m in metrics_list) / n),
+            estimated_cost_usd=sum(m.cost.estimated_cost_usd for m in metrics_list) / n,
+        ),
     )
 
 
@@ -122,7 +135,7 @@ async def _evaluate_trial(
     return TrialEval(
         trial=trial_index,
         approach=JudgeScore(
-            score=_normalize_approach(raw_approach.approach_correctness),
+            score=float(raw_approach.approach_correctness),
             reasoning=raw_approach.reasoning,
             judge_type="approach",
         ),
@@ -132,7 +145,7 @@ async def _evaluate_trial(
             judge_type=strategy,
         ),
         sources=JudgeScore(
-            score=_normalize_source(raw_sources.source_validity),
+            score=float(raw_sources.source_validity),
             reasoning=raw_sources.reasoning,
             judge_type="sources",
         ),
@@ -206,6 +219,9 @@ async def _evaluate_model(
                 trial_evals.append(te)
             except FileNotFoundError:
                 print(f"    Warning: no trace for Q{qnum} trial {trial_index}, skipping")
+                continue
+            except Exception as e:
+                print(f"    Warning: Q{qnum} trial {trial_index} failed ({type(e).__name__}: {e}), skipping")
                 continue
 
         if not trial_evals:
@@ -453,6 +469,6 @@ async def run_evaluation(config: EvalConfig) -> dict[str, EvaluationReport]:
             "abs_tol": config.abs_tol,
             "rel_tol": config.rel_tol,
         }
-        _save_json(output_base / "eval_config.yaml", config_snapshot)
+        _save_json(output_base / "eval_config.json", config_snapshot)
 
     return reports

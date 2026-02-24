@@ -1,0 +1,51 @@
+import asyncio
+import inspect
+from collections.abc import Awaitable, Callable
+from typing import TypeVar
+
+T = TypeVar("T")
+
+
+async def retry_with_backoff(
+    fn: Callable[[], Awaitable[T]],
+    *,
+    max_retries: int,
+    base_delay: float,
+    on_retry: Callable[[int, Exception, float], None] | None = None,
+) -> T:
+    """Call *fn* up to ``1 + max_retries`` times with exponential backoff.
+
+    Args:
+        fn: Async callable to attempt.
+        max_retries: Number of retries after the first attempt.
+        base_delay: Base delay in seconds; each retry waits ``base_delay * 2**attempt``.
+        on_retry: Optional callback invoked before sleeping on each failure.
+            Receives ``(attempt, exception, delay_seconds)``.
+            May be a plain function or an async coroutine function.
+
+    Returns:
+        The return value of *fn* on the first successful call.
+
+    Raises:
+        The last exception raised by *fn* after all retries are exhausted.
+    """
+    last_error: Exception | None = None
+
+    for attempt in range(1 + max_retries):
+        try:
+            return await fn()
+        except Exception as exc:
+            last_error = exc
+            if attempt >= max_retries:
+                break
+
+            delay = base_delay * (2 ** attempt)
+
+            if on_retry is not None:
+                result = on_retry(attempt, exc, delay)
+                if inspect.isawaitable(result):
+                    await result
+            else:
+                await asyncio.sleep(delay)
+
+    raise last_error  # type: ignore[misc]

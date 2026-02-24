@@ -14,6 +14,11 @@ class MCPServerConfig:
     description: str = ""
 
     def __post_init__(self) -> None:
-        """Validate that either command or url is provided."""
-        if not self.command and not self.url:
-            raise ValueError(f"Server '{self.name}' must have either 'command' or 'url'")
+        """Validate remote-only MCP server configuration."""
+        if not self.url:
+            raise ValueError(f"Server '{self.name}' must provide a remote 'url'")
+        if self.command:
+            raise ValueError(
+                f"Server '{self.name}' is configured with 'command', "
+                "but this MCP client supports remote URL servers only"
+            )

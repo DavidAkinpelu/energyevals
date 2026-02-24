@@ -11,7 +11,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from energbench.agent.schema import ModelSpec
 from energbench.benchmark import (
-    PROVIDERS,
     BenchmarkConfig,
     list_questions,
     load_config,
@@ -22,8 +21,14 @@ from energbench.benchmark import (
 from energbench.benchmark import (
     list_tools as list_tools_func,
 )
+from energbench.benchmark.config import validate_api_keys
+from energbench.core.errors import ConfigurationError
+from energbench.core.types import ProviderName
 from energbench.mcp import create_mcp_client
 from energbench.tools import create_default_registry
+
+PROVIDER_CHOICES = [str(provider) for provider in ProviderName]
+SEED_MODE_CHOICES = ["fixed", "rotate", "random_per_trial"]
 
 
 def parse_args() -> argparse.Namespace:
@@ -58,7 +63,7 @@ Config file (YAML):
     parser.add_argument(
         "--provider",
         "-p",
-        choices=list(PROVIDERS.keys()),
+        choices=PROVIDER_CHOICES,
         help="Override provider from config",
     )
     parser.add_argument(
@@ -119,6 +124,28 @@ Config file (YAML):
         help="Number of independent trials per question (default: 1). "
         "Produces trial_N/ subdirectories in trace output.",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Base seed for deterministic shuffling when shuffle=true.",
+    )
+    parser.add_argument(
+        "--seed-mode",
+        choices=SEED_MODE_CHOICES,
+        default=None,
+        help="Per-trial seed strategy when shuffle=true: fixed, rotate, or random_per_trial.",
+    )
+    parser.add_argument(
+        "--seeds",
+        default=None,
+        help="Comma-separated explicit per-trial seeds (e.g., '101,202,303'). Overrides seed/seed-mode.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate config, list tools and questions, then exit without calling any LLM APIs.",
+    )
 
     return parser.parse_args()
 
@@ -139,17 +166,20 @@ def apply_cli_overrides(config: BenchmarkConfig, args: argparse.Namespace) -> No
                 print(f"Error: Invalid model spec '{spec}'. Use format 'provider:model'")
                 sys.exit(1)
             provider, model = spec.split(":", 1)
-            if provider not in PROVIDERS:
+            if provider not in PROVIDER_CHOICES:
                 print(f"Error: Unknown provider '{provider}'")
-                print(f"Available: {', '.join(PROVIDERS.keys())}")
+                print(f"Available: {', '.join(PROVIDER_CHOICES)}")
                 sys.exit(1)
             config.models.append(ModelSpec(provider=provider, model=model))
     elif args.provider or args.model:
         # Legacy single-model override
         if len(config.models) > 1:
             print("Warning: --provider/--model overrides multi-model config to single model")
+        if args.provider and not args.model:
+            print("Error: --provider requires --model (no provider defaults are assumed).")
+            sys.exit(1)
         provider = args.provider or config.models[0].provider
-        model = args.model or PROVIDERS[provider]["default_model"]
+        model = args.model or config.models[0].model
         is_reasoning = None
         if args.reasoning_model:
             is_reasoning = (
@@ -181,6 +211,20 @@ def apply_cli_overrides(config: BenchmarkConfig, args: argparse.Namespace) -> No
     # Trial override
     if args.num_trials is not None:
         config.num_trials = args.num_trials
+    if args.seed is not None:
+        config.seed = args.seed
+    if args.seed_mode is not None:
+        config.seed_mode = args.seed_mode
+    if args.seeds is not None:
+        try:
+            parsed_seeds = [int(s.strip()) for s in args.seeds.split(",") if s.strip()]
+        except ValueError:
+            print("Error: --seeds must be a comma-separated list of integers")
+            sys.exit(1)
+        if not parsed_seeds:
+            print("Error: --seeds cannot be empty")
+            sys.exit(1)
+        config.seeds = parsed_seeds
 
     # Tool overrides
     if args.tools:
@@ -191,6 +235,13 @@ def apply_cli_overrides(config: BenchmarkConfig, args: argparse.Namespace) -> No
         exclude_list = [t.strip() for t in args.exclude_tools.split(",")]
         config.tools_config.exclude = exclude_list
         config.tools_config.include = []
+
+    errors = config.validate()
+    if errors:
+        print("Error: Invalid configuration after CLI overrides:")
+        for err in errors:
+            print(f"  - {err}")
+        sys.exit(1)
 
 
 async def handle_list_tools(config: BenchmarkConfig) -> int:
@@ -237,8 +288,27 @@ async def main() -> int:
     # List questions or run benchmark
     if args.list_questions:
         return list_questions(config)
-    else:
-        return await run_benchmark(config)
+
+    # --dry-run: validate config + show summary without calling any LLM APIs
+    if args.dry_run:
+        try:
+            validate_api_keys(config)
+            key_status = "OK"
+        except ConfigurationError as e:
+            key_status = f"MISSING — {e}"
+        print_header("Dry Run Summary")
+        print(f"  Config file:   {config.config_path}")
+        print(f"  Models:        {', '.join(m.display_name for m in config.models)}")
+        print(f"  Questions:     {config.questions or 'all'}")
+        print(f"  Max iterations:{config.max_iterations}")
+        print(f"  Tool timeout:  {config.tool_timeout}s")
+        print(f"  Max retries:   {config.max_retries}")
+        print(f"  Retry delay:   {config.retry_base_delay}s")
+        print(f"  API keys:      {key_status}")
+        print("\n  Config is valid. Exiting (--dry-run).")
+        return 0
+
+    return await run_benchmark(config)
 
 
 if __name__ == "__main__":

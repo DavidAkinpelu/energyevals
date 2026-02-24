@@ -1,6 +1,4 @@
 from .config import (
-    DEFAULT_CONFIG,
-    PROVIDERS,
     BenchmarkConfig,
     ToolsConfig,
     load_config,
@@ -22,8 +20,6 @@ from .tools import build_tool_executor, filter_tools, list_tools
 
 __all__ = [
     "BenchmarkConfig",
-    "DEFAULT_CONFIG",
-    "PROVIDERS",
     "ToolsConfig",
     "load_config",
     "print_config",

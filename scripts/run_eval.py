@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from energbench.benchmark.config import BenchmarkConfig
 from energbench.evaluation.config import EvalConfig, load_eval_config
 from energbench.evaluation.runner import run_evaluation
 
@@ -31,7 +32,7 @@ Examples:
     parser.add_argument(
         "--config", "-c",
         type=Path,
-        default=Path("configs/eval_config.yaml"),
+        default=None,
         help="Path to eval config YAML (default: configs/eval_config.yaml)",
     )
     parser.add_argument(
@@ -65,7 +66,7 @@ Examples:
     parser.add_argument(
         "--questions", "-q",
         default=None,
-        help="Comma-separated question IDs to evaluate (e.g. 1,3,5)",
+        help="Question IDs to evaluate: comma-separated (e.g. 1,3,5) or range (e.g. 1-5)",
     )
     parser.add_argument(
         "--compare",
@@ -95,7 +96,7 @@ def apply_cli_overrides(config: EvalConfig, args: argparse.Namespace) -> None:
     if args.model is not None:
         config.models = [args.model]
     if args.questions is not None:
-        config.questions = [int(q.strip()) for q in args.questions.split(",")]
+        config.questions = BenchmarkConfig._parse_questions(args.questions)
     if args.compare:
         config.compare = True
     if args.judge_model is not None:
@@ -107,8 +108,12 @@ def main() -> int:
     args = parse_args()
     base_path = Path(__file__).parent.parent
 
-    config_path = args.config if args.config.exists() else None
-    config = load_eval_config(config_path, base_path=base_path)
+    DEFAULT_CONFIG = base_path / "configs" / "eval_config.yaml"
+    if args.config is not None:
+        config = load_eval_config(args.config, base_path=base_path)
+    else:
+        config_path = DEFAULT_CONFIG if DEFAULT_CONFIG.exists() else None
+        config = load_eval_config(config_path, base_path=base_path)
     apply_cli_overrides(config, args)
 
     print(f"{'=' * 70}")

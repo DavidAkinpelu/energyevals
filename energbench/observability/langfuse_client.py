@@ -7,7 +7,7 @@ from loguru import logger
 
 from energbench.agent.schema import AgentRun, AgentStep, StepType
 
-from .base import BaseObserver
+from .base import BaseObserver, TraceMetadata
 
 try:
     from langfuse import Langfuse as _Langfuse
@@ -96,7 +96,7 @@ class LangfuseObserver(BaseObserver):
     def trace_agent_run(
         self,
         run: AgentRun,
-        metadata: dict[str, Any] | None = None,
+        metadata: "TraceMetadata | None" = None,
         tags: list[str] | None = None,
         user_id: str | None = None,
         session_id: str | None = None,

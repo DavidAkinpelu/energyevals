@@ -9,17 +9,6 @@ from energbench.mcp import MCPClient, MCPServerConfig, get_default_mcp_servers
 class TestMCPServerConfig:
     """Tests for MCPServerConfig dataclass."""
 
-    def test_config_with_command(self):
-        """Test creating config with command."""
-        config = MCPServerConfig(
-            name="test-server",
-            command="test-command",
-            description="Test server",
-        )
-        assert config.name == "test-server"
-        assert config.command == "test-command"
-        assert config.url is None
-
     def test_config_with_url(self):
         """Test creating config with URL."""
         config = MCPServerConfig(
@@ -31,21 +20,20 @@ class TestMCPServerConfig:
         assert config.url == "https://example.com/sse"
         assert config.command is None
 
-    def test_config_validation_fails_without_command_or_url(self):
-        """Test that config validation fails without command or URL."""
-        with pytest.raises(ValueError, match="must have either 'command' or 'url'"):
+    def test_config_validation_fails_without_url(self):
+        """Test that config validation fails without URL."""
+        with pytest.raises(ValueError, match="must provide a remote 'url'"):
             MCPServerConfig(name="test-server", description="Test server")
 
-    def test_config_with_both_command_and_url(self):
-        """Test creating config with both command and URL (allowed, URL takes precedence)."""
-        config = MCPServerConfig(
-            name="test-server",
-            command="test-command",
-            url="https://example.com/sse",
-            description="Test server",
-        )
-        assert config.command == "test-command"
-        assert config.url == "https://example.com/sse"
+    def test_config_with_command_rejected(self):
+        """Test that command-based server config is rejected in remote-only mode."""
+        with pytest.raises(ValueError, match="remote URL servers only"):
+            MCPServerConfig(
+                name="test-server",
+                command="test-command",
+                url="https://example.com/sse",
+                description="Test server",
+            )
 
 
 class TestGetDefaultMCPServers:
@@ -101,34 +89,8 @@ class TestMCPClientConnection:
     """Tests for MCPClient connection logic."""
 
     @pytest.mark.asyncio
-    async def test_connect_routes_to_stdio(self):
-        """Test that servers with command use stdio connection."""
-        config = MCPServerConfig(
-            name="test-server",
-            command="test-command",
-        )
-
-        client = MCPClient([config])
-
-        # Mock session and tools
-        mock_session = MagicMock()
-        mock_tools_result = MagicMock()
-        mock_tools_result.tools = []
-        mock_session.list_tools = AsyncMock(return_value=mock_tools_result)
-
-        # Mock the transport-level methods (what _connect_server actually calls)
-        client._open_stdio = AsyncMock(return_value=mock_session)
-        client._open_sse = AsyncMock(return_value=mock_session)
-
-        await client.connect()
-
-        # Verify stdio was called, not SSE
-        client._open_stdio.assert_called_once()
-        client._open_sse.assert_not_called()
-
-    @pytest.mark.asyncio
     async def test_connect_routes_to_sse(self):
-        """Test that servers with URL use SSE connection."""
+        """Test that URL servers use SSE connection."""
         config = MCPServerConfig(
             name="test-server",
             url="https://example.com/sse",
@@ -142,15 +104,12 @@ class TestMCPClientConnection:
         mock_tools_result.tools = []
         mock_session.list_tools = AsyncMock(return_value=mock_tools_result)
 
-        # Mock the transport-level methods (what _connect_server actually calls)
-        client._open_stdio = AsyncMock(return_value=mock_session)
         client._open_sse = AsyncMock(return_value=mock_session)
 
         await client.connect()
 
-        # Verify SSE was called, not stdio
+        # Verify SSE was called
         client._open_sse.assert_called_once()
-        client._open_stdio.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_disconnect_cleans_up_connections(self):
@@ -198,3 +157,15 @@ class TestMCPClientProperties:
         client._connected = True
         assert not client.is_connected
 
+
+class TestCreateMCPClient:
+    """Tests for create_mcp_client helper."""
+
+    @pytest.mark.asyncio
+    async def test_create_mcp_client_requires_remote_servers(self):
+        """MCP client helper should fail fast when no remote server URLs are configured."""
+        from energbench.mcp.client import create_mcp_client
+
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(RuntimeError, match="no remote MCP servers are configured"):
+                await create_mcp_client()

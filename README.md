@@ -143,6 +143,18 @@ Inside the interactive session, type your question at the `>` prompt. The agent 
 ### Running Benchmarks
 
 For detailed benchmark configuration, custom questions, evaluation, and multi-model comparison, see the [Benchmark Guide](docs/BENCHMARK_GUIDE.md).
+Benchmark runs require at least one explicit `models` entry in config; there is no provider/model fallback.
+
+Multi-trial seed controls are configured in `agent`:
+
+```yaml
+agent:
+  num_trials: 3
+  shuffle: true
+  seed_mode: rotate              # fixed | rotate | random_per_trial
+  seed: 12345                    # optional base seed
+  # seeds: [101, 202, 303]       # optional explicit per-trial seeds
+```
 
 ## Architecture
 
@@ -209,5 +221,3 @@ mypy energbench
 ```
 
 ## Documentation
-
-

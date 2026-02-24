@@ -301,11 +301,11 @@ class JSONFileObserver(BaseObserver):
             trace_output_dir = self.output_dir / model_dir
             if self._trial is not None:
                 trace_output_dir = trace_output_dir / f"trial_{self._trial}"
-            trace_output_dir.mkdir(parents=True, exist_ok=True)
             filename = f"trace_q{question_id}_{trace_id}.json"
         else:
             trace_output_dir = self.output_dir
             filename = f"trace_{trace_id}.json"
+        trace_output_dir.mkdir(parents=True, exist_ok=True)
 
         if self.single_file:
             filepath = trace_output_dir / self.filename

@@ -1,15 +1,28 @@
 # MCP Client Usage Guide
 
-The `MCPClient` supports connecting to MCP servers using both local (stdio) and remote (SSE/URL) transports.
+The `MCPClient` supports connecting to MCP servers using remote SSE/URL transports.
 
 ## Quick Start
 
-### Local Servers (Default)
+### Remote Servers (via env vars)
+
+`get_default_mcp_servers()` builds server configs from environment variables. If
+neither `RAG_SERVER_URL` nor `DATABASE_SERVER_URL` is set, `create_mcp_client()`
+raises an error and MCP startup fails fast.
+
+Set the env vars first:
+
+```bash
+# .env file
+RAG_SERVER_URL=https://energy-rag-server-production.up.railway.app/sse
+DATABASE_SERVER_URL=https://energy-database-server-production.up.railway.app/sse
+```
+
+Then create a client — it will automatically use the configured URLs:
 
 ```python
 from energbench.mcp import create_mcp_client
 
-# Uses local servers by default
 client = await create_mcp_client()
 
 # List available tools
@@ -25,18 +38,6 @@ result = await client.call_tool("search_documents", {
 # Clean up
 await client.disconnect()
 ```
-
-### Remote Servers via Environment Variables
-
-Set environment variables to use deployed servers:
-
-```bash
-# .env file
-RAG_SERVER_URL=https://energy-rag-server-production.up.railway.app/sse
-DATABASE_SERVER_URL=https://energy-database-server-production.up.railway.app/sse
-```
-
-Then use the same code as above - it will automatically detect and use the URLs.
 
 ### Explicit Configuration
 
@@ -62,50 +63,6 @@ client = MCPClient(servers)
 await client.connect()
 ```
 
-#### Local Servers Only
-
-```python
-from energbench.mcp import MCPServerConfig, MCPClient
-
-servers = [
-    MCPServerConfig(
-        name="energy-rag",
-        command="energy-rag-server",
-        description="Local RAG server",
-    ),
-    MCPServerConfig(
-        name="energy-database",
-        command="energy-database-server",
-        description="Local Database server",
-    ),
-]
-
-client = MCPClient(servers)
-await client.connect()
-```
-
-#### Mixed Local and Remote
-
-```python
-servers = [
-    # Local RAG server
-    MCPServerConfig(
-        name="energy-rag",
-        command="energy-rag-server",
-        description="Local RAG server",
-    ),
-    # Remote Database server
-    MCPServerConfig(
-        name="energy-database",
-        url="https://your-db-server.com/sse",
-        description="Remote Database server",
-    ),
-]
-
-client = MCPClient(servers)
-await client.connect()
-```
-
 ## Configuration Options
 
 ### MCPServerConfig
@@ -115,13 +72,13 @@ The `MCPServerConfig` dataclass supports the following fields:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `name` | `str` | Yes | Unique identifier for the server |
-| `command` | `str` | Conditional* | Command to run local server (e.g., `"energy-rag-server"`) |
-| `url` | `str` | Conditional* | URL for remote server (e.g., `"https://example.com/sse"`) |
-| `args` | `list[str]` | No | Command-line arguments (only for local servers) |
-| `env` | `dict[str, str]` | No | Environment variables (only for local servers) |
+| `command` | `str` | No | Not supported by this client (remote-only mode) |
+| `url` | `str` | Yes | URL for remote server (e.g., `"https://example.com/sse"`) |
+| `args` | `list[str]` | No | Reserved (unused in remote-only mode) |
+| `env` | `dict[str, str]` | No | Reserved (unused in remote-only mode) |
 | `description` | `str` | No | Human-readable description |
 
-\* Either `command` or `url` must be provided (but not both).
+\* `url` is required. `command`-based stdio configs are rejected.
 
 ### Environment Variables
 
@@ -130,18 +87,9 @@ The `get_default_mcp_servers()` function checks these environment variables:
 - `RAG_SERVER_URL`: URL for remote RAG server
 - `DATABASE_SERVER_URL`: URL for remote Database server
 
-If not set, it falls back to local servers using commands:
-- `energy-rag-server`
-- `energy-database-server`
+If neither variable is set, `create_mcp_client()` raises an error.
 
-## Transport Types
-
-### stdio (Local Servers)
-
-- **When**: Server runs as a subprocess on the same machine
-- **How**: Communicates via stdin/stdout
-- **Requires**: Server command available in PATH or virtualenv
-- **Config**: Provide `command` field in `MCPServerConfig`
+## Transport Type
 
 ### SSE (Remote Servers)
 
@@ -164,11 +112,6 @@ For instructions on deploying MCP servers to Railway or other platforms, see:
 ## Troubleshooting
 
 ### Connection Issues
-
-**Local servers:**
-- Ensure servers are installed: `pip install ./mcp-servers/rag-server ./mcp-servers/database-server`
-- Verify commands are available: `which energy-rag-server`
-- Check environment variables are set in `.env` file
 
 **Remote servers:**
 - Verify URL is accessible: `curl https://your-server.com/health`
@@ -255,4 +198,3 @@ Returns default server configurations, checking environment variables for URLs.
 
 **Returns:**
 - List of `MCPServerConfig` for RAG and Database servers
-

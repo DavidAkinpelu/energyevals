@@ -1,6 +1,5 @@
 import json
 import os
-import time
 from typing import Any, Literal
 
 import pandas as pd
@@ -143,8 +142,6 @@ class GridStatusAPITool(BaseTool):
             JSON string. On success contains 'preview' (first rows as list of dicts), 'filepath'
             (absolute path to saved CSV), and 'row_count'. On error contains the full API error response.
         """
-        time.sleep(5)
-
         page = 1
         page_size = GRID_STATUS_PAGE_SIZE
         order = "asc"

@@ -23,7 +23,7 @@ def _serialize_result(r: BenchmarkResult) -> dict:
 def save_results(
     all_results: dict[str, dict[int, list[BenchmarkResult]]],
     config: BenchmarkConfig,
-    seed: int | None = None,
+    trial_seeds: dict[int, int | None] | None = None,
 ) -> Path:
     """Save benchmark results to JSON.
 
@@ -82,7 +82,14 @@ def save_results(
             "max_iterations": config.max_iterations,
             "num_trials": config.num_trials,
             "shuffle": config.shuffle,
-            "seed": seed,
+            "seed": config.seed,
+            "seed_mode": config.seed_mode,
+            "seeds": config.seeds,
+            "trial_seeds": (
+                {f"trial_{trial}": seed for trial, seed in sorted(trial_seeds.items())}
+                if trial_seeds
+                else {}
+            ),
         },
         "summary": {
             "total_questions": len(first_results),

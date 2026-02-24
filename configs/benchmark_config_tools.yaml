@@ -7,6 +7,7 @@
 
 # Multi-model format (recommended for comparing models):
 # Uncomment additional models to run benchmarks across multiple providers
+# At least one model must be listed; benchmark runs do not use provider/model fallbacks.
 models:
   # - provider: anthropic
   #   model: claude-3-5-sonnet-20260219
@@ -67,8 +68,10 @@ mcp:
 agent:
   max_iterations: 25                 # Maximum iterations per question
   num_trials: 3                      # Independent trials per question (for statistical eval)
-  shuffle: false                     # Randomise question order across all trials
-  seed: null                         # Integer for reproducible shuffles; null = random each run
+  shuffle: true                     # Shuffle question order within each trial
+  seed_mode: rotate                  # fixed | rotate | random_per_trial (ignored when shuffle=false)
+  seed: 0                         # Base seed used by fixed/rotate when seeds is not provided
+  # seeds: [101, 202, 303]           # Optional explicit per-trial seeds; length must equal num_trials
   # csv_threshold: 20                # Rows above which tool results are saved to CSV not inline
 
 # =============================================================================

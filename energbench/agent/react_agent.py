@@ -1,4 +1,6 @@
 import asyncio
+import concurrent.futures
+import inspect
 import json
 import re
 import time
@@ -14,14 +16,13 @@ from .constants import (
     QUERY_TRUNCATE_LENGTH,
     TOOL_TIMEOUT,
 )
+from energbench.core.retry import retry_with_backoff
 
-_RAW_TOOL_CALL_RE = re.compile(r"<function=\w+.*?</function>", re.DOTALL)
 from .exceptions import ProviderError, ToolExecutionError
 from .processors import ResultProcessor
 from .prompts import get_system_prompt
 from .providers import BaseProvider, ProviderResponse, ToolDefinition
 from .schema import (
-    AgentConfig,
     AgentRun,
     AgentStep,
     ImageContent,
@@ -30,6 +31,8 @@ from .schema import (
     TextContent,
     ToolExecutor,
 )
+
+_RAW_TOOL_CALL_RE = re.compile(r"<function=\w+.*?</function>", re.DOTALL)
 
 
 class ReActAgent:
@@ -123,9 +126,11 @@ class ReActAgent:
                 run.total_latency_ms += response.latency_ms
 
                 if response.tool_calls:
-                    await self._process_tool_calls(
+                    should_continue = await self._process_tool_calls(
                         response, messages, run, iteration
                     )
+                    if not should_continue:
+                        break
                 else:
                     if response.content and _RAW_TOOL_CALL_RE.search(response.content):
                         logger.warning(
@@ -214,21 +219,24 @@ class ReActAgent:
         messages: list[Message],
         tools: list[ToolDefinition] | None,
     ) -> ProviderResponse:
-        last_error: Exception | None = None
-        for attempt in range(1 + self.max_retries):
-            try:
-                return await self.provider.complete(messages, tools=tools, temperature=0.0)
-            except Exception as e:
-                last_error = e
-                if attempt >= self.max_retries:
-                    break
-                delay = self.retry_base_delay * (2 ** attempt)
-                logger.warning(
-                    f"Provider call failed (attempt {attempt + 1}/{1 + self.max_retries}), "
-                    f"retrying in {delay:.1f}s: {e}"
-                )
-                await asyncio.sleep(delay)
-        raise ProviderError(str(last_error), provider=self.provider.provider_name)
+        total_attempts = 1 + self.max_retries
+
+        async def on_retry(attempt: int, exc: Exception, delay: float) -> None:
+            logger.warning(
+                f"Provider call failed (attempt {attempt + 1}/{total_attempts}), "
+                f"retrying in {delay:.1f}s: {exc}"
+            )
+            await asyncio.sleep(delay)
+
+        try:
+            return await retry_with_backoff(
+                lambda: self.provider.complete(messages, tools=tools, temperature=0.0),
+                max_retries=self.max_retries,
+                base_delay=self.retry_base_delay,
+                on_retry=on_retry,
+            )
+        except Exception as exc:
+            raise ProviderError(str(exc), provider=self.provider.provider_name) from exc
 
     async def _process_tool_calls(
         self,
@@ -236,7 +244,13 @@ class ReActAgent:
         messages: list[Message],
         run: AgentRun,
         iteration: int = 0,
-    ) -> None:
+    ) -> bool:
+        """Process tool calls from the provider response.
+
+        Returns:
+            True if the agent loop should continue, False if a non-recoverable
+            tool error requires stopping immediately.
+        """
         messages.append(
             Message(
                 role="assistant",
@@ -256,16 +270,15 @@ class ReActAgent:
         )
 
         # Log the model's reasoning as a THOUGHT step (owns the LLM latency + tokens).
-        if response.content:
-            run.steps.append(
-                AgentStep(
-                    step_type=StepType.THOUGHT,
-                    content=response.content,
-                    iteration=iteration,
-                    tokens_used=response.input_tokens + response.output_tokens,
-                    latency_ms=response.latency_ms,
-                )
+        run.steps.append(
+            AgentStep(
+                step_type=StepType.THOUGHT,
+                content=response.content or "",
+                iteration=iteration,
+                tokens_used=response.input_tokens + response.output_tokens,
+                latency_ms=response.latency_ms,
             )
+        )
 
         llm_call_timestamp = time.time()
 
@@ -292,7 +305,7 @@ class ReActAgent:
                 tool_result = await self._execute_tool(
                     tool_call.name, tool_call.arguments
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 error_payload = {"error": f"Tool '{tool_call.name}' timed out after {self.tool_timeout}s"}
                 logger.error(error_payload["error"])
                 tool_result = json.dumps(error_payload)
@@ -302,6 +315,23 @@ class ReActAgent:
                 tool_result = json.dumps(error_payload)
 
             execution_time = (time.time() - start_time) * 1000
+
+            # Check for non-recoverable tool failure before processing further.
+            try:
+                result_data = json.loads(tool_result)
+                if (
+                    isinstance(result_data, dict)
+                    and not result_data.get("success", True)
+                    and result_data.get("metadata", {}).get("recoverable") is False
+                ):
+                    error_msg = result_data.get("error") or f"Non-recoverable error in tool '{tool_call.name}'"
+                    logger.error(f"Non-recoverable tool error: {error_msg}")
+                    run.success = False
+                    run.error = error_msg
+                    run.steps.append(AgentStep(step_type=StepType.ERROR, content=error_msg))
+                    return False
+            except json.JSONDecodeError:
+                pass  # Not valid JSON or unexpected shape — treat as recoverable
 
             context_result, csv_path = self._result_processor.process_result(
                 tool_call.name, tool_result
@@ -328,6 +358,8 @@ class ReActAgent:
                 context_result=context_result,
             )
             messages.append(tool_message)
+
+        return True
 
     def _create_tool_message(
         self,
@@ -379,10 +411,20 @@ class ReActAgent:
         if tool_name not in self._tool_registry:
             raise ToolExecutionError(f"Unknown tool: {tool_name}", tool_name=tool_name)
 
-        result = self.tool_executor(tool_name, arguments)
-
-        if hasattr(result, "__await__"):
-            result = await asyncio.wait_for(result, timeout=self.tool_timeout)
+        if inspect.iscoroutinefunction(self.tool_executor):
+            result = await asyncio.wait_for(
+                self.tool_executor(tool_name, arguments),
+                timeout=self.tool_timeout,
+            )
+        else:
+            loop = asyncio.get_running_loop()
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                result = await asyncio.wait_for(
+                    loop.run_in_executor(executor, self.tool_executor, tool_name, arguments),
+                    timeout=self.tool_timeout,
+                )
+            if inspect.isawaitable(result):
+                result = await asyncio.wait_for(result, timeout=self.tool_timeout)
 
         if isinstance(result, dict):
             return json.dumps(result, indent=2, default=str)
@@ -401,4 +443,3 @@ class ReActAgent:
                 "arguments": arguments,
             }
         )
-

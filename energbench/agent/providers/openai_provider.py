@@ -7,6 +7,8 @@ from typing import Any, Literal
 
 from openai import AsyncOpenAI
 
+from energbench.agent.exceptions import ProviderError
+
 from .base_provider import (
     BaseProvider,
     ImageContent,
@@ -239,56 +241,62 @@ class OpenAIProvider(BaseProvider):
 
         latency_ms = (time.time() - start_time) * 1000
 
-        tool_calls = None
-        content = ""
-        if hasattr(response, "output_text") and response.output_text:
-            content = response.output_text
-        else:
-            for item in response.output:
-                if getattr(item, "type", None) == "message":
-                    for block in item.content:
-                        if getattr(block, "type", None) in {"output_text", "text"}:
-                            content += block.text
-                elif getattr(item, "type", None) in {"tool_call", "function_call"}:
-                    tool_calls = tool_calls or []
-                    name = getattr(item, "name", None) or getattr(item, "tool_name", None)
-                    arguments = getattr(item, "arguments", None)
-                    if arguments is None and getattr(item, "function", None):
-                        name = name or item.function.name
-                        arguments = getattr(item.function, "arguments", None)
-                    call_id = getattr(item, "call_id", None) or getattr(item, "id", None)
-                    try:
-                        parsed_args = json.loads(arguments) if isinstance(arguments, str) else arguments or {}
-                    except json.JSONDecodeError:
-                        parsed_args = {}
-                    tool_calls.append(ToolCall(id=call_id or "", name=name or "", arguments=parsed_args))
+        try:
+            tool_calls = None
+            content = ""
+            if hasattr(response, "output_text") and response.output_text:
+                content = response.output_text
+            else:
+                for item in response.output:
+                    if getattr(item, "type", None) == "message":
+                        for block in item.content:
+                            if getattr(block, "type", None) in {"output_text", "text"}:
+                                content += block.text
+                    elif getattr(item, "type", None) in {"tool_call", "function_call"}:
+                        tool_calls = tool_calls or []
+                        name = getattr(item, "name", None) or getattr(item, "tool_name", None)
+                        arguments = getattr(item, "arguments", None)
+                        if arguments is None and getattr(item, "function", None):
+                            name = name or item.function.name
+                            arguments = getattr(item.function, "arguments", None)
+                        call_id = getattr(item, "call_id", None) or getattr(item, "id", None)
+                        try:
+                            parsed_args = json.loads(arguments) if isinstance(arguments, str) else arguments or {}
+                        except json.JSONDecodeError:
+                            parsed_args = {}
+                        tool_calls.append(ToolCall(id=call_id or "", name=name or "", arguments=parsed_args))
 
-        cached_tokens = 0
-        input_tokens = 0
-        output_tokens = 0
-        reasoning_tokens = 0
-        if response.usage:
-            input_tokens = getattr(response.usage, "input_tokens", 0) or 0
-            output_tokens = getattr(response.usage, "output_tokens", 0) or 0
-            details = getattr(response.usage, "input_tokens_details", None)
-            if details is not None:
-                cached_tokens = getattr(details, "cached_tokens", 0) or 0
-            output_details = getattr(response.usage, "output_tokens_details", None)
-            if output_details is not None:
-                reasoning_tokens = getattr(output_details, "reasoning_tokens", 0) or 0
+            cached_tokens = 0
+            input_tokens = 0
+            output_tokens = 0
+            reasoning_tokens = 0
+            if response.usage:
+                input_tokens = getattr(response.usage, "input_tokens", 0) or 0
+                output_tokens = getattr(response.usage, "output_tokens", 0) or 0
+                details = getattr(response.usage, "input_tokens_details", None)
+                if details is not None:
+                    cached_tokens = getattr(details, "cached_tokens", 0) or 0
+                output_details = getattr(response.usage, "output_tokens_details", None)
+                if output_details is not None:
+                    reasoning_tokens = getattr(output_details, "reasoning_tokens", 0) or 0
 
-        return ProviderResponse(
-            content=content,
-            tool_calls=tool_calls,
-            input_tokens=input_tokens,
-            cached_tokens=cached_tokens,
-            output_tokens=output_tokens,
-            reasoning_tokens=reasoning_tokens,
-            latency_ms=latency_ms,
-            model=response.model,
-            finish_reason=getattr(response, "status", None),
-            raw_response=response,
-        )
+            return ProviderResponse(
+                content=content,
+                tool_calls=tool_calls,
+                input_tokens=input_tokens,
+                cached_tokens=cached_tokens,
+                output_tokens=output_tokens,
+                reasoning_tokens=reasoning_tokens,
+                latency_ms=latency_ms,
+                model=response.model,
+                finish_reason=getattr(response, "status", None),
+                raw_response=response,
+            )
+        except (KeyError, AttributeError, IndexError, TypeError) as exc:
+            raise ProviderError(
+                f"Malformed API response: {exc}. Raw: {response!r}",
+                provider=self.provider_name,
+            ) from exc
 
     async def stream(
         self,
