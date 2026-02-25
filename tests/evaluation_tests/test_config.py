@@ -20,8 +20,8 @@ def test_load_eval_config_compare_and_reasoning_effort(tmp_path: Path) -> None:
                 "compare: true",
                 "judge:",
                 "  provider: openai",
-                "  model: gpt-4o",
-                "  reasoning_effort: high",
+                "  model: gpt-5-mini",
+                "  reasoning_effort: low",
             ]
         )
     )
@@ -29,4 +29,4 @@ def test_load_eval_config_compare_and_reasoning_effort(tmp_path: Path) -> None:
     config = load_eval_config(config_path, base_path=tmp_path)
 
     assert config.compare is True
-    assert config.judge.reasoning_effort == "high"
+    assert config.judge.reasoning_effort == "low"

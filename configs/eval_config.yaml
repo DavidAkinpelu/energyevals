@@ -10,7 +10,7 @@ judge:
   model: gpt-5-mini
   temperature: 0.0
   max_tokens: 4096
-  # reasoning_effort: medium  # Only used with OpenAI reasoning models (o1, o3)
+  reasoning_effort: low  # Only used with OpenAI reasoning models (o1, o3)
 
 # =============================================================================
 # Paths
