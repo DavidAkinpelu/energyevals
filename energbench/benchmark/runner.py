@@ -202,7 +202,7 @@ async def _setup_tools(config: BenchmarkConfig) -> tuple[list[ToolDefinition], M
     mcp_tools = []
     if config.mcp_enabled:
         try:
-            mcp_client = await create_mcp_client()
+            mcp_client = await create_mcp_client(sse_read_timeout=config.mcp_sse_read_timeout)
             mcp_tools = mcp_client.list_tools()
         except Exception as e:
             raise RuntimeError(
@@ -266,6 +266,7 @@ async def _run_model_benchmark(
             tool_timeout=config.tool_timeout,
             max_retries=config.max_retries,
             retry_base_delay=config.retry_base_delay,
+            max_tool_result_chars=config.max_tool_result_chars,
         )
 
         result = await run_question(

@@ -69,15 +69,17 @@ class CSVProcessor:
             return result, None
 
         # Tool already saved its own CSV — nothing to do
-        if isinstance(data, dict) and data.get("saved_csv"):
+        if isinstance(data, dict) and (data.get("saved_csv") or
+                (isinstance(data.get("data"), dict) and data["data"].get("saved_csv"))):
             return result, None
 
-        rows = None
-        columns = None
+        # Unwrap ToolResult envelope: {"success": ..., "data": {"rows": ...}}
+        inner: dict = data if isinstance(data, dict) else {}
+        if "success" in inner and isinstance(inner.get("data"), dict):
+            inner = inner["data"]
 
-        if isinstance(data, dict):
-            rows = data.get("rows")
-            columns = data.get("columns")
+        rows = inner.get("rows")
+        columns = inner.get("columns")
 
         if not rows or not isinstance(rows, list):
             return result, None
@@ -123,8 +125,8 @@ class CSVProcessor:
             }
 
             for key in ["database", "query", "table"]:
-                if key in data:
-                    context_data[key] = data[key]
+                if key in inner:
+                    context_data[key] = inner[key]
 
             return json.dumps(context_data, indent=2, default=str), str(csv_path)
 

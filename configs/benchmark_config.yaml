@@ -62,6 +62,7 @@ observability:
 
 mcp:
   enabled: true                      # Use MCP tools (requires server URLs in .env)
+  # sse_read_timeout: 600.0          # Seconds to wait for an SSE event before the connection is considered dead
 
 # =============================================================================
 # Agent Settings
@@ -70,14 +71,15 @@ mcp:
 agent:
   max_iterations: 25                 # Maximum iterations per question
   num_trials: 3                      # Independent trials per question (for statistical eval)
-  shuffle: false                     # Shuffle question order within each trial
+  shuffle: true                     # Shuffle question order within each trial
   seed_mode: rotate                  # fixed | rotate | random_per_trial (ignored when shuffle=false)
-  seed: null                         # Base seed used by fixed/rotate when seeds is not provided
-  # seeds: [101, 202, 303]           # Optional explicit per-trial seeds; length must equal num_trials
+  #seed: null                         # Base seed used by fixed/rotate when seeds is not provided
+  seeds: [101, 202, 303]              # Optional explicit per-trial seeds; length must equal num_trials
   # csv_threshold: 20                # Rows above which tool results are saved to CSV not inline
-  # tool_timeout: 60.0               # Seconds before a stalled tool call is cancelled
+  # tool_timeout: 120.0               # Seconds before a stalled tool call is cancelled
   # max_retries: 3                   # Maximum retries for provider complete() on transient errors
   # retry_base_delay: 1.0            # Base delay (seconds) for exponential backoff between retries
+  # max_tool_result_chars: 80000     # Truncate tool results to this many chars before adding to LLM context (0 = disabled)
 
 # =============================================================================
 # Tools Configuration

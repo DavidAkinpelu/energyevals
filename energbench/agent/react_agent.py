@@ -11,6 +11,7 @@ from loguru import logger
 from .constants import (
     CSV_THRESHOLD,
     MAX_ITERATIONS,
+    MAX_TOOL_RESULT_CHARS,
     PROVIDER_MAX_RETRIES,
     PROVIDER_RETRY_BASE_DELAY,
     QUERY_TRUNCATE_LENGTH,
@@ -56,6 +57,7 @@ class ReActAgent:
         tool_timeout: float = TOOL_TIMEOUT,
         max_retries: int = PROVIDER_MAX_RETRIES,
         retry_base_delay: float = PROVIDER_RETRY_BASE_DELAY,
+        max_tool_result_chars: int = MAX_TOOL_RESULT_CHARS,
     ):
         """Initialize the ReAct agent.
 
@@ -71,6 +73,7 @@ class ReActAgent:
             tool_timeout: Seconds before a stalled tool call is cancelled (default: 60).
             max_retries: Maximum retries for provider complete() on transient errors (default: 3).
             retry_base_delay: Base delay in seconds for exponential backoff (default: 1.0).
+            max_tool_result_chars: Truncate tool results to this many chars before adding to LLM context (0 = disabled).
         """
         self.provider = provider
         self.tools = tools or []
@@ -85,6 +88,7 @@ class ReActAgent:
         self.tool_timeout = tool_timeout
         self.max_retries = max_retries
         self.retry_base_delay = retry_base_delay
+        self.max_tool_result_chars = max_tool_result_chars
 
     def register_tool(self, tool: ToolDefinition) -> None:
         self.tools.append(tool)
@@ -336,6 +340,16 @@ class ReActAgent:
             context_result, csv_path = self._result_processor.process_result(
                 tool_call.name, tool_result
             )
+
+            if self.max_tool_result_chars > 0 and len(context_result) > self.max_tool_result_chars:
+                logger.warning(
+                    f"Tool {tool_call.name} result truncated from {len(context_result)} "
+                    f"to {self.max_tool_result_chars} chars before adding to context"
+                )
+                context_result = (
+                    context_result[: self.max_tool_result_chars]
+                    + f"\n...[truncated: result exceeded {self.max_tool_result_chars} chars]"
+                )
 
             logger.debug(f"Tool {tool_call.name} returned {len(tool_result)} chars")
             if csv_path:

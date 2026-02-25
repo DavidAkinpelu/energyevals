@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
+from loguru import logger
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -115,6 +116,9 @@ def main() -> int:
         config_path = DEFAULT_CONFIG if DEFAULT_CONFIG.exists() else None
         config = load_eval_config(config_path, base_path=base_path)
     apply_cli_overrides(config, args)
+
+    logger.remove()
+    logger.add(sys.stderr, level=config.log_level)
 
     print(f"{'=' * 70}")
     print("  energBench Evaluation Pipeline")
