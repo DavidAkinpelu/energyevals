@@ -55,7 +55,7 @@ class OpenAIProvider(BaseProvider):
         model: str = "gpt-4o-mini",
         api_key: str | None = None,
         base_url: str | None = None,
-        reasoning_effort: Literal["low", "medium", "high"] = "medium",
+        reasoning_effort: Literal["low", "medium", "high"] = "low",
         is_reasoning_model_override: bool | None = None,
         **kwargs: Any,
     ):

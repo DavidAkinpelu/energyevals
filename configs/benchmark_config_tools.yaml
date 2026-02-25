@@ -14,7 +14,8 @@ models:
   # - provider: google
   #   model: gemini-3-pro-preview
     - provider: openai
-      model: gpt-4o-mini
+      model: gpt-4.1-mini
+      #reasoning_effort: low
   # - provider: deepinfra
   #   model: meta-llama/Llama-3.3-70B-Instruct-Turbo
 
@@ -74,10 +75,10 @@ agent:
   #seed: 0                         # Base seed used by fixed/rotate when seeds is not provided
   seeds: [101, 202, 303]           # Optional explicit per-trial seeds; length must equal num_trials
   # csv_threshold: 20                # Rows above which tool results are saved to CSV not inline
-  # tool_timeout: 120.0               # Seconds before a stalled tool call is cancelled
+  tool_timeout: 240.0               # Seconds before a stalled tool call is cancelled
   # max_retries: 3                   # Maximum retries for provider complete() on transient errors
   # retry_base_delay: 1.0            # Base delay (seconds) for exponential backoff between retries
-  # max_tool_result_chars: 80000     # Truncate tool results to this many chars before adding to LLM context (0 = disabled)
+  max_tool_result_chars: 80000      # Truncate tool results to this many chars before adding to LLM context (0 = disabled)
 
 # =============================================================================
 # Tools Configuration

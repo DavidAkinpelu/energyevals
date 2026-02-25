@@ -204,6 +204,9 @@ async def _setup_tools(config: BenchmarkConfig) -> tuple[list[ToolDefinition], M
         try:
             mcp_client = await create_mcp_client(sse_read_timeout=config.mcp_sse_read_timeout)
             mcp_tools = mcp_client.list_tools()
+        except RuntimeError:
+            # All servers failed — re-raise with actionable hint.
+            raise
         except Exception as e:
             raise RuntimeError(
                 f"MCP setup failed (mcp.enabled=true): {e}\n"

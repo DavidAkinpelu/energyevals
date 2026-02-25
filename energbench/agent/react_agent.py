@@ -52,7 +52,7 @@ class ReActAgent:
         max_iterations: int = MAX_ITERATIONS,
         system_prompt: str | None = None,
         csv_threshold: int = CSV_THRESHOLD,
-        csv_output_dir: str = "./agent_outputs",
+        csv_output_dir: str = "./run_outputs",
         result_processor: ResultProcessor | None = None,
         tool_timeout: float = TOOL_TIMEOUT,
         max_retries: int = PROVIDER_MAX_RETRIES,

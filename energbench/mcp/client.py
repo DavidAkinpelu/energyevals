@@ -60,14 +60,24 @@ class MCPClient:
     async def connect(self) -> None:
         """Connect to all configured MCP servers.
 
-        Supports remote SSE transports.
+        Servers that fail to connect are skipped with a warning so the
+        benchmark can continue with whichever servers are reachable.
+        Raises RuntimeError only if *every* configured server fails.
         """
+        failed: list[str] = []
         for server in self.servers:
             try:
                 await self._connect_server(server)
             except Exception as e:
-                logger.error(f"Failed to connect to MCP server '{server.name}': {e}")
-                raise
+                logger.warning(
+                    f"MCP server '{server.name}' unavailable, skipping: {type(e).__name__}: {e}"
+                )
+                failed.append(server.name)
+
+        if failed and not self._sessions:
+            raise RuntimeError(
+                f"All MCP servers failed to connect: {', '.join(failed)}"
+            )
 
         self._connected = True
 

@@ -33,7 +33,7 @@ class TestCreateJudgeProvider:
         assert provider.provider_name == "google"
 
     def test_reasoning_effort_does_not_force_non_reasoning(self):
-        cfg = JudgeConfig(provider="openai", model="gpt-4o", reasoning_effort="high")
+        cfg = JudgeConfig(provider="openai", model="gpt-5-mini", reasoning_effort="low")
         provider = create_judge_provider(cfg)
         assert provider.provider_name == "openai"
         assert getattr(provider, "is_reasoning_model", False) is False
@@ -104,11 +104,11 @@ class TestJudgeCall:
         mock_response.content = '{"approach_correctness": 4, "reasoning": "Good approach"}'
         mock_provider.complete = AsyncMock(return_value=mock_response)
 
-        cfg = JudgeConfig(model="o3-mini", reasoning_effort="high")
+        cfg = JudgeConfig(model="gpt-5-mini", reasoning_effort="low")
         await _judge_call(mock_provider, cfg, "test prompt", ApproachResult)
 
         call_kwargs = mock_provider.complete.call_args
-        assert call_kwargs.kwargs["reasoning_effort"] == "high"
+        assert call_kwargs.kwargs["reasoning_effort"] == "low"
 
     @pytest.mark.asyncio
     async def test_reasoning_effort_not_passed_to_non_openai(self):
@@ -118,7 +118,7 @@ class TestJudgeCall:
         mock_response.content = '{"approach_correctness": 4, "reasoning": "Good approach"}'
         mock_provider.complete = AsyncMock(return_value=mock_response)
 
-        cfg = JudgeConfig(model="gpt-4o", reasoning_effort="high")
+        cfg = JudgeConfig(model="gpt-5-mini", reasoning_effort="low")
         await _judge_call(mock_provider, cfg, "test prompt", ApproachResult)
 
         call_kwargs = mock_provider.complete.call_args
