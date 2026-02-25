@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+from loguru import logger
+
 from energbench.agent.providers import BaseProvider
 
 from .config import EvalConfig
@@ -106,9 +108,11 @@ async def _evaluate_trial(
     agent_steps = entry.steps_trace
     jcfg = config.judge
 
+    logger.info("  → approach judge")
     raw_approach = await judge_approach(
         provider, question_text, suggested_steps, agent_steps, judge_config=jcfg,
     )
+    logger.info("  → sources judge")
     raw_sources = await judge_sources(
         provider, question_text, suggested_steps, agent_answer, judge_config=jcfg,
     )
@@ -118,6 +122,7 @@ async def _evaluate_trial(
     raw_attributes = None
 
     if strategy == "accuracy":
+        logger.info("  → accuracy judge")
         raw_accuracy = await judge_accuracy(
             provider, question_text, expected_answer, agent_answer,
             abs_tol=config.abs_tol, rel_tol=config.rel_tol, judge_config=jcfg,
@@ -125,12 +130,19 @@ async def _evaluate_trial(
         accuracy_score = raw_accuracy.accuracy_score
         accuracy_reasoning = raw_accuracy.reasoning
     else:
+        logger.info("  → attributes judge")
         raw_attributes = await judge_attributes(
             provider, question_text, expected_answer, agent_answer,
             abs_tol=config.abs_tol, rel_tol=config.rel_tol, judge_config=jcfg,
         )
         accuracy_score = raw_attributes.alignment_score
         accuracy_reasoning = raw_attributes.reasoning
+
+    logger.info(
+        f"  \u2713 approach={raw_approach.approach_correctness:.2f}"
+        f"  accuracy={accuracy_score:.2f}"
+        f"  sources={raw_sources.source_validity:.2f}"
+    )
 
     return TrialEval(
         trial=trial_index,
@@ -170,6 +182,7 @@ async def _evaluate_model(
     num_trials = len(trials)
 
     question_nums: list[int] = []
+
     for row in eval_data:
         qnum = int(row["S/N"])
         if config.questions and qnum not in config.questions:
@@ -186,8 +199,10 @@ async def _evaluate_model(
 
     rows_by_id = {int(r["S/N"]): r for r in eval_data}
     question_evals: list[QuestionEval] = []
+    total = len(question_nums)
+    logger.info(f"[{model_name}] {total} question(s), {num_trials} trial(s)")
 
-    for qnum in question_nums:
+    for i, qnum in enumerate(question_nums, start=1):
         gt = ground_truths.get(qnum)
         if gt is None:
             continue
@@ -199,10 +214,12 @@ async def _evaluate_model(
         category = row.get("Category", "")
         difficulty = row.get("Difficulty level", "")
         strategy = get_strategy(category, config.category_strategies, config.default_strategy)
+        logger.info(f"[{model_name}] Q{qnum} ({i}/{total}) [{category}] [{difficulty}]")
 
         trial_evals: list[TrialEval] = []
         for trial in trials:
             trial_index = trial if trial is not None else 1
+            logger.info(f"[{model_name}] Q{qnum} trial {trial_index}/{num_trials}")
             try:
                 te = await _evaluate_trial(
                     provider=provider,
@@ -284,6 +301,7 @@ def _compare_models(
             )
             if not shared_ids:
                 continue
+            logger.info(f"  Comparing {name_a} vs {name_b} ({len(shared_ids)} shared questions)")
 
             scores_a_map = {q.question_id: q for q in report_a.questions}
             scores_b_map = {q.question_id: q for q in report_b.questions}
@@ -420,6 +438,7 @@ async def run_evaluation(config: EvalConfig) -> dict[str, EvaluationReport]:
 
     eval_data = load_eval_data(config.dataset_path)
     ground_truths = load_ground_truth(config.dataset_path)
+    logger.info(f"Loaded {len(eval_data)} evaluation questions")
 
     model_dirs = _discover_model_dirs(config.results_path, config.run_name)
 
@@ -431,6 +450,7 @@ async def run_evaluation(config: EvalConfig) -> dict[str, EvaluationReport]:
         return {}
 
     print(f"  Found {len(model_dirs)} model(s): {[d.name for d in model_dirs]}")
+    logger.info(f"Starting evaluation: {len(model_dirs)} model(s), judge={config.judge.model}")
 
     output_base = config.output_dir
     if config.run_name:
@@ -451,10 +471,13 @@ async def run_evaluation(config: EvalConfig) -> dict[str, EvaluationReport]:
         reports[model_dir.name] = report
 
         _write_report(report, output_base)
+        logger.info(f"Report written to {output_base / report.model}")
         _print_report(report)
 
     comparisons: list[ModelComparison] = []
     if config.compare and len(reports) >= 2:
+        n_pairs = len(reports) * (len(reports) - 1) // 2
+        logger.info(f"Running cross-model significance tests ({n_pairs} pair(s), alpha={config.significance_alpha})")
         comparisons = _compare_models(reports, config.significance_alpha)
         _save_json(output_base / "comparison_report.json", {"comparisons": [c.model_dump() for c in comparisons]})
         _print_comparisons(comparisons)

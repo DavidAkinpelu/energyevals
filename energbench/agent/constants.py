@@ -8,8 +8,10 @@ PREVIEW_ROWS: int = 5 # Number of preview rows to include when large results are
 
 QUERY_TRUNCATE_LENGTH: int = 100 # Maximum characters shown when logging a query.
 
-TOOL_TIMEOUT: float = 60.0 # Seconds before a stalled tool call is cancelled.
+TOOL_TIMEOUT: float = 120.0 # Seconds before a stalled tool call is cancelled.
 
 PROVIDER_MAX_RETRIES: int = 3 # Maximum number of retries for provider complete() calls.
 
 PROVIDER_RETRY_BASE_DELAY: float = 1.0 # Base delay in seconds for exponential backoff.
+
+MAX_TOOL_RESULT_CHARS: int = 80_000 # Truncate tool results larger than this before adding to LLM context (0 = disabled).

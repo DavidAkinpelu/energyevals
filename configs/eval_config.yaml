@@ -76,3 +76,10 @@ statistics:
 
 # Filter to specific question IDs
 # questions: [1, 3, 5]
+
+# =============================================================================
+# Logging
+# =============================================================================
+
+# Log verbosity: DEBUG | INFO | WARNING | ERROR  (default: INFO)
+log_level: INFO

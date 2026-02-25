@@ -40,6 +40,8 @@ class EvalConfig:
 
     compare: bool = False
 
+    log_level: str = "INFO"  # DEBUG | INFO | WARNING | ERROR
+
 
 def load_eval_config(path: Path | str | None = None, base_path: Path | None = None) -> EvalConfig:
     """Load evaluation config from a YAML file.
@@ -119,4 +121,5 @@ def load_eval_config(path: Path | str | None = None, base_path: Path | None = No
         confidence_level=stats.get("confidence_level", 0.95),
         significance_alpha=stats.get("significance_alpha", 0.05),
         compare=bool(data.get("compare", False)),
+        log_level=data.get("log_level", "INFO"),
     )

@@ -27,6 +27,7 @@ class MCPClient:
         servers: list[MCPServerConfig] | None = None,
         max_retries: int = 3,
         retry_base_delay: float = 1.0,
+        sse_read_timeout: float = 600.0,
     ):
         """Initialize the MCP client.
 
@@ -34,10 +35,12 @@ class MCPClient:
             servers: List of MCP server configurations.
             max_retries: Maximum reconnection attempts per tool call failure.
             retry_base_delay: Base delay in seconds between retries (doubles each attempt).
+            sse_read_timeout: Seconds to wait for an SSE event before the connection is considered dead (default: 600).
         """
         self.servers = servers or []
         self.max_retries = max_retries
         self.retry_base_delay = retry_base_delay
+        self.sse_read_timeout = sse_read_timeout
 
         self._sessions: dict[str, Any] = {}
         self._tools: dict[str, dict[str, Any]] = {}
@@ -107,7 +110,9 @@ class MCPClient:
             stack: The exit stack that owns the connection lifetime.
             server: Server configuration with URL.
         """
-        read, write = await stack.enter_async_context(sse_client(server.url))
+        read, write = await stack.enter_async_context(
+            sse_client(server.url, sse_read_timeout=self.sse_read_timeout)
+        )
         session = await stack.enter_async_context(ClientSession(read, write))
         await session.initialize()
         return session
@@ -323,11 +328,13 @@ def get_default_mcp_servers() -> list[MCPServerConfig]:
 
 async def create_mcp_client(
     servers: list[MCPServerConfig] | None = None,
+    sse_read_timeout: float = 600.0,
 ) -> MCPClient:
     """Create and connect an MCP client.
 
     Args:
         servers: Server configurations. Uses defaults if not provided.
+        sse_read_timeout: Seconds to wait for an SSE event before the connection is considered dead.
 
     Returns:
         Connected MCP client.
@@ -344,6 +351,6 @@ async def create_mcp_client(
             "Set RAG_SERVER_URL and/or DATABASE_SERVER_URL."
         )
 
-    client = MCPClient(servers)
+    client = MCPClient(servers, sse_read_timeout=sse_read_timeout)
     await client.connect()
     return client

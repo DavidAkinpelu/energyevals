@@ -34,7 +34,7 @@ class FERCDocketTool(DocketBaseTool):
         sub_docket_numbers: list[str] | None = None,
         search_full_text: bool = True,
         search_description: bool = True,
-        results_per_page: int = 500,
+        results_per_page: int = 50,
         page: int = 0,
     ) -> str:
         """Search the FERC eLibrary using the AdvancedSearch API for filings and dockets.

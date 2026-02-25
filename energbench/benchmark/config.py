@@ -7,6 +7,7 @@ import yaml
 
 from energbench.agent.constants import (
     CSV_THRESHOLD,
+    MAX_TOOL_RESULT_CHARS,
     PROVIDER_MAX_RETRIES,
     PROVIDER_RETRY_BASE_DELAY,
     TOOL_TIMEOUT,
@@ -69,6 +70,7 @@ class BenchmarkConfig:
     max_iterations: int
     results_dir: Path
     save_answers: bool
+    mcp_sse_read_timeout: float = 600.0
     num_trials: int = 1
     shuffle: bool = False
     seed: int | None = None
@@ -78,6 +80,7 @@ class BenchmarkConfig:
     tool_timeout: float = TOOL_TIMEOUT
     max_retries: int = PROVIDER_MAX_RETRIES
     retry_base_delay: float = PROVIDER_RETRY_BASE_DELAY
+    max_tool_result_chars: int = MAX_TOOL_RESULT_CHARS
     tools_config: ToolsConfig = field(default_factory=ToolsConfig)
     config_path: Path | None = None
 
@@ -221,6 +224,7 @@ class BenchmarkConfig:
             observability_output_dir=Path(obs.get("output_dir", "./benchmark_traces")),
             observability_run_name=obs.get("run_name"),
             mcp_enabled=mcp.get("enabled", True),
+            mcp_sse_read_timeout=mcp.get("sse_read_timeout", 600.0),
             max_iterations=agent.get("max_iterations", DEFAULT_MAX_ITERATIONS),
             results_dir=Path(output.get("results_dir", "./benchmark_results")),
             save_answers=output.get("save_answers", True),
@@ -233,6 +237,7 @@ class BenchmarkConfig:
             tool_timeout=agent.get("tool_timeout", TOOL_TIMEOUT),
             max_retries=agent.get("max_retries", PROVIDER_MAX_RETRIES),
             retry_base_delay=agent.get("retry_base_delay", PROVIDER_RETRY_BASE_DELAY),
+            max_tool_result_chars=agent.get("max_tool_result_chars", MAX_TOOL_RESULT_CHARS),
             tools_config=tools_config,
         )
 
