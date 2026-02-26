@@ -17,3 +17,5 @@ aiohttp>=3.9
 loguru>=0.7
 scipy>=1.10
 prophet>=1.1
+streamlit>=1.35
+altair>=5.0
