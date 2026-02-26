@@ -145,7 +145,10 @@ class MCPClient:
         if old_stack:
             try:
                 await old_stack.aclose()
-            except Exception as e:
+            except BaseException as e:
+                # Swallow cancel-scope mismatches and spurious CancelledErrors
+                # that arise from closing a stack whose anyio task group already
+                # exited abnormally.  The old connection is gone regardless.
                 logger.debug(f"Ignored error closing old stack for '{server_name}': {e}")
 
         self._sessions.pop(server_name, None)
@@ -154,7 +157,13 @@ class MCPClient:
             del self._tools[name]
 
         logger.warning(f"Reconnecting to MCP server '{server_name}' ...")
-        await self._connect_server(config)
+        # Run in a fresh asyncio Task so the new connection starts with a clean
+        # anyio cancel-scope stack.  The failed SSE session leaves a cancelled
+        # cancel scope on the current task's stack; if we call _connect_server
+        # directly, anyio's checkpoint_if_cancelled() sees that scope and raises
+        # a spurious CancelledError before any I/O even begins.
+        task = asyncio.create_task(self._connect_server(config))
+        await task
 
     async def disconnect(self) -> None:
         """Disconnect from all MCP servers."""
@@ -225,7 +234,7 @@ class MCPClient:
                     return "".join(parts)
             return json.dumps({"result": "Tool executed successfully"})
 
-        async def on_retry(attempt: int, exc: Exception, delay: float) -> None:
+        async def on_retry(attempt: int, exc: BaseException, delay: float) -> None:
             logger.warning(
                 f"Tool call '{tool_name}' failed (attempt {attempt + 1}/{total_attempts}), "
                 f"reconnecting to '{server_name}' in {delay:.1f}s: {exc}"
@@ -233,7 +242,9 @@ class MCPClient:
             await asyncio.sleep(delay)
             try:
                 await self._reconnect_server(server_name)
-            except Exception as re_err:
+            except BaseException as re_err:
+                if isinstance(re_err, asyncio.CancelledError):
+                    raise
                 logger.error(f"Reconnection to '{server_name}' failed: {re_err}")
 
         try:

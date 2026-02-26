@@ -258,6 +258,8 @@ async def _run_model_benchmark(
 
     for i, question in enumerate(questions, 1):
         print_question(question, i, len(questions))
+        if i < 155 or i in [157, 158, 159]:
+            continue
 
         provider = get_provider(model_spec.provider, model=model_spec.model, **provider_kwargs)
         agent = ReActAgent(

@@ -11,7 +11,7 @@ async def retry_with_backoff(
     *,
     max_retries: int,
     base_delay: float,
-    on_retry: Callable[[int, Exception, float], None] | None = None,
+    on_retry: Callable[[int, BaseException, float], None] | None = None,
 ) -> T:
     """Call *fn* up to ``1 + max_retries`` times with exponential backoff.
 
@@ -29,12 +29,14 @@ async def retry_with_backoff(
     Raises:
         The last exception raised by *fn* after all retries are exhausted.
     """
-    last_error: Exception | None = None
+    last_error: BaseException | None = None
 
     for attempt in range(1 + max_retries):
         try:
             return await fn()
-        except Exception as exc:
+        except BaseException as exc:
+            if isinstance(exc, asyncio.CancelledError):
+                raise
             last_error = exc
             if attempt >= max_retries:
                 break
