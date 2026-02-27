@@ -207,6 +207,61 @@ class TestRunPythonCode:
         assert data2["status"] == "error"
         assert "not defined" in data2["error"]
 
+    def test_run_python_code_scientific_imports(self):
+        """Test that common scientific packages can be imported in sandbox."""
+        tool = SystemTool()
+        code = """
+import numpy
+import pandas
+import scipy
+import cvxpy
+print("OK")
+"""
+        result = tool.run_python_code(code)
+
+        data = json.loads(result)
+        assert data["status"] == "success"
+        assert "OK" in data["stdout"]
+
+    def test_run_python_code_import_scope_inside_function(self):
+        """Test that module imports are visible inside function scope."""
+        tool = SystemTool()
+        code = """
+import numpy as np
+
+def compute():
+    return int(np.sum(np.array([1, 2, 3])))
+
+print(compute())
+"""
+        result = tool.run_python_code(code)
+
+        data = json.loads(result)
+        assert data["status"] == "success"
+        assert "6" in data["stdout"]
+
+    def test_run_python_code_pyomo_ipopt_path(self):
+        """Test that pyomo import and optional ipopt checks run in sandbox."""
+        tool = SystemTool()
+        code = """
+from pyomo.environ import ConcreteModel, NonNegativeReals, Objective, Var, maximize
+from pyomo.opt import SolverFactory
+
+model = ConcreteModel()
+model.x = Var(domain=NonNegativeReals, bounds=(0, 1))
+model.obj = Objective(expr=model.x, sense=maximize)
+solver = SolverFactory("ipopt")
+if solver is None or not solver.available():
+    print("IPOPT_UNAVAILABLE")
+else:
+    solver.solve(model)
+    print("IPOPT_SOLVED")
+"""
+        result = tool.run_python_code(code)
+        data = json.loads(result)
+        assert data["status"] == "success"
+        assert "IPOPT_UNAVAILABLE" in data["stdout"] or "IPOPT_SOLVED" in data["stdout"]
+
 
 class TestRunShellCommand:
     """Tests for run_shell_command method."""
@@ -254,6 +309,26 @@ class TestRunShellCommand:
 
         data = json.loads(result)
         assert "error" in data or data["returncode"] != 0
+
+    def test_run_python_command(self):
+        """Test running python command."""
+        tool = SystemTool()
+        result = tool.run_shell_command('python -c "print(123)"')
+
+        data = json.loads(result)
+        assert data["status"] == "success"
+        assert data["returncode"] == 0
+        assert "123" in data["stdout"]
+
+    def test_run_python3_command(self):
+        """Test running python3 command."""
+        tool = SystemTool()
+        result = tool.run_shell_command('python3 -c "print(456)"')
+
+        data = json.loads(result)
+        assert data["status"] == "success"
+        assert data["returncode"] == 0
+        assert "456" in data["stdout"]
 
 
 @pytest.mark.integration

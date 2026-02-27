@@ -53,7 +53,8 @@ printf '/usr/local/lib\n' > /etc/ld.so.conf.d/ipopt.conf
 ldconfig
 
 # Verify installation
-if ! command -v ipopt >/dev/null 2>&1; then
+ipopt_path="$(command -v ipopt || true)"
+if [[ -z "${ipopt_path}" ]]; then
   echo "Ipopt executable not found on PATH after install." >&2
   exit 1
 fi
@@ -71,11 +72,11 @@ if [[ -z "${pyomo_home}" ]]; then
 fi
 
 mkdir -p "${pyomo_home}/.python/pyomo"
-cat <<'EOF' > "${pyomo_home}/.python/pyomo/config.json"
+cat <<EOF > "${pyomo_home}/.python/pyomo/config.json"
 [solvers]
 glpk=/usr/bin/glpsol
 glpk_options=""
-ipopt=/usr/local/bin/ipopt
+ipopt=${ipopt_path}
 ipopt_options=""
 EOF
 

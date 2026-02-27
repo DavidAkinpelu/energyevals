@@ -3,6 +3,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -55,15 +56,33 @@ _DEFAULT_ALLOWED_ROOTS = (
     Path.cwd().resolve(),
     Path("/tmp").resolve(),
 )
-_PY_SANDBOX_TIMEOUT_SECONDS = 8
-_PY_SANDBOX_MEM_BYTES = 256 * 1024 * 1024
-_PY_SANDBOX_FILE_BYTES = 5 * 1024 * 1024
+
+
+def _env_int(name: str, default: int) -> int:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        logger.warning(f"Invalid {name}={raw!r}; using default {default}.")
+        return default
+    if value <= 0:
+        logger.warning(f"Non-positive {name}={raw!r}; using default {default}.")
+        return default
+    return value
+
+
+_PY_SANDBOX_TIMEOUT_SECONDS = _env_int("ENERGBENCH_PY_SANDBOX_TIMEOUT_SECONDS", 300)
+_PY_SANDBOX_MEM_BYTES = _env_int("ENERGBENCH_PY_SANDBOX_MEM_BYTES", 4 * 1024 * 1024 * 1024)
+_PY_SANDBOX_FILE_BYTES = _env_int("ENERGBENCH_PY_SANDBOX_FILE_BYTES", 50 * 1024 * 1024)
 _PY_SANDBOX_RUNNER = r"""
 import builtins
 import json
 import os
 import pathlib
 import resource
+import shlex
 import socket
 import subprocess
 import sys
@@ -73,6 +92,8 @@ ALLOWED_ROOTS = [pathlib.Path(p).resolve() for p in json.loads(sys.argv[1])]
 CPU_SECONDS = int(sys.argv[2])
 MEM_BYTES = int(sys.argv[3])
 FILE_BYTES = int(sys.argv[4])
+# Allow solver binaries used by pyomo/cvxpy while keeping subprocess access narrow.
+ALLOWED_EXECUTABLES = {"ipopt", "highs", "glpsol", "cbc"}
 
 
 def _within_allowed(path: object) -> bool:
@@ -92,6 +113,41 @@ def _blocked(*_args, **_kwargs):
     raise PermissionError("Operation blocked by sandbox policy")
 
 
+def _extract_executable(command):
+    if isinstance(command, (list, tuple)):
+        if not command:
+            return None
+        cmd = command[0]
+    elif isinstance(command, (str, bytes)):
+        text = command.decode() if isinstance(command, bytes) else command
+        parts = shlex.split(text)
+        if not parts:
+            return None
+        cmd = parts[0]
+    elif isinstance(command, os.PathLike):
+        cmd = os.fspath(command)
+    else:
+        return None
+    return os.fspath(cmd)
+
+
+def _is_allowed_subprocess_command(command) -> bool:
+    executable = _extract_executable(command)
+    if not executable:
+        return False
+    executable_name = pathlib.Path(executable).name
+    return executable_name in ALLOWED_EXECUTABLES
+
+
+def _guard_subprocess_args(*args, **kwargs):
+    if kwargs.get("shell"):
+        raise PermissionError("subprocess shell execution is blocked by sandbox policy")
+    command = kwargs.get("args", args[0] if args else None)
+    if not _is_allowed_subprocess_command(command):
+        raise PermissionError("subprocess command is blocked by sandbox policy")
+    return command
+
+
 resource.setrlimit(resource.RLIMIT_CPU, (CPU_SECONDS, CPU_SECONDS))
 resource.setrlimit(resource.RLIMIT_AS, (MEM_BYTES, MEM_BYTES))
 resource.setrlimit(resource.RLIMIT_FSIZE, (FILE_BYTES, FILE_BYTES))
@@ -106,22 +162,56 @@ def _sandbox_open(file, *args, **kwargs):
 
 
 builtins.open = _sandbox_open
-subprocess.Popen = _blocked
-subprocess.run = _blocked
-subprocess.call = _blocked
-subprocess.check_call = _blocked
-subprocess.check_output = _blocked
+_real_popen = subprocess.Popen
+_real_run = subprocess.run
+_real_call = subprocess.call
+_real_check_call = subprocess.check_call
+_real_check_output = subprocess.check_output
+
+
+def _guarded_popen(*args, **kwargs):
+    _guard_subprocess_args(*args, **kwargs)
+    return _real_popen(*args, **kwargs)
+
+
+def _guarded_run(*args, **kwargs):
+    _guard_subprocess_args(*args, **kwargs)
+    return _real_run(*args, **kwargs)
+
+
+def _guarded_call(*args, **kwargs):
+    _guard_subprocess_args(*args, **kwargs)
+    return _real_call(*args, **kwargs)
+
+
+def _guarded_check_call(*args, **kwargs):
+    _guard_subprocess_args(*args, **kwargs)
+    return _real_check_call(*args, **kwargs)
+
+
+def _guarded_check_output(*args, **kwargs):
+    _guard_subprocess_args(*args, **kwargs)
+    return _real_check_output(*args, **kwargs)
+
+
+subprocess.Popen = _guarded_popen
+subprocess.run = _guarded_run
+subprocess.call = _guarded_call
+subprocess.check_call = _guarded_check_call
+subprocess.check_output = _guarded_check_output
 socket.socket = _blocked
 os.system = _blocked
 os.popen = _blocked
 os.fork = _blocked
 
 user_code = sys.stdin.read()
-globals_dict = {"__name__": "__main__"}
-locals_dict = {}
+# Use one namespace for globals/locals so imports are visible inside functions/classes
+# defined by user code. Separate dicts make top-level imports local-only, which then
+# raises NameError inside function bodies.
+exec_namespace = {"__name__": "__main__"}
 
 try:
-    exec(compile(user_code, "<sandbox>", "exec"), globals_dict, locals_dict)
+    exec(compile(user_code, "<sandbox>", "exec"), exec_namespace, exec_namespace)
 except Exception:
     traceback.print_exc()
     sys.exit(1)
@@ -277,11 +367,14 @@ class SystemTool(BaseTool):
         allowed_roots = [str(path) for path in _DEFAULT_ALLOWED_ROOTS]
 
         try:
+            python_executable = os.environ.get("PYTHON_EXECUTABLE")
+            if not python_executable:
+                python_executable = "python3" if shutil.which("python3") else "python"
+
             result = subprocess.run(
                 [
-                    os.environ.get("PYTHON_EXECUTABLE", "python3"),
+                    python_executable,
                     "-I",
-                    "-S",
                     "-c",
                     _PY_SANDBOX_RUNNER,
                     json.dumps(allowed_roots),

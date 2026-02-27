@@ -122,3 +122,66 @@ class TestReActAgentRun:
 
         assert run.success is False
         assert run.error
+
+
+class TestToolOutputLogging:
+    """Unit tests for configurable tool output logging behavior."""
+
+    def test_preview_redacts_secrets(self):
+        provider = _make_provider([_text("done")])
+        agent = ReActAgent(
+            provider=provider,
+            tool_output_log_mode="preview",
+            tool_output_log_max_chars=200,
+            tool_output_redact_secrets=True,
+        )
+
+        preview = agent._build_tool_output_preview('{"api_key":"super-secret","status":"ok"}')
+
+        assert "[REDACTED]" in preview
+        assert "super-secret" not in preview
+
+    def test_full_mode_writes_per_call_file(self, tmp_path):
+        provider = _make_provider([_text("done")])
+        agent = ReActAgent(
+            provider=provider,
+            tool_output_log_mode="full",
+            tool_output_log_dir=tmp_path,
+            tool_output_redact_secrets=True,
+        )
+
+        agent._log_tool_output(
+            tool_name="search_web",
+            tool_call_id="call-1",
+            iteration=0,
+            execution_time_ms=12.0,
+            tool_result='{"token":"secret-value","ok":true}',
+        )
+
+        files = list(tmp_path.glob("*.log"))
+        assert files
+        saved = files[0].read_text(encoding="utf-8")
+        assert "[REDACTED]" in saved
+        assert "secret-value" not in saved
+
+    def test_json_with_error_null_is_not_flagged_as_error(self):
+        provider = _make_provider([_text("done")])
+        agent = ReActAgent(provider=provider)
+        payload = {
+            "success": True,
+            "data": '{"status":"success","stdout":"ok","stderr":""}',
+            "error": None,
+        }
+
+        assert agent._is_tool_output_error(json.dumps(payload), payload, is_json=True) is False
+
+    def test_nested_tool_error_in_json_data_is_flagged(self):
+        provider = _make_provider([_text("done")])
+        agent = ReActAgent(provider=provider)
+        payload = {
+            "success": True,
+            "data": '{"status":"error","error":"boom","stdout":"","stderr":"traceback"}',
+            "error": None,
+        }
+
+        assert agent._is_tool_output_error(json.dumps(payload), payload, is_json=True) is True
