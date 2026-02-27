@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from typing import Any, Literal
+from typing import Any, Literal, Optional
 
 import requests
 from loguru import logger
@@ -50,7 +50,7 @@ class TariffsTool(BaseTool):
         sector: Literal["Residential", "Commercial", "Industrial", "Lighting"],
         address: str = "",
         state: str = "",
-        eia_id: str | None = None,
+        eia_id: Optional[int] = None,
         active_only: bool = True,
         include_schedules: bool = False,
         return_format: Literal["json"] = "json",

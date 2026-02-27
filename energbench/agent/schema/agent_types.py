@@ -1,13 +1,17 @@
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from energbench.agent.constants import (
     CSV_THRESHOLD,
     MAX_ITERATIONS,
     PROVIDER_MAX_RETRIES,
     PROVIDER_RETRY_BASE_DELAY,
+    TOOL_OUTPUT_LOG_DIR,
+    TOOL_OUTPUT_LOG_MAX_CHARS,
+    TOOL_OUTPUT_LOG_MODE,
+    TOOL_OUTPUT_REDACT_SECRETS,
     TOOL_TIMEOUT,
 )
 
@@ -20,6 +24,9 @@ class StepType(Enum):
     OBSERVATION = "observation"
     ANSWER = "answer"
     ERROR = "error"
+
+
+ToolOutputLogMode = Literal["off", "errors_only", "preview", "full"]
 
 
 @dataclass
@@ -107,6 +114,10 @@ class AgentConfig:
         csv_threshold: Row count threshold for saving results to CSV.
         csv_output_dir: Directory to save CSV files.
         system_prompt: Custom system prompt (None uses default).
+        tool_output_log_mode: Tool output logging mode: off, errors_only, preview, or full.
+        tool_output_log_max_chars: Max preview chars for console tool output logging.
+        tool_output_log_dir: Directory used for full mode output files.
+        tool_output_redact_secrets: Whether likely secrets are redacted in output logs.
     """
 
     max_iterations: int = MAX_ITERATIONS
@@ -116,3 +127,7 @@ class AgentConfig:
     tool_timeout: float = TOOL_TIMEOUT
     max_retries: int = PROVIDER_MAX_RETRIES
     retry_base_delay: float = PROVIDER_RETRY_BASE_DELAY
+    tool_output_log_mode: ToolOutputLogMode = TOOL_OUTPUT_LOG_MODE
+    tool_output_log_max_chars: int = TOOL_OUTPUT_LOG_MAX_CHARS
+    tool_output_log_dir: str = TOOL_OUTPUT_LOG_DIR
+    tool_output_redact_secrets: bool = TOOL_OUTPUT_REDACT_SECRETS

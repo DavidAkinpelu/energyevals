@@ -137,3 +137,49 @@ class TestBenchmarkConfig:
             )
 
         assert "max_iterations must be at least 1" in str(exc_info.value)
+
+    def test_invalid_tool_output_log_mode_raises_error(self, tmp_path):
+        """Invalid tool output log mode should fail validation."""
+        questions_file = tmp_path / "questions.csv"
+        questions_file.touch()
+
+        with pytest.raises(ConfigurationError) as exc_info:
+            BenchmarkConfig(
+                models=[ModelSpec(provider="openai", model="gpt-4o-mini")],
+                questions_file=questions_file,
+                questions=None,
+                observability_enabled=True,
+                observability_backend="json",
+                observability_output_dir=Path("./traces"),
+                observability_run_name=None,
+                mcp_enabled=True,
+                max_iterations=25,
+                results_dir=Path("./results"),
+                save_answers=True,
+                tool_output_log_mode="invalid",
+            )
+
+        assert "tool_output_log_mode must be one of" in str(exc_info.value)
+
+    def test_negative_tool_output_log_max_chars_raises_error(self, tmp_path):
+        """Negative preview max chars should fail validation."""
+        questions_file = tmp_path / "questions.csv"
+        questions_file.touch()
+
+        with pytest.raises(ConfigurationError) as exc_info:
+            BenchmarkConfig(
+                models=[ModelSpec(provider="openai", model="gpt-4o-mini")],
+                questions_file=questions_file,
+                questions=None,
+                observability_enabled=True,
+                observability_backend="json",
+                observability_output_dir=Path("./traces"),
+                observability_run_name=None,
+                mcp_enabled=True,
+                max_iterations=25,
+                results_dir=Path("./results"),
+                save_answers=True,
+                tool_output_log_max_chars=-1,
+            )
+
+        assert "tool_output_log_max_chars must be non-negative" in str(exc_info.value)

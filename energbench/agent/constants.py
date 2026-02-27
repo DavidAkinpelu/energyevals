@@ -1,3 +1,5 @@
+from typing import Literal
+
 MAX_ITERATIONS: int = 25 # Maximum number of ReAct iterations before the agent stops.
 
 CSV_THRESHOLD: int = 20 # Row count threshold for saving tool results to CSV instead of inline.
@@ -15,3 +17,11 @@ PROVIDER_MAX_RETRIES: int = 3 # Maximum number of retries for provider complete(
 PROVIDER_RETRY_BASE_DELAY: float = 1.0 # Base delay in seconds for exponential backoff.
 
 MAX_TOOL_RESULT_CHARS: int = 80_000 # Truncate tool results larger than this before adding to LLM context (0 = disabled).
+
+TOOL_OUTPUT_LOG_MODE: Literal["off", "errors_only", "preview", "full"] = "preview"
+
+TOOL_OUTPUT_LOG_MAX_CHARS: int = 2_000 # Max chars for console preview snippets.
+
+TOOL_OUTPUT_LOG_DIR: str = "./run_outputs/tool_output_logs" # Directory for full tool output logs.
+
+TOOL_OUTPUT_REDACT_SECRETS: bool = True # Redact likely secrets in console/file tool output logs.

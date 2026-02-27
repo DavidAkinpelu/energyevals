@@ -4,9 +4,12 @@ import inspect
 import json
 import re
 import time
+from pathlib import Path
 from typing import Any
 
 from loguru import logger
+
+from energbench.core.retry import retry_with_backoff
 
 from .constants import (
     CSV_THRESHOLD,
@@ -15,10 +18,12 @@ from .constants import (
     PROVIDER_MAX_RETRIES,
     PROVIDER_RETRY_BASE_DELAY,
     QUERY_TRUNCATE_LENGTH,
+    TOOL_OUTPUT_LOG_DIR,
+    TOOL_OUTPUT_LOG_MAX_CHARS,
+    TOOL_OUTPUT_LOG_MODE,
+    TOOL_OUTPUT_REDACT_SECRETS,
     TOOL_TIMEOUT,
 )
-from energbench.core.retry import retry_with_backoff
-
 from .exceptions import ProviderError, ToolExecutionError
 from .processors import ResultProcessor
 from .prompts import get_system_prompt
@@ -34,6 +39,13 @@ from .schema import (
 )
 
 _RAW_TOOL_CALL_RE = re.compile(r"<function=\w+.*?</function>", re.DOTALL)
+_SECRET_JSON_VALUE_RE = re.compile(
+    r'(?i)("?(?:api[_-]?key|access[_-]?token|refresh[_-]?token|token|password|secret|authorization)"?\s*:\s*")([^"]+)(")'
+)
+_SECRET_ASSIGNMENT_RE = re.compile(
+    r"(?i)\b(api[_-]?key|access[_-]?token|refresh[_-]?token|token|password|secret|authorization)\b(\s*[:=]\s*)([^\s,;]+)"
+)
+_BEARER_TOKEN_RE = re.compile(r"(?i)\b(bearer)\s+([A-Za-z0-9\-._~+/]+=*)")
 
 
 class ReActAgent:
@@ -58,6 +70,10 @@ class ReActAgent:
         max_retries: int = PROVIDER_MAX_RETRIES,
         retry_base_delay: float = PROVIDER_RETRY_BASE_DELAY,
         max_tool_result_chars: int = MAX_TOOL_RESULT_CHARS,
+        tool_output_log_mode: str = TOOL_OUTPUT_LOG_MODE,
+        tool_output_log_max_chars: int = TOOL_OUTPUT_LOG_MAX_CHARS,
+        tool_output_log_dir: str | Path = TOOL_OUTPUT_LOG_DIR,
+        tool_output_redact_secrets: bool = TOOL_OUTPUT_REDACT_SECRETS,
     ):
         """Initialize the ReAct agent.
 
@@ -74,6 +90,10 @@ class ReActAgent:
             max_retries: Maximum retries for provider complete() on transient errors (default: 3).
             retry_base_delay: Base delay in seconds for exponential backoff (default: 1.0).
             max_tool_result_chars: Truncate tool results to this many chars before adding to LLM context (0 = disabled).
+            tool_output_log_mode: Tool output logging mode: off, errors_only, preview, or full.
+            tool_output_log_max_chars: Max preview chars for console tool output logging.
+            tool_output_log_dir: Directory where full tool outputs are saved in full mode.
+            tool_output_redact_secrets: Whether likely secrets are redacted in console/file logs.
         """
         self.provider = provider
         self.tools = tools or []
@@ -89,6 +109,10 @@ class ReActAgent:
         self.max_retries = max_retries
         self.retry_base_delay = retry_base_delay
         self.max_tool_result_chars = max_tool_result_chars
+        self.tool_output_log_mode = tool_output_log_mode
+        self.tool_output_log_max_chars = tool_output_log_max_chars
+        self.tool_output_log_dir = Path(tool_output_log_dir)
+        self.tool_output_redact_secrets = tool_output_redact_secrets
 
     def register_tool(self, tool: ToolDefinition) -> None:
         self.tools.append(tool)
@@ -319,6 +343,13 @@ class ReActAgent:
                 tool_result = json.dumps(error_payload)
 
             execution_time = (time.time() - start_time) * 1000
+            self._log_tool_output(
+                tool_name=tool_call.name,
+                tool_call_id=tool_call.id,
+                iteration=iteration,
+                execution_time_ms=execution_time,
+                tool_result=tool_result,
+            )
 
             # Check for non-recoverable tool failure before processing further.
             try:
@@ -374,6 +405,141 @@ class ReActAgent:
             messages.append(tool_message)
 
         return True
+
+    def _log_tool_output(
+        self,
+        tool_name: str,
+        tool_call_id: str,
+        iteration: int,
+        execution_time_ms: float,
+        tool_result: str,
+    ) -> None:
+        is_json, parsed_output = self._parse_tool_output_json(tool_result)
+        is_error = self._is_tool_output_error(tool_result, parsed_output, is_json)
+        output_chars = len(tool_result)
+
+        logger.info(
+            "Tool output metadata | "
+            f"tool={tool_name} latency_ms={execution_time_ms:.1f} "
+            f"output_chars={output_chars} is_json={is_json} "
+            f"is_error={is_error} mode={self.tool_output_log_mode}"
+        )
+
+        if self.tool_output_log_mode == "off":
+            return
+
+        if self.tool_output_log_mode == "errors_only":
+            if not is_error:
+                return
+            preview = self._build_tool_output_preview(tool_result)
+            logger.error(f"Tool error output preview ({tool_name}):\n{preview}")
+            return
+
+        if self.tool_output_log_mode == "preview":
+            preview = self._build_tool_output_preview(tool_result)
+            logger.info(f"Tool output preview ({tool_name}):\n{preview}")
+            return
+
+        if self.tool_output_log_mode == "full":
+            file_path = self._write_full_tool_output(
+                tool_name=tool_name,
+                tool_call_id=tool_call_id,
+                iteration=iteration,
+                tool_result=tool_result,
+            )
+            if file_path:
+                logger.info(f"Tool output saved to file: {file_path}")
+            return
+
+        logger.warning(
+            f"Unknown tool_output_log_mode={self.tool_output_log_mode!r}. "
+            "Supported modes: off, errors_only, preview, full."
+        )
+
+    def _parse_tool_output_json(self, tool_result: str) -> tuple[bool, Any | None]:
+        try:
+            return True, json.loads(tool_result)
+        except json.JSONDecodeError:
+            return False, None
+
+    def _is_tool_output_error(
+        self,
+        tool_result: str,
+        parsed_output: Any | None,
+        is_json: bool,
+    ) -> bool:
+        if is_json and isinstance(parsed_output, dict):
+            if self._dict_indicates_error(parsed_output):
+                return True
+
+            nested_data = parsed_output.get("data")
+            if isinstance(nested_data, str):
+                try:
+                    nested_output = json.loads(nested_data)
+                except json.JSONDecodeError:
+                    nested_output = None
+                if isinstance(nested_output, dict) and self._dict_indicates_error(nested_output):
+                    return True
+            return False
+
+        lowered = tool_result.lower()
+        return any(token in lowered for token in ("error", "exception", "traceback"))
+
+    @staticmethod
+    def _dict_indicates_error(payload: dict[str, Any]) -> bool:
+        error_value = payload.get("error")
+        if error_value not in (None, "", False):
+            return True
+        success = payload.get("success")
+        if success is False:
+            return True
+        status = payload.get("status")
+        return isinstance(status, str) and status.lower() == "error"
+
+    def _build_tool_output_preview(self, tool_result: str) -> str:
+        preview = self._redact_tool_output(tool_result)
+        if self.tool_output_log_max_chars <= 0:
+            return "[preview omitted: tool_output_log_max_chars=0]"
+        if len(preview) <= self.tool_output_log_max_chars:
+            return preview
+        return (
+            preview[: self.tool_output_log_max_chars]
+            + f"\n...[preview truncated at {self.tool_output_log_max_chars} chars]"
+        )
+
+    def _redact_tool_output(self, tool_result: str) -> str:
+        if not self.tool_output_redact_secrets:
+            return tool_result
+
+        redacted = _SECRET_JSON_VALUE_RE.sub(r"\1[REDACTED]\3", tool_result)
+        redacted = _SECRET_ASSIGNMENT_RE.sub(r"\1\2[REDACTED]", redacted)
+        redacted = _BEARER_TOKEN_RE.sub(r"\1 [REDACTED]", redacted)
+        return redacted
+
+    def _write_full_tool_output(
+        self,
+        tool_name: str,
+        tool_call_id: str,
+        iteration: int,
+        tool_result: str,
+    ) -> Path | None:
+        try:
+            self.tool_output_log_dir.mkdir(parents=True, exist_ok=True)
+            timestamp = int(time.time() * 1000)
+            safe_tool = self._sanitize_path_component(tool_name)
+            safe_call = self._sanitize_path_component(tool_call_id)
+            file_name = f"iter_{iteration + 1}_{safe_tool}_{safe_call}_{timestamp}.log"
+            output_path = self.tool_output_log_dir / file_name
+            output_path.write_text(self._redact_tool_output(tool_result), encoding="utf-8")
+            return output_path
+        except Exception as exc:
+            logger.warning(f"Failed to write tool output log file for {tool_name}: {exc}")
+            return None
+
+    @staticmethod
+    def _sanitize_path_component(value: str) -> str:
+        sanitized = re.sub(r"[^A-Za-z0-9._-]+", "_", value).strip("._")
+        return sanitized or "unknown"
 
     def _create_tool_message(
         self,

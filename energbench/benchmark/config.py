@@ -10,6 +10,10 @@ from energbench.agent.constants import (
     MAX_TOOL_RESULT_CHARS,
     PROVIDER_MAX_RETRIES,
     PROVIDER_RETRY_BASE_DELAY,
+    TOOL_OUTPUT_LOG_DIR,
+    TOOL_OUTPUT_LOG_MAX_CHARS,
+    TOOL_OUTPUT_LOG_MODE,
+    TOOL_OUTPUT_REDACT_SECRETS,
     TOOL_TIMEOUT,
 )
 from energbench.agent.schema import ModelSpec
@@ -18,6 +22,7 @@ from energbench.core.errors import ConfigurationError
 from energbench.core.types import ProviderName, ensure_path
 
 VALID_SEED_MODES = {"fixed", "rotate", "random_per_trial"}
+VALID_TOOL_OUTPUT_LOG_MODES = {"off", "errors_only", "preview", "full"}
 
 PROVIDER_ENV_VARS: dict[ProviderName, str] = {
     ProviderName.OPENAI: "OPENAI_API_KEY",
@@ -81,6 +86,10 @@ class BenchmarkConfig:
     max_retries: int = PROVIDER_MAX_RETRIES
     retry_base_delay: float = PROVIDER_RETRY_BASE_DELAY
     max_tool_result_chars: int = MAX_TOOL_RESULT_CHARS
+    tool_output_log_mode: str = TOOL_OUTPUT_LOG_MODE
+    tool_output_log_max_chars: int = TOOL_OUTPUT_LOG_MAX_CHARS
+    tool_output_log_dir: Path = Path(TOOL_OUTPUT_LOG_DIR)
+    tool_output_redact_secrets: bool = TOOL_OUTPUT_REDACT_SECRETS
     tools_config: ToolsConfig = field(default_factory=ToolsConfig)
     config_path: Path | None = None
 
@@ -89,6 +98,7 @@ class BenchmarkConfig:
         self.questions_file = ensure_path(self.questions_file)
         self.observability_output_dir = ensure_path(self.observability_output_dir)
         self.results_dir = ensure_path(self.results_dir)
+        self.tool_output_log_dir = ensure_path(self.tool_output_log_dir)
 
         errors = self.validate()
         if errors:
@@ -146,6 +156,21 @@ class BenchmarkConfig:
 
         if self.num_trials < 1:
             errors.append(f"num_trials must be at least 1, got {self.num_trials}")
+
+        if self.tool_output_log_mode not in VALID_TOOL_OUTPUT_LOG_MODES:
+            errors.append(
+                "tool_output_log_mode must be one of "
+                f"{sorted(VALID_TOOL_OUTPUT_LOG_MODES)}, got {self.tool_output_log_mode!r}"
+            )
+
+        if self.tool_output_log_max_chars < 0:
+            errors.append(
+                "tool_output_log_max_chars must be non-negative, "
+                f"got {self.tool_output_log_max_chars}"
+            )
+
+        if not self.tool_output_log_dir:
+            errors.append("tool_output_log_dir must be a valid path")
 
         if self.seed is not None and not isinstance(self.seed, int):
             errors.append(f"seed must be an integer, got {type(self.seed).__name__}")
@@ -238,6 +263,14 @@ class BenchmarkConfig:
             max_retries=agent.get("max_retries", PROVIDER_MAX_RETRIES),
             retry_base_delay=agent.get("retry_base_delay", PROVIDER_RETRY_BASE_DELAY),
             max_tool_result_chars=agent.get("max_tool_result_chars", MAX_TOOL_RESULT_CHARS),
+            tool_output_log_mode=agent.get("tool_output_log_mode", TOOL_OUTPUT_LOG_MODE),
+            tool_output_log_max_chars=agent.get(
+                "tool_output_log_max_chars", TOOL_OUTPUT_LOG_MAX_CHARS
+            ),
+            tool_output_log_dir=Path(agent.get("tool_output_log_dir", TOOL_OUTPUT_LOG_DIR)),
+            tool_output_redact_secrets=agent.get(
+                "tool_output_redact_secrets", TOOL_OUTPUT_REDACT_SECRETS
+            ),
             tools_config=tools_config,
         )
 
