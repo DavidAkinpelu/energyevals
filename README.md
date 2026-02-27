@@ -97,20 +97,6 @@ RAG_SERVER_URL=https://your-rag-server.com/sse
 DATABASE_SERVER_URL=https://your-db-server.com/sse
 ```
 
-**Local server setup (advanced):**
-
-Local stdio servers are supported but must be configured manually — they are not
-auto-discovered. Install the servers first, then construct `MCPServerConfig` objects
-with a `command` field instead of a `url` field (see `docs/MCP_CLIENT_USAGE.md`).
-
-```bash
-# Install local servers
-pip install ./mcp-servers/rag-server
-pip install ./mcp-servers/database-server
-```
-
-See `mcp-servers/DEPLOYMENT_GUIDE.md` for remote deployment instructions.
-
 ## Usage
 
 ### Ask a Question (Interactive)
@@ -171,12 +157,12 @@ Maximum iterations default to 25 (configurable).
 
 ### Provider Abstraction
 
-Unified interface for multiple LLM providers:
+A unified interface to run models from any major LLM provider:
 
-- **OpenAI**: GPT-4o, GPT-4o-mini, o1, o3 (reasoning models)
-- **Anthropic**: Claude Sonnet 4, Opus 4
-- **Google**: Gemini 2.0 Flash, 1.5 Pro/Flash
-- **DeepInfra**: Llama 3.3 70B, 3.1 405B
+- **OpenAI** — GPT, O1, O3, and more
+- **Anthropic** — Claude models (Sonnet, Opus, Haiku)
+- **Google** — Gemini models (Flash, Pro)
+- **DeepInfra** — Open-source models (Llama, Mistral, and more)
 
 Providers implement a common `BaseProvider` protocol with tool calling and streaming support.
 
