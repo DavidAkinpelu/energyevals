@@ -39,6 +39,29 @@ class TestBenchmarkConfig:
         assert config.models[0].provider == "openai"
         assert config.models[0].model == "gpt-4o-mini"
         assert config.models[1].provider == "anthropic"
+        assert config.tool_output_log_mode == "preview"
+
+    def test_from_dict_tool_output_logging_options(self, tmp_path):
+        """Tool output logging settings should parse from agent config."""
+        questions_file = tmp_path / "test.csv"
+        questions_file.write_text("S/N,Category,Question type,Difficulty level,Question\n1,Test,Type,Easy,Test?")
+
+        data = {
+            "models": [{"provider": "openai", "model": "gpt-4o-mini"}],
+            "questions_file": str(questions_file.name),
+            "agent": {
+                "tool_output_log_mode": "full",
+                "tool_output_log_max_chars": 512,
+                "tool_output_log_dir": "./custom_tool_logs",
+                "tool_output_redact_secrets": False,
+            },
+        }
+
+        config = BenchmarkConfig.from_dict(data, tmp_path)
+        assert config.tool_output_log_mode == "full"
+        assert config.tool_output_log_max_chars == 512
+        assert str(config.tool_output_log_dir).endswith("custom_tool_logs")
+        assert config.tool_output_redact_secrets is False
 
     def test_parse_questions_list(self):
         """Test parsing question list."""
