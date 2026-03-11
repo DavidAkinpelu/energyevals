@@ -1,0 +1,2 @@
+interval_start_local,interval_start_utc,interval_end_local,interval_end_utc,location,location_id,lmp,energy,congestion,loss
+2024-01-01T00:00:00-05:00,2024-01-01T05:00:00+00:00,2024-02-01T00:00:00-05:00,2024-02-01T05:00:00+00:00,DOMINION HUB,35010337.0,50.3208865053764,45.6174327956989,4.41661872446236,0.286834985215053
