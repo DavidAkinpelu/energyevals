@@ -80,6 +80,18 @@ Examples:
         default=None,
         help="Override the judge LLM model (e.g. gpt-4o)",
     )
+    parser.add_argument(
+        "--attributes-file",
+        type=Path,
+        default=None,
+        help="Path to canonical attributes JSON; skips attribute generation when provided",
+    )
+    parser.add_argument(
+        "--attributes-output-file",
+        type=Path,
+        default=None,
+        help="Where to save generated canonical attributes JSON",
+    )
 
     return parser.parse_args()
 
@@ -102,6 +114,10 @@ def apply_cli_overrides(config: EvalConfig, args: argparse.Namespace) -> None:
         config.compare = True
     if args.judge_model is not None:
         config.judge.model = args.judge_model
+    if args.attributes_file is not None:
+        config.attributes_file = args.attributes_file
+    if args.attributes_output_file is not None:
+        config.attributes_output_file = args.attributes_output_file
 
 
 def main() -> int:
@@ -127,6 +143,8 @@ def main() -> int:
     print(f"  Results path:  {config.results_path}")
     print(f"  Dataset:       {config.dataset_path}")
     print(f"  Output dir:    {config.output_dir}")
+    print(f"  Attr file in:  {config.attributes_file or '(generate)'}")
+    print(f"  Attr file out: {config.attributes_output_file or '(default under output dir)'}")
     print(f"  Run name:      {config.run_name or '(auto-discover)'}")
     print(f"  Models filter: {config.models or 'all'}")
     print(f"  Questions:     {config.questions or 'all'}")

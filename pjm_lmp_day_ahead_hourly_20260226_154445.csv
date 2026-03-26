@@ -1,2 +1,0 @@
-interval_start_local,interval_start_utc,interval_end_local,interval_end_utc,location,location_id,lmp,energy,congestion,loss
-2024-01-01T00:00:00-05:00,2024-01-01T05:00:00+00:00,2024-02-01T00:00:00-05:00,2024-02-01T05:00:00+00:00,OHIO HUB,34497151.0,42.9945444637097,45.6174327956989,-1.88877938575269,-0.734108946236559

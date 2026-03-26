@@ -24,6 +24,8 @@ class EvalConfig:
     results_path: Path = Path("./benchmark_traces")
     dataset_path: Path = Path("./data/eval_samples_with_answers.csv")
     output_dir: Path = Path("./evaluation_results")
+    attributes_file: Path | None = None
+    attributes_output_file: Path | None = None
 
     run_name: str | None = None
     models: list[str] | None = None
@@ -111,6 +113,16 @@ def load_eval_config(path: Path | str | None = None, base_path: Path | None = No
         results_path=_resolve(data.get("results_path"), "./benchmark_traces"),
         dataset_path=_resolve(data.get("dataset_path"), "./data/eval_samples_with_answers.csv"),
         output_dir=_resolve(data.get("output_dir"), "./evaluation_results"),
+        attributes_file=(
+            _resolve(data.get("attributes_file"), "./evaluation_results/attributes.json")
+            if data.get("attributes_file") is not None
+            else None
+        ),
+        attributes_output_file=(
+            _resolve(data.get("attributes_output_file"), "./evaluation_results/attributes.json")
+            if data.get("attributes_output_file") is not None
+            else None
+        ),
         run_name=data.get("run_name"),
         models=models_raw,
         questions=questions_parsed,

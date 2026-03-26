@@ -67,3 +67,6 @@ Thumbs.db
 
 # Claude
 .claude/
+
+# folders
+artefacts/

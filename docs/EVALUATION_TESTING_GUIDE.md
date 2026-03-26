@@ -1,6 +1,6 @@
 # Evaluation Pipeline Testing Guide
 
-A hands-on guide for manually verifying that the LLM-judge evaluation pipeline is functional and produces correct results. Work through each section in order — later sections depend on earlier ones passing.
+A hands-on guide for manually verifying that the LLM-judge evaluation pipeline is functional and produces correct results. Work through each section in order - later sections depend on earlier ones passing.
 
 ---
 
@@ -30,7 +30,7 @@ A hands-on guide for manually verifying that the LLM-judge evaluation pipeline i
 ### What you need
 
 - **Benchmark traces** must already exist. These are produced by `scripts/run_benchmark.py` and live under `benchmark_traces/{model}/` (or `benchmark_traces/{run_name}/{model}/` when `run_name` is configured in the benchmark config). Each model directory contains files like `trace_q1_20260220_180033_e33e3a7d.json`. If you have multi-trial runs (`num_trials > 1`), traces will be under `trial_1/`, `trial_2/`, etc.
-- **`OPENAI_API_KEY`** must be set in your `.env` file. All four judges (approach, accuracy, sources, attributes) use OpenAI structured outputs via `client.responses.parse()`.
+- **Judge provider credentials** must be set in `.env` for the provider configured under `judge.provider` (for example `OPENAI_API_KEY` when provider is `openai`).
 - **Ground truth CSV** at `data/eval_samples_with_answers.csv` with columns: `S/N`, `Category`, `Question type`, `Difficulty level`, `Question`, `Answer`, `Approach`.
 - **Python dependencies** installed, including `scipy` (used for statistical tests and confidence intervals).
 
@@ -136,7 +136,7 @@ print(f'Default strategy:    {c.default_strategy}')
 
 ### What to check
 
-- [ ] Default config: judge model is `gpt-4o`, provider is `openai`, temperature is `0.0`.
+- [ ] Default config: judge model is `gpt-5-mini`, provider is `openai`, temperature is `0.0`.
 - [ ] Default config: `abs_tol=0.01`, `rel_tol=0.5`, `confidence_level=0.95`.
 - [ ] Default config: `category_strategies` is `{}` (empty dict), `default_strategy` is `"attributes"`.
 - [ ] YAML config: paths resolve relative to the base path (not as raw strings like `./benchmark_traces`).
@@ -200,7 +200,7 @@ from energbench.evaluation.data_loader import load_benchmark_result
 # Adjust these to match your actual trace directory and question number.
 # When run_name is configured: Path('benchmark_traces/{run_name}/{model}')
 # When run_name is NOT configured: Path('benchmark_traces/{model}')
-trace_base = Path('benchmark_traces/openai_gpt-4o-mini')
+trace_base = Path('benchmark_traces/openai_gpt-5-mini')
 question_num = 1
 trial = 1  # Use an int matching trial_N/ subdirectory, or None when no trial dirs exist
 
@@ -280,7 +280,7 @@ print(get_strategy('Anything', {}, 'accuracy'))                         # should
 ```bash
 # Replace with your actual model directory name (add --run-name only if one was configured)
 python scripts/run_eval.py \
-  --model openai_gpt-4o-mini \
+  --model openai_gpt-5-mini \
   --questions 1
 ```
 
@@ -296,22 +296,22 @@ python scripts/run_eval.py \
 
 ```bash
 # Verify output files were created
-ls -la evaluation_results/openai_gpt-4o-mini/
+ls -la evaluation_results/openai_gpt-5-mini/
 
 # Inspect the report
 python -c "
 import json
-with open('evaluation_results/openai_gpt-4o-mini/report.json') as f:
+with open('evaluation_results/openai_gpt-5-mini/report.json') as f:
     report = json.load(f)
 print(f'Model: {report[\"model\"]}')
 print(f'Questions evaluated: {len(report[\"questions\"])}')
 print(f'Aggregate approach mean: {report[\"aggregate_approach\"][\"mean\"]}')
 "
 
-# Inspect the per-question JSON (in trial_1/ when multi-trial)
+# Inspect the per-question JSON (single-trial path)
 python -c "
 import json
-with open('evaluation_results/openai_gpt-4o-mini/trial_1/q1.json') as f:
+with open('evaluation_results/openai_gpt-5-mini/q1.json') as f:
     q = json.load(f)
 print(f'Trial: {q[\"trial\"]}')
 print(f'Approach score: {q[\"approach\"][\"score\"]}')
@@ -338,7 +338,7 @@ print(f'Approach reasoning: {q[\"approach\"][\"reasoning\"][:100]}...')
 
 ```bash
 python scripts/run_eval.py \
-  --model openai_gpt-4o-mini
+  --model openai_gpt-5-mini
 ```
 
 ### What to check
@@ -347,7 +347,7 @@ python scripts/run_eval.py \
 # Check summary CSV has a row per question
 python -c "
 import csv
-with open('evaluation_results/openai_gpt-4o-mini/summary.csv') as f:
+with open('evaluation_results/openai_gpt-5-mini/summary.csv') as f:
     reader = csv.DictReader(f)
     rows = list(reader)
 print(f'Questions in summary: {len(rows)}')
@@ -389,19 +389,19 @@ This structure is produced automatically by `run_benchmark.py` when `num_trials 
 
 ```bash
 python scripts/run_eval.py \
-  --model openai_gpt-4o-mini
+  --model openai_gpt-5-mini
 ```
 
 ### What to check
 
 ```bash
 # Verify per-trial output files
-ls evaluation_results/openai_gpt-4o-mini/trial_*/
+ls evaluation_results/openai_gpt-5-mini/trial_*/
 
 # Check confidence intervals are non-degenerate
 python -c "
 import json
-with open('evaluation_results/openai_gpt-4o-mini/report.json') as f:
+with open('evaluation_results/openai_gpt-5-mini/report.json') as f:
     report = json.load(f)
 print(f'Num trials: {report[\"num_trials\"]}')
 for q in report['questions']:
@@ -440,7 +440,7 @@ python scripts/run_eval.py \
 # Inspect comparison report
 python -c "
 import json
-with open('evaluation_results/comparison_report.json') as f:
+with open('evaluation_results/<run_name>/comparison_report.json') as f:
     data = json.load(f)
 print(f'Comparisons: {len(data[\"comparisons\"])}')
 for c in data['comparisons']:
@@ -450,7 +450,7 @@ for c in data['comparisons']:
 ```
 
 - [ ] `comparison_report.json` is created under the output directory.
-- [ ] There is one comparison entry per (model_pair, dimension) combination — 3 dimensions (approach, accuracy, sources) per pair.
+- [ ] There is one comparison entry per (model_pair, dimension) combination - 3 dimensions (approach, accuracy, sources) per pair.
 - [ ] `test_name` is `wilcoxon` when there are >= 6 questions with non-zero score differences, `paired_t` otherwise, or `exact_tie` when all scores are identical.
 - [ ] `direction` is one of `a>b`, `b>a`, or `equal`.
 - [ ] `p_value` is in [0.0, 1.0].
@@ -468,7 +468,7 @@ for c in data['comparisons']:
 ```bash
 python -c "
 import json
-with open('evaluation_results/openai_gpt-4o-mini/report.json') as f:
+with open('evaluation_results/openai_gpt-5-mini/report.json') as f:
     r = json.load(f)
 required_keys = ['model', 'run_name', 'num_trials', 'questions',
                  'aggregate_approach', 'aggregate_accuracy', 'aggregate_sources',
@@ -486,10 +486,10 @@ print(f'Config snapshot: {r[\"config_snapshot\"]}')
 ### 10b. summary.csv
 
 ```bash
-head -5 evaluation_results/openai_gpt-4o-mini/summary.csv
+head -5 evaluation_results/openai_gpt-5-mini/summary.csv
 ```
 
-- [ ] Header row: `question_id,category,difficulty,strategy,approach_mean,approach_ci,accuracy_mean,accuracy_ci,sources_mean,sources_ci,tool_calls,tokens,duration_s`.
+- [ ] Header row includes: `question_id,category,difficulty,strategy,approach_mean,approach_ci,accuracy_mean,accuracy_ci,sources_mean,sources_ci,Failed,iterations,tool_calls,tokens,duration_s,total_input_tokens,total_output_tokens,total_cached_tokens,input_tokens,output_tokens,cached_tokens,reasoning_tokens`.
 - [ ] One data row per evaluated question.
 - [ ] `approach_mean` and `sources_mean` are in [1.0, 5.0].
 - [ ] `accuracy_mean` is in [0.0, 1.0].
@@ -499,7 +499,7 @@ head -5 evaluation_results/openai_gpt-4o-mini/summary.csv
 ```bash
 python -c "
 import json
-with open('evaluation_results/openai_gpt-4o-mini/trial_1/q1.json') as f:
+with open('evaluation_results/openai_gpt-5-mini/trial_1/q1.json') as f:
     q = json.load(f)
 for dim in ['approach', 'accuracy', 'sources']:
     s = q[dim]
@@ -512,6 +512,21 @@ for dim in ['approach', 'accuracy', 'sources']:
 - [ ] `approach.score` and `sources.score` are in [1.0, 5.0], `accuracy.score` is in [0.0, 1.0].
 - [ ] `judge_type` for approach is `"approach"`, for sources is `"sources"`, for accuracy is either `"accuracy"` or `"attributes"` depending on category.
 
+### 10d. eval_config.json snapshot
+
+```bash
+python -c "
+import json
+with open('evaluation_results/<run_name>/eval_config.json') as f:
+    c = json.load(f)
+print(c.keys())
+print(c['judge'])
+"
+```
+
+- [ ] `eval_config.json` exists under the eval output base directory.
+- [ ] Snapshot includes at least `judge`, `results_path`, `dataset_path`, and tolerances.
+
 ---
 
 ## 11. Score Sanity Checks
@@ -523,7 +538,7 @@ for dim in ['approach', 'accuracy', 'sources']:
 ```bash
 python -c "
 import json
-with open('evaluation_results/openai_gpt-4o-mini/report.json') as f:
+with open('evaluation_results/openai_gpt-5-mini/report.json') as f:
     r = json.load(f)
 
 errors = []
@@ -588,16 +603,47 @@ else:
 
 ```bash
 python scripts/run_eval.py \
-  --model openai_gpt-4o-mini \
+  --model openai_gpt-5-mini \
   --questions 1 \
-  --judge-model gpt-4o-mini
+  --judge-model gpt-5.2
 ```
 
 ### What to check
 
-- [ ] The header prints `Judge model: gpt-4o-mini` (not `gpt-4o`).
+- [ ] The header prints `Judge model: gpt-5.2` (overriding default `gpt-5-mini`).
 - [ ] Evaluation completes without errors.
 - [ ] Scores are produced (they may differ from the default judge, which is expected).
+
+### 12b. Attributes File Flags
+
+```bash
+# Use pre-generated canonical attributes
+python scripts/run_eval.py \
+  --model openai_gpt-5-mini \
+  --questions 1 \
+  --attributes-file evaluation_results/attributes_generated_final.json
+
+# Or write generated attributes to a custom output path
+python scripts/run_eval.py \
+  --model openai_gpt-5-mini \
+  --questions 1 \
+  --attributes-output-file evaluation_results/reruns/attributes_generated.json
+```
+
+- [ ] `--attributes-file` skips full attribute generation and uses the provided file.
+- [ ] `--attributes-output-file` writes generated attributes to the specified path.
+
+### 12c. Dataset Path Override
+
+```bash
+python scripts/run_eval.py \
+  --model openai_gpt-5-mini \
+  --questions 1 \
+  --dataset-path data/evals_full_dataset_212.csv
+```
+
+- [ ] The header prints the overridden dataset path.
+- [ ] Evaluation uses the specified dataset without modifying config files.
 
 ---
 
@@ -611,7 +657,7 @@ Run evaluation for a question number that has no trace file:
 
 ```bash
 python scripts/run_eval.py \
-  --model openai_gpt-4o-mini \
+  --model openai_gpt-5-mini \
   --questions 99
 ```
 
@@ -635,7 +681,7 @@ python scripts/run_eval.py \
 
 ```bash
 python scripts/run_eval.py \
-  --model openai_gpt-4o-mini
+  --model openai_gpt-5-mini
 ```
 
 - [ ] Omitting `--questions` evaluates all questions that have traces.
@@ -647,8 +693,8 @@ python scripts/run_eval.py \
 python scripts/run_eval.py --config nonexistent.yaml
 ```
 
-- [ ] Falls back to default config (the script checks `config.exists()` before loading).
-- [ ] No crash.
+- [ ] Exits with `FileNotFoundError: Eval config not found: ...`.
+- [ ] This is expected behavior for explicit nonexistent config paths.
 
 ---
 
@@ -664,6 +710,7 @@ python scripts/run_eval.py --config nonexistent.yaml
 | `No trace file matching 'trace_q{N}_*.json'` | Missing trace for that question | Run the benchmark for that question first, or exclude it with `--questions` |
 | Scores are all 0.0 or all 1.0 | Judge may not be evaluating correctly | Try a different `--judge-model`, inspect the `reasoning` field in `qN.json` |
 | `comparison_report.json` not created | Forgot `--compare` flag or only one model | Pass `--compare` and ensure traces exist for 2+ models |
-| `ValidationError` from Pydantic | Judge returned out-of-schema values | Check OpenAI API status; retry with `--judge-model gpt-4o` |
+| `ValidationError` from Pydantic | Judge returned out-of-schema values | Check provider/API status; retry with a different `--judge-model` |
 | Very wide confidence intervals | Too few trials | Run the benchmark with more trials (`num_trials` in benchmark config) |
 | `KeyError: 'S/N'` when loading CSV | Wrong CSV format or encoding | Verify the CSV has a header row with `S/N` as the first column |
+
