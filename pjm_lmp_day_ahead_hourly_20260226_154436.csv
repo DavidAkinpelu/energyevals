@@ -1,2 +1,0 @@
-interval_start_local,interval_start_utc,interval_end_local,interval_end_utc,location,location_id,lmp,energy,congestion,loss
-2024-01-01T00:00:00-05:00,2024-01-01T05:00:00+00:00,2024-02-01T00:00:00-05:00,2024-02-01T05:00:00+00:00,EASTERN HUB,51217.0,45.875136061828,45.6174327956989,-1.55793507392473,1.81563834005376

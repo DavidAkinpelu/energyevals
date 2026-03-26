@@ -1,2 +1,0 @@
-interval_start_local,interval_start_utc,interval_end_local,interval_end_utc,location,location_id,lmp,energy,congestion,loss
-2024-01-01T00:00:00-05:00,2024-01-01T05:00:00+00:00,2024-02-01T00:00:00-05:00,2024-02-01T05:00:00+00:00,NEW JERSEY HUB,4669664.0,44.2953688736559,45.6174327956989,-2.24441191666666,0.922347994623655

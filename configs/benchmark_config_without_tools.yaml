@@ -9,20 +9,22 @@
 # Uncomment additional models to run benchmarks across multiple providers
 # At least one model must be listed; benchmark runs do not use provider/model fallbacks.
 models:
-  # - provider: anthropic
-  #   model: claude-3-5-sonnet-20260219
+  #  - provider: anthropic
+  #    model: claude-sonnet-4-6
   # - provider: google
   #   model: gemini-3-pro-preview
   # - provider: openai
-  #    model: gpt-4o-mini
-    - provider: openai
-      model: gpt-5-mini
-      reasoning_effort: low
-    - provider: openai
-      model: gpt-5.2
-      reasoning_effort: low
+  #   model: gpt-4o-mini
+  # - provider: openai
+  #   model: gpt-5-mini
+  #   reasoning_effort: low
+  # - provider: openai
+  #   model: gpt-5.2
+  #   reasoning_effort: low
+  #  - provider: deepinfra
+  #    model: deepseek-ai/DeepSeek-V3.2
     - provider: deepinfra
-      model: deepseek-ai/DeepSeek-V3.2
+      model: moonshotai/Kimi-K2.5
 
 # Per-model options (optional):
 # models:
@@ -41,12 +43,12 @@ models:
 # =============================================================================
 
 # Questions file
-questions_file: data/evals_full_dataset_without_tools.csv
+questions_file: data/evals_full_dataset_without_tools_additional.csv
 
 # Question selection (optional)
 # Leave empty or comment out to run all questions
 # questions: [1, 2]              # Specific question IDs
-# questions: 1-5                     # Range of questions
+questions: [112, 172, 209, 213, 214, 216, 218, 219, 221, 223, 224, 225, 227, 228, 230, 231]                     # Range of questions
 
 # =============================================================================
 # Observability Settings
@@ -56,7 +58,7 @@ observability:
   enabled: true                      # Enable/disable tracing
   backend: json                      # json, langfuse, both, or auto
   output_dir: ./benchmark_traces     # Base directory for trace files
-  run_name: without_tools_config_rerun             # Optional: subdirectory for organizing runs
+  run_name: without_tools_final      # Optional: subdirectory for organizing runs
                                      # e.g., "no_tools", "with_tools", "experiment_1"
                                      # Traces saved to: {output_dir}/{run_name}/{model}/
 

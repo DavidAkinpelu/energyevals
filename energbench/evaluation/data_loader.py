@@ -199,6 +199,7 @@ def load_benchmark_result(
 
     metric_score = MetricScore(
         tool_calls=metrics_raw.get("tool_calls_count", 0),
+        iterations=metrics_raw.get("iterations", 0),
         total_tokens=metrics_raw.get("total_tokens", 0),
         duration_seconds=metrics_raw.get("duration_seconds", 0.0),
         latency=latency,

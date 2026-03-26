@@ -10,17 +10,19 @@
 # At least one model must be listed; benchmark runs do not use provider/model fallbacks.
 models:
   #  - provider: anthropic
-  #    model: claude-3-5-sonnet-20260219
+  #    model: claude-sonnet-4-6
   #  - provider: google
   #    model: gemini-3-pro-preview
-    - provider: openai
-      model: gpt-5-mini
-      reasoning_effort: low
-    - provider: openai
-      model: gpt-5.2
-      reasoning_effort: low
+  #  - provider: openai
+  #    model: gpt-5-mini
+  #    reasoning_effort: low
+  #  - provider: openai
+  #    model: gpt-5.2
+  #    reasoning_effort: low
+  #  - provider: deepinfra
+  #    model: deepseek-ai/DeepSeek-V3.2
     - provider: deepinfra
-      model: deepseek-ai/DeepSeek-V3.2
+      model: moonshotai/Kimi-K2.5
 
 # Per-model options (optional):
 # models:
@@ -39,12 +41,12 @@ models:
 # =============================================================================
 
 # Questions file
-questions_file: data/evals_full_dataset_without_gridstatus.csv
+questions_file: data/evals_full_dataset_212.csv
 
 # Question selection (optional)
 # Leave empty or comment out to run all questions
-# questions: [232]              # Specific question IDs
-# questions: 1-5                     # Range of questions
+#questions: [93, 94, 107, 108, 136, 137,95, 96, 109, 110, 140, 141]              # Specific question IDs 
+questions: [3]                     # Range of questions
 
 # =============================================================================
 # Observability Settings
@@ -54,7 +56,7 @@ observability:
   enabled: true                      # Enable/disable tracing
   backend: json                      # json, langfuse, both, or auto
   output_dir: ./benchmark_traces     # Base directory for trace files
-  run_name: without_gridstatus             # Optional: subdirectory for organizing runs
+  run_name: failure_checks # Optional: subdirectory for organizing runs
                                      # e.g., "no_tools", "with_tools", "experiment_1"
                                      # Traces saved to: {output_dir}/{run_name}/{model}/
 
@@ -96,7 +98,7 @@ agent:
 tools:
   enabled: true
   include: []
-  exclude: [gridstatus_api_tool]
+  exclude: []
 
 # Pattern 2: Run only specific tools (recommended for faster benchmarks)
 # Use parent tool names (groups) or individual method names.
