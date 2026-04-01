@@ -1,0 +1,47 @@
+type_clean,ct
+Solar,13564
+Wind,6317
+Battery,5536
+Solar+Battery,3698
+Gas,3326
+Other,1721
+Hydro,493
+Coal,426
+Offshore Wind,235
+Nuclear,172
+Geothermal,158
+Gas+Oil,110
+Other Storage,103
+Wind+Battery,101
+Oil,79
+Diesel,75
+Other+Battery,74
+Solar+Wind+Battery,68
+Gas+Battery,41
+Solar+Wind,28
+Solar+Other,25
+Solar+Gas+Battery,21
+Solar+Gas,14
+Gas+Other,9
+Hydro+Battery,7
+Wind+Other,4
+Battery+Other¬†Storage,3
+Offshore Wind+Battery,3
+Gas+Coal,3
+Other+Battery+Other¬†Storage,3
+Hydrogen,3
+Solar+Wind+Other¬†Storage,2
+Oil+Other,2
+Other+Coal,2
+Solar+Other+Battery,2
+Other+Diesel,2
+Solar+Battery+Other¬†Storage,2
+Gas+Battery+Diesel,1
+Solar+Diesel,1
+Gas+Diesel,1
+Solar+Hydro,1
+Oil+Battery,1
+Geothermal+Battery,1
+Oil+Coal,1
+Solar+Geothermal,1
+Wind+Gas,1

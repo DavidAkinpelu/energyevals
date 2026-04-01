@@ -1244,7 +1244,16 @@ After the benchmark completes, run the evaluation pipeline against the traces:
 ```bash
 python scripts/run_eval.py \
   --run-name eval_samples \
-  --model openai_gpt-4o
+  --model openai_gpt-5-mini
+```
+
+Useful eval-run overrides:
+
+```bash
+python scripts/run_eval.py \
+  --run-name eval_samples \
+  --dataset-path data/evals_full_dataset_212.csv \
+  --attributes-file evaluation_results/attributes_generated_final.json
 ```
 
 ### Multi-trial multi-model comparison
@@ -1266,6 +1275,10 @@ python scripts/run_eval.py \
 ```
 
 The evaluation pipeline discovers all models and trials automatically, computes per-question confidence intervals, and runs paired significance tests between models.
+
+By default, eval outputs are written under `evaluation_results/{run_name}/` and
+include `report.json`, `summary.csv`, `eval_config.json`, and optionally
+`comparison_report.json` when `--compare` is enabled.
 
 ### Run a single model on a specific question for debugging
 

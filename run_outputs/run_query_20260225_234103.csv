@@ -1,0 +1,32 @@
+entity,q_status,ia_status_clean,cnt,mw
+MISO,active,Cluster Study,729,128101.78000000003
+MISO,active,,718,141404.12000000002
+MISO,withdrawn,Cluster Study,522,80204.73
+MISO,active,In Progress (unknown study),462,83147.34000000001
+MISO,withdrawn,IA Executed,353,58470.26000000001
+MISO,active,IA Executed,262,40574.39
+MISO,withdrawn,Feasibility Study,237,50412.600000000006
+MISO,withdrawn,In Progress (unknown study),151,22329.25
+MISO,operational,Operational,125,25843.100000000002
+MISO,withdrawn,System Impact Study,111,21119.9
+MISO,operational,IA Executed,70,10423.62
+MISO,withdrawn,,66,8136.889999999999
+MISO,withdrawn,Facility Study,12,1407.0
+MISO,operational,Cluster Study,7,872.6899999999999
+MISO,withdrawn,Withdrawn,5,345.9
+NYISO,withdrawn,,1049,207738.50999999995
+NYISO,active,,301,61438.58000000001
+NYISO,active,Facility Study,51,2969.4999999999995
+NYISO,active,System Impact Study,49,8318.7
+NYISO,operational,Facility Study,21,1484.9
+NYISO,operational,System Impact Study,19,1853.7
+NYISO,operational,In Progress (unknown study),3,20.2
+NYISO,operational,,2,40.0
+SPP,withdrawn,Withdrawn,1073,195167.88700000013
+SPP,active,System Impact Study,428,94706.79200000003
+SPP,operational,Operational,163,26037.07
+SPP,active,IA Executed,140,23124.66
+SPP,active,IA Pending,51,7346.9800000000005
+SPP,active,Facility Study,16,1856.65
+SPP,suspended,Suspended,8,1379.4
+SPP,active,In Progress (unknown study),8,1699.6

@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from loguru import logger
@@ -14,23 +15,28 @@ from .data_loader import (
 )
 from .judges import (
     create_judge_provider,
+    extract_attributes,
     judge_accuracy,
     judge_approach,
     judge_attributes,
     judge_sources,
 )
 from .models import (
+    AttributesFile,
     CostEstimate,
     EvaluationReport,
+    ExtractedAttribute,
     JudgeScore,
     LatencyBreakdown,
     MetricScore,
     ModelComparison,
+    QuestionAttributes,
     QuestionEval,
     TrialEval,
 )
 from .stats import compare_models_paired, compute_score_statistics
 from .strategy import get_strategy
+from .summary_postprocess import update_summary_from_traces
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -48,10 +54,18 @@ def _aggregate_metrics(metrics_list: list[MetricScore]) -> MetricScore:
         k: sum(m.latency.per_tool_ms.get(k, 0.0) for m in metrics_list) / n
         for k in all_tool_keys
     }
+    avg_input_tokens = round(sum(m.cost.input_tokens for m in metrics_list) / n)
+    avg_output_tokens = round(sum(m.cost.output_tokens for m in metrics_list) / n)
+    avg_cached_tokens = round(sum(m.cost.cached_tokens for m in metrics_list) / n)
+    avg_reasoning_tokens = round(sum(m.cost.reasoning_tokens for m in metrics_list) / n)
+    # Input token accounting already includes cached tokens for these runs.
+    # Keep total as input + output to avoid double counting cached.
+    avg_total_tokens = avg_input_tokens + avg_output_tokens
 
     return MetricScore(
         tool_calls=round(sum(m.tool_calls for m in metrics_list) / n),
-        total_tokens=round(sum(m.total_tokens for m in metrics_list) / n),
+        iterations=round(sum(m.iterations for m in metrics_list) / n),
+        total_tokens=avg_total_tokens,
         duration_seconds=sum(m.duration_seconds for m in metrics_list) / n,
         latency=LatencyBreakdown(
             wall_clock_ms=sum(m.latency.wall_clock_ms for m in metrics_list) / n,
@@ -60,10 +74,10 @@ def _aggregate_metrics(metrics_list: list[MetricScore]) -> MetricScore:
             per_tool_ms=per_tool_avg,
         ),
         cost=CostEstimate(
-            input_tokens=round(sum(m.cost.input_tokens for m in metrics_list) / n),
-            output_tokens=round(sum(m.cost.output_tokens for m in metrics_list) / n),
-            cached_tokens=round(sum(m.cost.cached_tokens for m in metrics_list) / n),
-            reasoning_tokens=round(sum(m.cost.reasoning_tokens for m in metrics_list) / n),
+            input_tokens=avg_input_tokens,
+            output_tokens=avg_output_tokens,
+            cached_tokens=avg_cached_tokens,
+            reasoning_tokens=avg_reasoning_tokens,
             estimated_cost_usd=sum(m.cost.estimated_cost_usd for m in metrics_list) / n,
         ),
     )
@@ -86,6 +100,112 @@ def _discover_model_dirs(results_path: Path, run_name: str | None) -> list[Path]
     )
 
 
+def _attributes_output_path(config: EvalConfig, output_base: Path) -> Path:
+    """Resolve where generated attributes should be written."""
+    if config.attributes_output_file is not None:
+        return config.attributes_output_file
+    return output_base / "attributes_generated.json"
+
+
+def _load_attributes_file(path: Path) -> dict[int, list[ExtractedAttribute]]:
+    """Load canonical attributes from a JSON file."""
+    with open(path, encoding="utf-8") as f:
+        payload = json.load(f)
+    parsed = AttributesFile.model_validate(payload)
+    return {
+        q.question_id: q.attributes
+        for q in parsed.questions
+    }
+
+
+def _serialize_attributes_payload(
+    *,
+    config: EvalConfig,
+    dataset_path: Path,
+    rows_by_id: dict[int, dict],
+    attributes_map: dict[int, list[ExtractedAttribute]],
+) -> dict:
+    """Build JSON payload for persisted canonical attributes."""
+    questions: list[QuestionAttributes] = []
+    for qid in sorted(attributes_map):
+        row = rows_by_id.get(qid, {})
+        questions.append(
+            QuestionAttributes(
+                question_id=qid,
+                question=row.get("Question", ""),
+                category=row.get("Category", ""),
+                difficulty=row.get("Difficulty level", ""),
+                attributes=attributes_map[qid],
+            )
+        )
+    payload = AttributesFile(
+        generated_at=datetime.now(timezone.utc).isoformat(),
+        judge_provider=config.judge.provider,
+        judge_model=config.judge.model,
+        dataset_path=str(dataset_path),
+        questions=questions,
+    )
+    return payload.model_dump()
+
+
+async def _build_or_load_attributes(
+    provider: BaseProvider,
+    eval_data: list[dict],
+    config: EvalConfig,
+    output_base: Path,
+) -> dict[int, list[ExtractedAttribute]]:
+    """Get canonical per-question attributes from file or by generation."""
+    rows_by_id = {int(r["S/N"]): r for r in eval_data}
+    all_qids = sorted(rows_by_id.keys())
+
+    if config.attributes_file is not None:
+        path = config.attributes_file
+        if not path.exists():
+            raise FileNotFoundError(f"attributes_file not found: {path}")
+        attrs = _load_attributes_file(path)
+        missing = [qid for qid in all_qids if qid not in attrs]
+        if missing:
+            logger.warning(
+                f"attributes_file is missing {len(missing)} question(s); generating missing attributes: {missing[:10]}"
+            )
+            for qid in missing:
+                row = rows_by_id[qid]
+                extracted = await extract_attributes(
+                    provider,
+                    row.get("Question", ""),
+                    row.get("Answer", ""),
+                    judge_config=config.judge,
+                )
+                attrs[qid] = extracted.attributes
+        return attrs
+
+    attrs: dict[int, list[ExtractedAttribute]] = {}
+    logger.info(f"Generating canonical attributes for {len(all_qids)} question(s)")
+    for idx, qid in enumerate(all_qids, start=1):
+        row = rows_by_id[qid]
+        logger.info(f"[attributes] Q{qid} ({idx}/{len(all_qids)})")
+        extracted = await extract_attributes(
+            provider,
+            row.get("Question", ""),
+            row.get("Answer", ""),
+            judge_config=config.judge,
+        )
+        attrs[qid] = extracted.attributes
+
+    out_path = _attributes_output_path(config, output_base)
+    _save_json(
+        out_path,
+        _serialize_attributes_payload(
+            config=config,
+            dataset_path=config.dataset_path,
+            rows_by_id=rows_by_id,
+            attributes_map=attrs,
+        ),
+    )
+    logger.info(f"Saved canonical attributes to {out_path}")
+    return attrs
+
+
 # ---------------------------------------------------------------------------
 # Core evaluation logic
 # ---------------------------------------------------------------------------
@@ -100,6 +220,7 @@ async def _evaluate_trial(
     trace_base: Path,
     trial: int | None,
     trial_index: int,
+    canonical_attributes: list[ExtractedAttribute] | None,
     config: EvalConfig,
 ) -> TrialEval:
     """Run all judges for a single trial of a single question."""
@@ -131,8 +252,12 @@ async def _evaluate_trial(
         accuracy_reasoning = raw_accuracy.reasoning
     else:
         logger.info("  → attributes judge")
+        expected_attributes = [
+            {"name": attr.name, "expected": attr.expected}
+            for attr in (canonical_attributes or [])
+        ]
         raw_attributes = await judge_attributes(
-            provider, question_text, expected_answer, agent_answer,
+            provider, question_text, expected_attributes, agent_answer,
             abs_tol=config.abs_tol, rel_tol=config.rel_tol, judge_config=jcfg,
         )
         accuracy_score = raw_attributes.alignment_score
@@ -174,6 +299,7 @@ async def _evaluate_model(
     model_dir: Path,
     ground_truths: dict[int, object],
     eval_data: list[dict],
+    attributes_map: dict[int, list[ExtractedAttribute]],
     config: EvalConfig,
 ) -> EvaluationReport:
     """Evaluate all questions for a single model across all trials."""
@@ -213,6 +339,17 @@ async def _evaluate_model(
         suggested_steps = row.get("Approach", "")
         category = row.get("Category", "")
         difficulty = row.get("Difficulty level", "")
+        canonical_attrs = attributes_map.get(qnum)
+        if canonical_attrs is None:
+            logger.warning(f"No canonical attributes found for Q{qnum}; generating fallback attributes")
+            extracted = await extract_attributes(
+                provider,
+                question_text,
+                expected_answer,
+                judge_config=config.judge,
+            )
+            canonical_attrs = extracted.attributes
+            attributes_map[qnum] = canonical_attrs
         strategy = get_strategy(category, config.category_strategies, config.default_strategy)
         logger.info(f"[{model_name}] Q{qnum} ({i}/{total}) [{category}] [{difficulty}]")
 
@@ -231,6 +368,7 @@ async def _evaluate_model(
                     trace_base=model_dir,
                     trial=trial,
                     trial_index=trial_index,
+                    canonical_attributes=canonical_attrs,
                     config=config,
                 )
                 trial_evals.append(te)
@@ -353,9 +491,18 @@ def _write_summary_csv(report: EvaluationReport, path: Path) -> None:
             "approach_mean", "approach_ci",
             "accuracy_mean", "accuracy_ci",
             "sources_mean", "sources_ci",
+            "Failed", "iterations",
             "tool_calls", "tokens", "duration_s",
+            "total_input_tokens", "total_output_tokens", "total_cached_tokens",
+            "input_tokens", "output_tokens", "cached_tokens", "reasoning_tokens",
         ])
         for q in report.questions:
+            # Input token accounting already includes cached tokens for these runs.
+            # Keep total as input + output to avoid double counting cached.
+            total_tokens_expanded = (
+                q.aggregated_metrics.cost.input_tokens
+                + q.aggregated_metrics.cost.output_tokens
+            )
             writer.writerow([
                 q.question_id, q.category, q.difficulty, q.accuracy_strategy,
                 f"{q.approach_stats.mean:.3f}",
@@ -364,9 +511,18 @@ def _write_summary_csv(report: EvaluationReport, path: Path) -> None:
                 f"[{q.accuracy_stats.ci_lower:.3f}, {q.accuracy_stats.ci_upper:.3f}]",
                 f"{q.sources_stats.mean:.3f}",
                 f"[{q.sources_stats.ci_lower:.3f}, {q.sources_stats.ci_upper:.3f}]",
+                "False",
+                q.aggregated_metrics.iterations,
                 q.aggregated_metrics.tool_calls,
-                q.aggregated_metrics.total_tokens,
+                total_tokens_expanded,
                 f"{q.aggregated_metrics.duration_seconds:.1f}",
+                q.aggregated_metrics.cost.input_tokens,
+                q.aggregated_metrics.cost.output_tokens,
+                q.aggregated_metrics.cost.cached_tokens,
+                q.aggregated_metrics.cost.input_tokens,
+                q.aggregated_metrics.cost.output_tokens,
+                q.aggregated_metrics.cost.cached_tokens,
+                q.aggregated_metrics.cost.reasoning_tokens,
             ])
 
 
@@ -440,6 +596,18 @@ async def run_evaluation(config: EvalConfig) -> dict[str, EvaluationReport]:
     ground_truths = load_ground_truth(config.dataset_path)
     logger.info(f"Loaded {len(eval_data)} evaluation questions")
 
+    output_base = config.output_dir
+    if config.run_name:
+        output_base = output_base / config.run_name
+    output_base.mkdir(parents=True, exist_ok=True)
+
+    attributes_map = await _build_or_load_attributes(
+        provider=provider,
+        eval_data=eval_data,
+        config=config,
+        output_base=output_base,
+    )
+
     model_dirs = _discover_model_dirs(config.results_path, config.run_name)
 
     if config.models:
@@ -452,26 +620,46 @@ async def run_evaluation(config: EvalConfig) -> dict[str, EvaluationReport]:
     print(f"  Found {len(model_dirs)} model(s): {[d.name for d in model_dirs]}")
     logger.info(f"Starting evaluation: {len(model_dirs)} model(s), judge={config.judge.model}")
 
-    output_base = config.output_dir
-    if config.run_name:
-        output_base = output_base / config.run_name
-    output_base.mkdir(parents=True, exist_ok=True)
-
     reports: dict[str, EvaluationReport] = {}
 
     for model_dir in model_dirs:
         print(f"\n  Evaluating model: {model_dir.name}")
-        report = await _evaluate_model(provider, model_dir, ground_truths, eval_data, config)
+        report = await _evaluate_model(
+            provider,
+            model_dir,
+            ground_truths,
+            eval_data,
+            attributes_map,
+            config,
+        )
         report.config_snapshot = {
             "judge_model": config.judge.model,
             "abs_tol": config.abs_tol,
             "rel_tol": config.rel_tol,
             "confidence_level": config.confidence_level,
+            "attributes_file": str(config.attributes_file) if config.attributes_file else None,
+            "attributes_output_file": (
+                str(config.attributes_output_file) if config.attributes_output_file else str(_attributes_output_path(config, output_base))
+            ),
         }
         reports[model_dir.name] = report
 
         _write_report(report, output_base)
         logger.info(f"Report written to {output_base / report.model}")
+        try:
+            stats = update_summary_from_traces(
+                traces_dir=model_dir,
+                eval_dir=output_base / report.model,
+            )
+            logger.info(
+                f"Summary post-process complete for {report.model}: "
+                f"rows={stats['rows_processed']}, failed={stats['failed_rows']}, "
+                f"missing_traces={stats['missing_traces']}"
+            )
+        except Exception as exc:
+            logger.warning(
+                f"Summary post-process failed for {report.model}: {type(exc).__name__}: {exc}"
+            )
         _print_report(report)
 
     comparisons: list[ModelComparison] = []
@@ -491,6 +679,10 @@ async def run_evaluation(config: EvalConfig) -> dict[str, EvaluationReport]:
             "run_name": config.run_name,
             "abs_tol": config.abs_tol,
             "rel_tol": config.rel_tol,
+            "attributes_file": str(config.attributes_file) if config.attributes_file else None,
+            "attributes_output_file": (
+                str(config.attributes_output_file) if config.attributes_output_file else str(_attributes_output_path(config, output_base))
+            ),
         }
         _save_json(output_base / "eval_config.json", config_snapshot)
 

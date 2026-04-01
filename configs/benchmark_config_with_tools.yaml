@@ -9,15 +9,20 @@
 # Uncomment additional models to run benchmarks across multiple providers
 # At least one model must be listed; benchmark runs do not use provider/model fallbacks.
 models:
-  # - provider: anthropic
-  #   model: claude-3-5-sonnet-20260219
-  # - provider: google
-  #   model: gemini-3-pro-preview
-    - provider: openai
-      model: gpt-4.1-mini
-      #reasoning_effort: low
-  # - provider: deepinfra
-  #   model: meta-llama/Llama-3.3-70B-Instruct-Turbo
+  #  - provider: anthropic
+  #    model: claude-sonnet-4-6
+  #  - provider: google
+  #    model: gemini-3-pro-preview
+  #  - provider: openai
+  #    model: gpt-5-mini
+  #    reasoning_effort: low
+  #  - provider: openai
+  #    model: gpt-5.2
+  #    reasoning_effort: low
+  #  - provider: deepinfra
+  #    model: deepseek-ai/DeepSeek-V3.2
+    - provider: deepinfra
+      model: moonshotai/Kimi-K2.5
 
 # Per-model options (optional):
 # models:
@@ -36,12 +41,12 @@ models:
 # =============================================================================
 
 # Questions file
-questions_file: data/eval_samples.csv
+questions_file: data/evals_full_dataset_212.csv
 
 # Question selection (optional)
 # Leave empty or comment out to run all questions
-#questions: [1, 2]              # Specific question IDs
-# questions: 1-5                     # Range of questions
+#questions: [93, 94, 107, 108, 136, 137,95, 96, 109, 110, 140, 141]              # Specific question IDs 
+questions: [3]                     # Range of questions
 
 # =============================================================================
 # Observability Settings
@@ -51,7 +56,7 @@ observability:
   enabled: true                      # Enable/disable tracing
   backend: json                      # json, langfuse, both, or auto
   output_dir: ./benchmark_traces     # Base directory for trace files
-  run_name: with_tools             # Optional: subdirectory for organizing runs
+  run_name: failure_checks # Optional: subdirectory for organizing runs
                                      # e.g., "no_tools", "with_tools", "experiment_1"
                                      # Traces saved to: {output_dir}/{run_name}/{model}/
 
@@ -69,16 +74,16 @@ mcp:
 
 agent:
   max_iterations: 25                 # Maximum iterations per question
-  num_trials: 3                      # Independent trials per question (for statistical eval)
+  num_trials: 1                      # Independent trials per question (for statistical eval)
   shuffle: true                     # Shuffle question order within each trial
   seed_mode: rotate                  # fixed | rotate | random_per_trial (ignored when shuffle=false)
   #seed: 0                         # Base seed used by fixed/rotate when seeds is not provided
-  seeds: [101, 202, 303]           # Optional explicit per-trial seeds; length must equal num_trials
+  seeds: [101] #, 202, 303]           # Optional explicit per-trial seeds; length must equal num_trials
   # csv_threshold: 20                # Rows above which tool results are saved to CSV not inline
   tool_timeout: 240.0               # Seconds before a stalled tool call is cancelled
   # max_retries: 3                   # Maximum retries for provider complete() on transient errors
   # retry_base_delay: 1.0            # Base delay (seconds) for exponential backoff between retries
-  max_tool_result_chars: 80000      # Truncate tool results to this many chars before adding to LLM context (0 = disabled)
+  max_tool_result_chars: 250000      # Truncate tool results to this many chars before adding to LLM context (0 = disabled)
 
 # =============================================================================
 # Tools Configuration

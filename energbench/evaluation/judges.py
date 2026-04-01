@@ -12,6 +12,7 @@ from .models import (
     AccuracyResult,
     ApproachResult,
     AttributeAlignmentResult,
+    ExtractedAttributesResult,
     SourceResult,
 )
 
@@ -82,9 +83,19 @@ Tolerance:
 """
 
 SOURCE_PROMPT = """\
-You are evaluating the source validity of an AI agent's answer to a question relating to energy markets analysis.
+You are evaluating the following two things only.
+1. Explicit inclusion of sources in an AI agent's answer to a question relating 
+to energy markets analysis.
 
-You can extract or infer relevant sources from the question iteself or from the suggested approach ground truth
+2. Relevance of the included sources for the question
+
+You can extract or infer relevant sources from the question itself or from the suggested approach ground truth
+
+Do not penalize for not explicitly adding queries or code for pulling data for verification as long as the source 
+specified is consistent with what the agent has access to and is plausible
+
+Internal databases are based on data from authoritative external sources and as such, the internal databases are 
+equivalent to external authoritative sources (e.g. market portals) and should be treated as such
 
 Question:
 {question}
@@ -103,15 +114,13 @@ Evaluate:
 """
 
 ATTRIBUTE_PROMPT = """\
-You are evaluating attribute alignment of an AI agent's answer against expected attributes.
-
-You should extract attributes from the expected answer. There should be no more than 5 attributes.
+You are evaluating attribute alignment of an AI agent's answer against a canonical set of expected attributes.
 
 Question:
 {question}
 
-Expected Answer:
-{expected_answer}
+Expected Attributes (canonical, JSON):
+{expected_attributes_json}
 
 Agent's Answer:
 {agent_answer}
@@ -123,6 +132,20 @@ Tolerance:
 - For numeric attributes, allow <= {abs_tol} absolute error OR <= {rel_tol}% relative error \
   unless exactness is required.
 
+"""
+
+ATTRIBUTE_EXTRACTION_PROMPT = """\
+You are generating a canonical attribute set for evaluating an AI agent answer to an energy market question.
+
+Extract no more than 5 high-value attributes from the expected answer.
+Each attribute should be specific, evaluable, and tied to the question intent.
+Prefer attributes that are most critical to correctness.
+
+Question:
+{question}
+
+Expected Answer:
+{expected_answer}
 """
 
 
@@ -254,7 +277,7 @@ async def judge_sources(
 async def judge_attributes(
     provider: BaseProvider,
     question: str,
-    expected_answer: str,
+    expected_attributes: list[dict[str, str]],
     agent_answer: str,
     *,
     abs_tol: float = 0.01,
@@ -264,9 +287,24 @@ async def judge_attributes(
     """Evaluate attribute alignment of the agent's answer."""
     prompt = ATTRIBUTE_PROMPT.format(
         question=question,
-        expected_answer=expected_answer,
+        expected_attributes_json=json.dumps(expected_attributes, indent=2, ensure_ascii=False),
         agent_answer=agent_answer,
         abs_tol=abs_tol,
         rel_tol=rel_tol,
     )
     return await _judge_call(provider, judge_config, prompt, AttributeAlignmentResult)
+
+
+async def extract_attributes(
+    provider: BaseProvider,
+    question: str,
+    expected_answer: str,
+    *,
+    judge_config: JudgeConfig,
+) -> ExtractedAttributesResult:
+    """Extract canonical attributes for a question from the expected answer."""
+    prompt = ATTRIBUTE_EXTRACTION_PROMPT.format(
+        question=question,
+        expected_answer=expected_answer,
+    )
+    return await _judge_call(provider, judge_config, prompt, ExtractedAttributesResult)
