@@ -37,7 +37,7 @@ a CSV file (`data/eval_samples_with_answers.csv`).
 
 The default path is `data/eval_samples_with_answers.csv` (set by
 `EvalConfig.dataset_path`). Override it in the YAML config or with the
-`--dataset` CLI flag.
+`--dataset-path` CLI flag.
 
 ### CSV columns
 
@@ -58,10 +58,7 @@ The default path is `data/eval_samples_with_answers.csv` (set by
 `models.py`) carries four fields: `answer`, `approach`, `question_type`, and
 `category`.
 
-The current dataset contains **11 questions** across four categories
-(Market data retrieval and analysis, Market rules retrieval, Policy and
-regulatory analysis, Project and asset development analysis) and three
-difficulty levels (Easy, Medium, Hard).
+Dataset size and category counts change over time as the benchmark set evolves.
 
 ## Module Files
 
@@ -70,7 +67,7 @@ difficulty levels (Easy, Medium, Hard).
 | `config.py` | `EvalConfig` and `JudgeConfig` dataclasses; YAML config loading via `load_eval_config()` |
 | `models.py` | Pydantic data models for every evaluation entity (scores, reports, comparisons, metrics) |
 | `data_loader.py` | Loads the ground-truth CSV and benchmark trace JSON files; discovers trial directories |
-| `judges.py` | Four LLM judge functions that use OpenAI structured outputs |
+| `judges.py` | Four LLM judge functions routed through the provider abstraction |
 | `strategy.py` | Maps question categories to the appropriate judge strategy |
 | `stats.py` | Confidence-interval computation and paired significance tests |
 | `runner.py` | Main pipeline orchestrator; the public entry point is `run_evaluation()` |
@@ -117,9 +114,10 @@ sources cited or implied in the agent's answer.
 - Raw scale: **1 -- 5** (5 = authoritative and well-aligned).
 - Used directly in the final report (no normalization).
 
-All judges use OpenAI structured outputs (`client.responses.parse`) with
-`temperature=0` for reproducibility. The judge model defaults to `gpt-4o` and
-can be overridden via config or the `--judge-model` CLI flag.
+All judges run through the benchmark provider abstraction, so judge calls can be
+routed to supported providers (`openai`, `anthropic`, `google`, `deepinfra`).
+The default judge model is `gpt-5-mini` and can be overridden via config or
+the `--judge-model` CLI flag.
 
 ## Strategy Routing
 
@@ -195,13 +193,16 @@ defaults). Key settings:
 ```yaml
 judge:
   provider: openai
-  model: gpt-4o
+  model: gpt-5-mini
   temperature: 0.0
   max_tokens: 4096
+  reasoning_effort: low
 
 results_path: ./benchmark_traces
 dataset_path: ./data/eval_samples_with_answers.csv
 output_dir: ./evaluation_results
+attributes_file: null
+attributes_output_file: null
 
 # run_name: eval_samples
 
@@ -318,6 +319,24 @@ python scripts/run_eval.py --run-name eval_samples --compare
 python scripts/run_eval.py -c configs/eval_config.yaml --judge-model gpt-4.1
 ```
 
+**Override dataset path**:
+
+```bash
+python scripts/run_eval.py --dataset-path data/evals_full_dataset_212.csv
+```
+
+**Use pre-generated canonical attributes**:
+
+```bash
+python scripts/run_eval.py --attributes-file evaluation_results/attributes_generated_final.json
+```
+
+**Write generated attributes to a custom path**:
+
+```bash
+python scripts/run_eval.py --attributes-output-file evaluation_results/reruns/attributes_generated.json
+```
+
 **Multi-trial runs** need no special flag. The pipeline auto-discovers
 `trial_N/` directories and aggregates scores across trials with confidence
 intervals.
@@ -334,7 +353,7 @@ evaluation_results/
       summary.csv       # one row per question
       q1.json           # per-question detail
       q2.json
-    eval_config.yaml    # snapshot of the config used
+    eval_config.json    # snapshot of the config used
 ```
 
 **Multi-trial** (adds `trial_N/` subdirectories for per-trial details):
@@ -357,7 +376,7 @@ evaluation_results/
       trial_1/
         ...
     comparison_report.json   # only when --compare is used
-    eval_config.yaml
+    eval_config.json
 ```
 
 **File contents:**
@@ -366,10 +385,43 @@ evaluation_results/
   for each dimension, plus aggregate stats across all questions.
 - `summary.csv` -- flat CSV with columns: `question_id`, `category`,
   `difficulty`, `strategy`, `approach_mean`, `approach_ci`, `accuracy_mean`,
-  `accuracy_ci`, `sources_mean`, `sources_ci`, `tool_calls`, `tokens`,
-  `duration_s`.
+  `accuracy_ci`, `sources_mean`, `sources_ci`, `Failed`, `iterations`,
+  `tool_calls`, `tokens`, `duration_s`, `total_input_tokens`,
+  `total_output_tokens`, `total_cached_tokens`, `input_tokens`,
+  `output_tokens`, `cached_tokens`, `reasoning_tokens`.
 - `comparison_report.json` -- pairwise `ModelComparison` results across all
   model pairs and scoring dimensions (approach, accuracy, sources).
+
+## Eval Runs Pipeline
+
+`scripts/run_eval.py` is the entry point for eval runs. The runtime flow is:
+
+1. Load `configs/eval_config.yaml` (or an explicit `--config` file).
+2. Apply CLI overrides (`--results-path`, `--dataset-path`, `--run-name`,
+   `--model`, `--questions`, `--compare`, `--judge-model`,
+   `--attributes-file`, `--attributes-output-file`).
+3. Run evaluation per model and write `report.json`, per-question `qN.json`,
+   and `summary.csv`.
+4. Post-process `summary.csv` from traces to populate `Failed`, iteration, and
+   token-breakdown fields.
+5. Optionally write `comparison_report.json` when `--compare` is enabled.
+6. Persist an eval config snapshot to `eval_config.json`.
+
+Notes:
+
+- If `--config` points to a nonexistent file, the run errors with
+  `FileNotFoundError`.
+- In single-trial mode, per-question files are written directly under the model
+  directory (for example `.../openai_gpt-5-mini/q1.json`). In multi-trial mode,
+  they are written under `trial_N/`.
+
+## Utility Scripts
+
+- `scripts/update_summary_from_traces.py` updates an existing eval `summary.csv`
+  with failure flags and token breakdown from trace files.
+- `scripts/process_results_summary.py` aggregates per-model summary metrics and
+  computes cost estimates using the model-pricing table in that script. Pricing
+  keys must match model folder names exactly.
 
 ## Dependencies
 

@@ -34,6 +34,33 @@ class AttributeAlignmentResult(BaseModel):
     reasoning: str
 
 
+class ExtractedAttribute(BaseModel):
+    name: str
+    expected: str
+
+
+class ExtractedAttributesResult(BaseModel):
+    attributes: list[ExtractedAttribute]
+    reasoning: str
+
+
+class QuestionAttributes(BaseModel):
+    question_id: int
+    question: str
+    category: str = ""
+    difficulty: str = ""
+    attributes: list[ExtractedAttribute]
+
+
+class AttributesFile(BaseModel):
+    version: str = "1"
+    generated_at: str
+    judge_provider: str
+    judge_model: str
+    dataset_path: str
+    questions: list[QuestionAttributes]
+
+
 # ---------------------------------------------------------------------------
 # Normalized score wrapper
 # ---------------------------------------------------------------------------
@@ -75,6 +102,7 @@ class CostEstimate(BaseModel):
 class MetricScore(BaseModel):
     """Operational metrics extracted from a single agent trace."""
     tool_calls: int = 0
+    iterations: int = 0
     total_tokens: int = 0
     duration_seconds: float = 0.0
     latency: LatencyBreakdown = Field(default_factory=LatencyBreakdown)

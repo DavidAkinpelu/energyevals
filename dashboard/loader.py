@@ -30,6 +30,16 @@ class TraceRef:
     total_tokens: int | None = None
 
 
+def _load_json_with_encoding_fallback(path: Path) -> dict[str, Any]:
+    """Load JSON using default text encoding, then retry with UTF-8 if needed."""
+    try:
+        with path.open() as fh:
+            return json.load(fh)
+    except UnicodeDecodeError:
+        with path.open(encoding="utf-8") as fh:
+            return json.load(fh)
+
+
 # ---------------------------------------------------------------------------
 # Scanning / loading
 # ---------------------------------------------------------------------------
@@ -87,8 +97,7 @@ def load_run_index(
             uuid8 = m.group(3)
 
             try:
-                with fpath.open() as fh:
-                    data = json.load(fh)
+                data = _load_json_with_encoding_fallback(fpath)
                 meta = data.get("metadata") or {}
                 metrics = data.get("metrics") or {}
                 ref = TraceRef(
@@ -116,8 +125,7 @@ def load_run_index(
 def load_trace(ref: TraceRef) -> dict[str, Any] | None:
     """Load the full trace JSON. No cache (called on demand)."""
     try:
-        with ref.path.open() as fh:
-            return json.load(fh)
+        return _load_json_with_encoding_fallback(ref.path)
     except Exception:
         return None
 

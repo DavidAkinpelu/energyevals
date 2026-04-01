@@ -1,0 +1,36 @@
+field_name,description
+q_id,queue ID number
+q_status,"current queue status (active, withdrawn, suspended, or operational)"
+q_date,interconnection request date (date project entered queue)
+prop_date,proposed online date from interconnection application
+on_date,date project became operational (if applicable)
+wd_date,date project withdrawn from queue (if applicable)
+ia_date,date of signed interconnection agreement (if applicable)
+IA_status_raw,interconnection study phase / status from queue
+IA_status_clean,standardized interconnection study phase / status
+county,county where project is located
+state,state where project is located
+county_state_pairs,concatenated county and state
+fips_codes,5-digit FIPS code
+latitude,project location latitude
+longitude,project location longitude
+poi_name,point of interconnection name
+interconnection_voltage_kv,point of interconnection voltage
+interconnecting_entity,entity requesting interconnection service
+region,region where project is located (ISO or non-ISO region)
+project_name,project name
+utility,utility name
+entity,transmission provider entity name (ISO or utility)
+developer,project developer name
+cluster,queue cluster
+service,"interconnection service type (e.g., ERIS or NRIS, energy or capacity)"
+project_type,type of project or interconnection request (load/transmission/generation)
+type1,resource type 1
+type2,resource type 2
+type3,resource type 3
+mw1,capacity of type 1 (MW)
+mw2,capacity of type 2 (MW)
+mw3,capacity of type 3 (MW)
+type_clean,resource type - standardized
+q_year,year project entered queue
+prop_year,proposed online year from interconnection application
