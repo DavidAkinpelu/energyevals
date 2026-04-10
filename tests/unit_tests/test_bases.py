@@ -1,8 +1,8 @@
 import pytest
 
-from energbench.agent.providers import ToolDefinition
-from energbench.core.errors import ConfigurationError
-from energbench.tools.bases import APITool
+from energyevals.agent.providers import ToolDefinition
+from energyevals.core.errors import ConfigurationError
+from energyevals.tools.bases import APITool
 
 
 class ConcreteAPITool(APITool):

@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import pytest
 import requests
 
-from energbench.tools.dockets import FERCDocketTool
+from energyevals.tools.dockets import FERCDocketTool
 
 
 class TestFERCDocketToolUnit:
@@ -67,7 +67,7 @@ class TestFERCDocketToolUnit:
         }
 
         mocker.patch(
-            "energbench.tools.dockets.ferc_tool.requests.post",
+            "energyevals.tools.dockets.ferc_tool.requests.post",
             return_value=mock_response,
         )
         mocker.patch.object(FERCDocketTool, "_save_csv", return_value=None)
@@ -99,7 +99,7 @@ class TestFERCDocketToolUnit:
         mock_response.json.return_value = {"searchHits": []}
 
         mocker.patch(
-            "energbench.tools.dockets.ferc_tool.requests.post",
+            "energyevals.tools.dockets.ferc_tool.requests.post",
             return_value=mock_response,
         )
         mocker.patch.object(FERCDocketTool, "_save_csv", return_value=None)
@@ -124,7 +124,7 @@ class TestFERCDocketToolUnit:
         )
 
         mocker.patch(
-            "energbench.tools.dockets.ferc_tool.requests.post",
+            "energyevals.tools.dockets.ferc_tool.requests.post",
             return_value=mock_response,
         )
 
@@ -142,7 +142,7 @@ class TestFERCDocketToolUnit:
     def test_search_ferc_exception_handling(self, mocker):
         """Test generic exception handling in FERC search."""
         mocker.patch(
-            "energbench.tools.dockets.ferc_tool.requests.post",
+            "energyevals.tools.dockets.ferc_tool.requests.post",
             side_effect=Exception("Network timeout"),
         )
 

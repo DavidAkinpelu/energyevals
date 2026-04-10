@@ -10,9 +10,9 @@ from loguru import logger
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from energbench.benchmark.config import BenchmarkConfig
-from energbench.evaluation.config import EvalConfig, load_eval_config
-from energbench.evaluation.runner import run_evaluation
+from energyevals.benchmark.config import BenchmarkConfig
+from energyevals.evaluation.config import EvalConfig, load_eval_config
+from energyevals.evaluation.runner import run_evaluation
 
 
 def parse_args() -> argparse.Namespace:
@@ -137,7 +137,7 @@ def main() -> int:
     logger.add(sys.stderr, level=config.log_level)
 
     print(f"{'=' * 70}")
-    print("  energBench Evaluation Pipeline")
+    print("  EnergyEvals Evaluation Pipeline")
     print(f"{'=' * 70}")
     print(f"  Judge model:   {config.judge.model}")
     print(f"  Results path:  {config.results_path}")

@@ -1,0 +1,86 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 4.0,
+    "reasoning": "The agent correctly framed the problem as a web search for CAISO-specific participation requirements for regulation service and used targeted queries (e.g., \"Regulation Service\", \"Regulation Up/Down\", \"technical eligibility\", \"certification requirements\") against a CAISO market corpus. That matches the suggested approach and the appropriate data sources for this question (ISO postings, tariffs, business practice manuals). Tool usage appears logical and focused. Minor shortcomings: the queries are somewhat generic and there is no explicit indication the agent prioritized authoritative CAISO sources (tariff sections, business practice manuals, or specific ISO ancillary services pages) or retrieved/quoted the exact tariff or certification process language; adding direct queries for CAISO Tariff, BPMs, or specific section numbers would make the approach more robust and expert-like.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 0.2,
+    "reasoning": "Each expected attribute was checked for presence of the specific canonical elements. Attribute 1: agent mentions certification and Scheduling Coordinator but omits NRI and required contractual agreements, so not matched. Attribute 2: agent covers AGC/EMS control but omits ISO-certified revenue-quality metering and explicit real-time telemetry requirement, so not matched. Attribute 3: agent notes certification/testing but fails to mention GRDT and documented control/protection settings, so not matched. Attribute 4: agent gives specific dispatch-following requirements (10-minute ramping), performance monitoring and potential decertification—this sufficiently matches the expected ability-to-follow-dispatch and performance standards. Attribute 5: agent includes some resource-specific items (minimum capacities, aggregation, dispatch durations) but omits key canonical items (SOC requirement ~30 min at awarded level for storage, Net Benefits Test and Sub-LAP/resource ID/BPM specifics for DR/PDR/DER), so not matched. Numeric tolerances were applied where relevant (e.g., 10-minute ramping matched exactly; duration statements were considered but did not substitute for the canonical SOC and policy tests). Overall 1 of 5 attributes matched -> alignment score 0.2.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 3.0,
+    "reasoning": "The agent correctly cites authoritative CAISO documents (Tariff Section 8, Appendix K, and Business Practice Manuals), which are appropriate primary sources for participation requirements. However, the answer lacks precise citations (no article/section numbers beyond generic references) and no hyperlinks or dates, reducing verifiability. Several technical claims appear inaccurate or imprecise compared with CAISO practice: the stated minimum capacity thresholds (500 kW / 100 kW aggregation) and the stated continuous dispatch durations (60 minutes DAM / 30 minutes RTM) do not match CAISO published thresholds and typical regulating capability requirements; the ‘‘response accuracy >25%’’ metric is unclear and not a recognized CAISO performance threshold as phrased. The agent correctly identifies AGC/control and separate capacity/mileage components of bids (mileage payments are part of CAISO regulation market), but some bid details (energy bid requirements language) are vague and potentially misleading. Overall: sources named are authoritative and relevant, but insufficiently specific and some substantive technical claims are questionable—requires direct citations to the cited Tariff and BPM sections and correction of the factual errors before being relied upon.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 4,
+    "reasoning": "The agent correctly framed the problem as a web search for CAISO-specific participation requirements for regulation service and used targeted queries (e.g., \"Regulation Service\", \"Regulation Up/Down\", \"technical eligibility\", \"certification requirements\") against a CAISO market corpus. That matches the suggested approach and the appropriate data sources for this question (ISO postings, tariffs, business practice manuals). Tool usage appears logical and focused. Minor shortcomings: the queries are somewhat generic and there is no explicit indication the agent prioritized authoritative CAISO sources (tariff sections, business practice manuals, or specific ISO ancillary services pages) or retrieved/quoted the exact tariff or certification process language; adding direct queries for CAISO Tariff, BPMs, or specific section numbers would make the approach more robust and expert-like."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 1,
+    "alignment_score": 0.2,
+    "attribute_details": [
+      {
+        "name": "Registration and contracting",
+        "expected": "Resource must be fully registered and contracted with CAISO: complete the New Resource Implementation (NRI) process, have an appointed Scheduling Coordinator (SC), and execute required agreements (e.g., Participating Generator Agreement).",
+        "found": false,
+        "agent_value": "Mentions resources must be tested and certified by CAISO and that Scheduling Coordinators must hold a current certificate of technical eligibility. Does not mention New Resource Implementation (NRI) process or execution of required agreements (e.g., Participating Generator Agreement)."
+      },
+      {
+        "name": "Metering and real-time telemetry",
+        "expected": "Install ISO-certified revenue-quality meters and provide direct real-time telemetry to CAISO's EMS to support fast response and accurate control.",
+        "found": false,
+        "agent_value": "Specifies Automatic Generation Control (AGC) capability and ability to receive and respond to direct digital control signals from CAISO EMS, but does not state requirement for ISO-certified revenue-quality meters or explicit real-time telemetry metering requirements."
+      },
+      {
+        "name": "Ancillary service (regulation) certification and data templates",
+        "expected": "Obtain regulation ancillary-service certification, supply documented control/protection settings and a completed Generator Resource Data Template (GRDT).",
+        "found": false,
+        "agent_value": "States resources must be tested and certified and Scheduling Coordinators must hold certificates of technical eligibility; does not mention providing documented control/protection settings or completing/submitting the GRDT."
+      },
+      {
+        "name": "Ability to follow dispatch and meet performance standards",
+        "expected": "Demonstrate capability to follow Dispatch Operating Points (DOP) and meet CAISO's regulation performance standards (response, accuracy, and any testing requirements).",
+        "found": true,
+        "agent_value": "States ramping capability (reach max regulation capacity within 10 minutes), CAISO monitors performance (weighted average of 15-minute intervals) and may revoke certification if performance falls below threshold, and describes response/accuracy and continuous adjustment to EMS signals—aligns with required ability to follow dispatch and meet performance standards."
+      },
+      {
+        "name": "Resource-type specific requirements",
+        "expected": "Comply with type-specific rules: storage must maintain sufficient state-of-charge for awarded regulation (e.g., ~30 minutes at awarded level); demand response/DERs/PDRs must meet Net Benefits Test, be correctly mapped to Sub-LAPs, and use proper resource IDs/aggregation per BPM.",
+        "found": false,
+        "agent_value": "Provides capacity minimums (500 kW, 100 kW for approved aggregations) and duration/dispatchability statements (capable of dispatch continuously for at least 60 minutes in Day-Ahead and 30 minutes in Real-Time) and mentions aggregations/DERs, but does not mention state-of-charge requirements (~30 minutes at awarded level), Net Benefits Test, Sub-LAP mapping, or specific resource ID/aggregation BPM rules."
+      }
+    ],
+    "reasoning": "Each expected attribute was checked for presence of the specific canonical elements. Attribute 1: agent mentions certification and Scheduling Coordinator but omits NRI and required contractual agreements, so not matched. Attribute 2: agent covers AGC/EMS control but omits ISO-certified revenue-quality metering and explicit real-time telemetry requirement, so not matched. Attribute 3: agent notes certification/testing but fails to mention GRDT and documented control/protection settings, so not matched. Attribute 4: agent gives specific dispatch-following requirements (10-minute ramping), performance monitoring and potential decertification—this sufficiently matches the expected ability-to-follow-dispatch and performance standards. Attribute 5: agent includes some resource-specific items (minimum capacities, aggregation, dispatch durations) but omits key canonical items (SOC requirement ~30 min at awarded level for storage, Net Benefits Test and Sub-LAP/resource ID/BPM specifics for DR/PDR/DER), so not matched. Numeric tolerances were applied where relevant (e.g., 10-minute ramping matched exactly; duration statements were considered but did not substitute for the canonical SOC and policy tests). Overall 1 of 5 attributes matched -> alignment score 0.2."
+  },
+  "raw_sources": {
+    "source_validity": 3,
+    "reasoning": "The agent correctly cites authoritative CAISO documents (Tariff Section 8, Appendix K, and Business Practice Manuals), which are appropriate primary sources for participation requirements. However, the answer lacks precise citations (no article/section numbers beyond generic references) and no hyperlinks or dates, reducing verifiability. Several technical claims appear inaccurate or imprecise compared with CAISO practice: the stated minimum capacity thresholds (500 kW / 100 kW aggregation) and the stated continuous dispatch durations (60 minutes DAM / 30 minutes RTM) do not match CAISO published thresholds and typical regulating capability requirements; the ‘‘response accuracy >25%’’ metric is unclear and not a recognized CAISO performance threshold as phrased. The agent correctly identifies AGC/control and separate capacity/mileage components of bids (mileage payments are part of CAISO regulation market), but some bid details (energy bid requirements language) are vague and potentially misleading. Overall: sources named are authoritative and relevant, but insufficiently specific and some substantive technical claims are questionable—requires direct citations to the cited Tariff and BPM sections and correction of the factual errors before being relied upon."
+  },
+  "metrics": {
+    "tool_calls": 3,
+    "iterations": 4,
+    "total_tokens": 66585,
+    "duration_seconds": 22.2600359916687,
+    "latency": {
+      "wall_clock_ms": 22244.01545524597,
+      "llm_thinking_ms": 20978.848934173584,
+      "tool_execution_ms": 1265.1665210723877,
+      "per_tool_ms": {
+        "search_documents": 1265.1665210723877
+      }
+    },
+    "cost": {
+      "input_tokens": 65952,
+      "output_tokens": 633,
+      "cached_tokens": 0,
+      "reasoning_tokens": 701,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

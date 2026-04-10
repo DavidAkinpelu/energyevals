@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import pytest
 import requests
 
-from energbench.tools.dockets import VirginiaDocketTool
+from energyevals.tools.dockets import VirginiaDocketTool
 
 
 class TestVirginiaDocketToolUnit:
@@ -54,7 +54,7 @@ class TestVirginiaDocketToolUnit:
         ]
 
         mocker.patch(
-            "energbench.tools.dockets.virginia_tool.requests.get",
+            "energyevals.tools.dockets.virginia_tool.requests.get",
             return_value=mock_response,
         )
         mocker.patch.object(VirginiaDocketTool, "_save_csv", return_value=None)
@@ -100,7 +100,7 @@ class TestVirginiaDocketToolUnit:
         ]
 
         mocker.patch(
-            "energbench.tools.dockets.virginia_tool.requests.get",
+            "energyevals.tools.dockets.virginia_tool.requests.get",
             return_value=mock_response,
         )
         mocker.patch.object(VirginiaDocketTool, "_save_csv", return_value=None)
@@ -143,7 +143,7 @@ class TestVirginiaDocketToolUnit:
         ]
 
         mocker.patch(
-            "energbench.tools.dockets.virginia_tool.requests.get",
+            "energyevals.tools.dockets.virginia_tool.requests.get",
             return_value=mock_response,
         )
         mocker.patch.object(VirginiaDocketTool, "_save_csv", return_value=None)
@@ -167,7 +167,7 @@ class TestVirginiaDocketToolUnit:
         mock_response.json.return_value = []
 
         mocker.patch(
-            "energbench.tools.dockets.virginia_tool.requests.get",
+            "energyevals.tools.dockets.virginia_tool.requests.get",
             return_value=mock_response,
         )
         mocker.patch.object(VirginiaDocketTool, "_save_csv", return_value=None)
@@ -191,7 +191,7 @@ class TestVirginiaDocketToolUnit:
         )
 
         mocker.patch(
-            "energbench.tools.dockets.virginia_tool.requests.get",
+            "energyevals.tools.dockets.virginia_tool.requests.get",
             return_value=mock_response,
         )
 
@@ -207,7 +207,7 @@ class TestVirginiaDocketToolUnit:
     def test_search_virginia_exception_handling(self, mocker):
         """Test generic exception handling in Virginia SCC search."""
         mocker.patch(
-            "energbench.tools.dockets.virginia_tool.requests.get",
+            "energyevals.tools.dockets.virginia_tool.requests.get",
             side_effect=Exception("Connection timed out"),
         )
 

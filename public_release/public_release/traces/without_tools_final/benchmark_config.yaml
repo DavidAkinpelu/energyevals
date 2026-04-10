@@ -1,0 +1,135 @@
+# Benchmark Configuration
+# Copy this file and modify as needed
+
+# =============================================================================
+# Model Configuration
+# =============================================================================
+
+# Multi-model format (recommended for comparing models):
+# Uncomment additional models to run benchmarks across multiple providers
+# At least one model must be listed; benchmark runs do not use provider/model fallbacks.
+models:
+  #  - provider: anthropic
+  #    model: claude-sonnet-4-6
+  # - provider: google
+  #   model: gemini-3-pro-preview
+  # - provider: openai
+  #   model: gpt-4o-mini
+  # - provider: openai
+  #   model: gpt-5-mini
+  #   reasoning_effort: low
+  # - provider: openai
+  #   model: gpt-5.2
+  #   reasoning_effort: low
+  #  - provider: deepinfra
+  #    model: deepseek-ai/DeepSeek-V3.2
+    - provider: deepinfra
+      model: moonshotai/Kimi-K2.5
+
+# Per-model options (optional):
+# models:
+#   - provider: openai
+#     model: o3-mini
+#     is_reasoning_model: true    # Override reasoning model auto-detection
+
+# Available models:
+#   openai: gpt-4o, gpt-4o-mini, o1, o1-mini, o3, o3-mini, o4-mini
+#   anthropic: claude-sonnet-4-20250514, claude-opus-4-20250514
+#   google: gemini-2.0-flash, gemini-1.5-pro, gemini-1.5-flash
+#   deepinfra: meta-llama/Llama-3.3-70B-Instruct-Turbo, meta-llama/Meta-Llama-3.1-405B-Instruct
+
+# =============================================================================
+# Questions Configuration
+# =============================================================================
+
+# Questions file
+questions_file: data/evals_full_dataset_without_tools_additional.csv
+
+# Question selection (optional)
+# Leave empty or comment out to run all questions
+# questions: [1, 2]              # Specific question IDs
+questions: [112, 172, 209, 213, 214, 216, 218, 219, 221, 223, 224, 225, 227, 228, 230, 231]                     # Range of questions
+
+# =============================================================================
+# Observability Settings
+# =============================================================================
+
+observability:
+  enabled: true                      # Enable/disable tracing
+  backend: json                      # json, langfuse, both, or auto
+  output_dir: ./benchmark_traces     # Base directory for trace files
+  run_name: without_tools_final      # Optional: subdirectory for organizing runs
+                                     # e.g., "no_tools", "with_tools", "experiment_1"
+                                     # Traces saved to: {output_dir}/{run_name}/{model}/
+
+# =============================================================================
+# MCP Settings
+# =============================================================================
+
+mcp:
+  enabled: true                      # Use MCP tools (requires server URLs in .env)
+  # sse_read_timeout: 600.0          # Seconds to wait for an SSE event before the connection is considered dead
+
+# =============================================================================
+# Agent Settings
+# =============================================================================
+
+agent:
+  max_iterations: 25                 # Maximum iterations per question
+  num_trials: 1                      # Independent trials per question (for statistical eval)
+  shuffle: true                     # Shuffle question order within each trial
+  seed_mode: rotate                  # fixed | rotate | random_per_trial (ignored when shuffle=false)
+  #seed: null                         # Base seed used by fixed/rotate when seeds is not provided
+  seeds: [101] #, 202, 303]              # Optional explicit per-trial seeds; length must equal num_trials
+  # csv_threshold: 20                # Rows above which tool results are saved to CSV not inline
+  tool_timeout: 240.0               # Seconds before a stalled tool call is cancelled
+  # max_retries: 3                   # Maximum retries for provider complete() on transient errors
+  # retry_base_delay: 1.0            # Base delay (seconds) for exponential backoff between retries
+  max_tool_result_chars: 250000     # Truncate tool results to this many chars before adding to LLM context (0 = disabled)
+
+# =============================================================================
+# Tools Configuration
+# =============================================================================
+
+# Note: When running multiple models, each model will use the same tool configuration.
+# To run different tool configurations per model, run separate benchmark runs.
+
+# Tools Configuration - Choose ONE of these patterns:
+
+# Pattern 1: Run all tools (default - currently active)
+tools:
+  enabled: true
+  include: [system, search, openweather]
+  exclude: []
+
+# Pattern 2: Run only specific tools (recommended for faster benchmarks)
+# Use parent tool names (groups) or individual method names.
+# tools:
+#   enabled: true
+#   include: [search, gridstatus_api_tool, battery_optimization]
+#   exclude: []
+
+# Pattern 3: Run all tools except specific ones
+# tools:
+#   enabled: true
+#   include: []
+#   exclude: [new_york_dockets, openweather]
+
+# Pattern 4: Disable all tools (agent uses only reasoning)
+# tools:
+#   enabled: false
+
+# Available tool groups (parent tool names):
+#   battery_optimization, dc_dockets, ferc_dockets, gridstatus_api_tool,
+#   maryland_dockets, new_york_dockets, north_carolina_dockets, openweather,
+#   renewables, search, south_carolina_dockets, system, tariffs, texas_dockets,
+#   virginia_dockets
+# You can also use individual method names (e.g. search_web, get_forecast).
+
+# =============================================================================
+# Output Settings
+# =============================================================================
+
+output:
+  results_dir: ./benchmark_results   # Directory for result files
+  save_answers: true                 # Save full answers in results

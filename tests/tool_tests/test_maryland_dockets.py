@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, Mock
 import pytest
 import requests
 
-from energbench.tools.dockets import MarylandDocketTool
+from energyevals.tools.dockets import MarylandDocketTool
 
 
 class TestMarylandDocketToolUnit:
@@ -59,7 +59,7 @@ class TestMarylandDocketToolUnit:
         mock_response.text = html
 
         mocker.patch(
-            "energbench.tools.dockets.maryland_tool.requests.get",
+            "energyevals.tools.dockets.maryland_tool.requests.get",
             return_value=mock_response,
         )
         mocker.patch.object(MarylandDocketTool, "_save_csv", return_value=None)
@@ -91,7 +91,7 @@ class TestMarylandDocketToolUnit:
         mock_response.text = html
 
         mock_get = mocker.patch(
-            "energbench.tools.dockets.maryland_tool.requests.get",
+            "energyevals.tools.dockets.maryland_tool.requests.get",
             return_value=mock_response,
         )
         mocker.patch.object(MarylandDocketTool, "_save_csv", return_value=None)
@@ -111,7 +111,7 @@ class TestMarylandDocketToolUnit:
         )
 
         mocker.patch(
-            "energbench.tools.dockets.maryland_tool.requests.get",
+            "energyevals.tools.dockets.maryland_tool.requests.get",
             return_value=mock_response,
         )
 
@@ -163,7 +163,7 @@ class TestMarylandDocketToolUnit:
         mock_session_instance.headers = MagicMock()
 
         mocker.patch(
-            "energbench.tools.dockets.maryland_tool.requests.Session",
+            "energyevals.tools.dockets.maryland_tool.requests.Session",
             return_value=mock_session_instance,
         )
         mocker.patch.object(MarylandDocketTool, "_save_csv", return_value=None)
@@ -207,7 +207,7 @@ class TestMarylandDocketToolUnit:
         mock_session_instance.headers = MagicMock()
 
         mocker.patch(
-            "energbench.tools.dockets.maryland_tool.requests.Session",
+            "energyevals.tools.dockets.maryland_tool.requests.Session",
             return_value=mock_session_instance,
         )
 
@@ -227,7 +227,7 @@ class TestMarylandDocketToolUnit:
         mock_session_instance.headers = MagicMock()
 
         mocker.patch(
-            "energbench.tools.dockets.maryland_tool.requests.Session",
+            "energyevals.tools.dockets.maryland_tool.requests.Session",
             return_value=mock_session_instance,
         )
 

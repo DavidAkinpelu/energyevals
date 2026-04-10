@@ -9,10 +9,10 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from energbench.agent import ReActAgent, get_provider
-from energbench.benchmark.tools import build_tool_executor
-from energbench.mcp import create_mcp_client
-from energbench.tools import create_default_registry
+from energyevals.agent import ReActAgent, get_provider
+from energyevals.benchmark.tools import build_tool_executor
+from energyevals.mcp import create_mcp_client
+from energyevals.tools import create_default_registry
 
 PROVIDERS = {
     "openai": "gpt-4o-mini",
@@ -25,7 +25,7 @@ PROVIDERS = {
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
-        description="Ask the energBench agent a question interactively",
+        description="Ask the EnergyEvals agent a question interactively",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -82,7 +82,7 @@ def print_banner(provider_name: str, model_name: str, tool_count: int) -> None:
     width = 60
     print()
     print("=" * width)
-    print("  energBench - Interactive Agent")
+    print("  EnergyEvals - Interactive Agent")
     print("=" * width)
     print(f"  Provider : {provider_name}")
     print(f"  Model    : {model_name}")

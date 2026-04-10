@@ -3,10 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from energbench.agent.providers import get_provider
-from energbench.agent.react_agent import ReActAgent
-from energbench.observability import JSONFileObserver, get_observer
-from energbench.tools import create_default_registry
+from energyevals.agent.providers import get_provider
+from energyevals.agent.react_agent import ReActAgent
+from energyevals.observability import JSONFileObserver
+from energyevals.tools import create_default_registry
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -90,23 +90,22 @@ class TestAgentWithObserver:
         assert trace_file.exists()
 
     @pytest.mark.asyncio
-    async def test_agent_with_composite_observer(self, agent, tmp_path: Path):
-        """Agent run with composite (both) observer should produce JSON trace."""
-        observer = get_observer("both", output_dir=str(tmp_path))
+    async def test_agent_with_named_json_observer(self, agent, tmp_path: Path):
+        """Agent run with a named JSON observer should write into the run subdirectory."""
+        observer = JSONFileObserver(output_dir=str(tmp_path), run_name="integration_run")
 
         query = "Calculate the square root of 144 using the calculator."
         run = await agent.run(query)
 
         trace_id = observer.trace_agent_run(
             run=run,
-            metadata={"test": "both_backends"},
-            tags=["test", "composite"],
+            metadata={"test": "named_json_observer"},
+            tags=["test", "json"],
         )
 
         assert trace_id is not None, "Should create trace"
 
-        # At least one JSON trace file created
-        json_files = list(tmp_path.glob("trace_*.json"))
+        json_files = list((tmp_path / "integration_run").glob("trace_*.json"))
         assert len(json_files) >= 1, "Should have at least one JSON trace file"
 
         observer.flush()

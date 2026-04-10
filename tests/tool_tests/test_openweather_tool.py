@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 import requests
 
-from energbench.tools.openweather_tool import OpenWeatherTool
+from energyevals.tools.openweather_tool import OpenWeatherTool
 
 
 class TestOpenWeatherToolUnit:
@@ -53,7 +53,7 @@ class TestOpenWeatherToolUnit:
         }
 
         mocker.patch(
-            "energbench.tools.openweather_tool.requests.get",
+            "energyevals.tools.openweather_tool.requests.get",
             side_effect=[geo_response, weather_response],
         )
 
@@ -77,7 +77,7 @@ class TestOpenWeatherToolUnit:
         weather_response.raise_for_status.side_effect = requests.exceptions.HTTPError("404")
 
         mocker.patch(
-            "energbench.tools.openweather_tool.requests.get",
+            "energyevals.tools.openweather_tool.requests.get",
             side_effect=[geo_response, weather_response],
         )
 
@@ -90,7 +90,7 @@ class TestOpenWeatherToolUnit:
     def test_get_current_weather_exception_handling(self, mocker):
         """Test exception handling."""
         mocker.patch(
-            "energbench.tools.openweather_tool.requests.get",
+            "energyevals.tools.openweather_tool.requests.get",
             side_effect=requests.exceptions.ConnectionError("Connection timeout"),
         )
 

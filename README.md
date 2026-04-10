@@ -1,4 +1,4 @@
-# energBench
+# EnergyEvals
 
 AI agent evaluation framework for energy analytics.
 
@@ -8,7 +8,7 @@ AI agent evaluation framework for energy analytics.
 - **Energy Tools**: GridStatus, Tariffs, Renewables, Battery optimization, Dockets, Weather, Search
 - **MCP Integration**: External RAG and database tools via Model Context Protocol
 - **Benchmark Framework**: Evaluate agents across questions with metrics and comparison
-- **Observability**: Langfuse and JSON tracing with full execution data
+- **Observability**: JSON tracing with full execution data
 
 ## Quick Start
 
@@ -71,11 +71,6 @@ ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_API_KEY=...
 DEEPINFRA_API_KEY=...
 
-# Observability (optional)
-LANGFUSE_PUBLIC_KEY=pk-lf-...
-LANGFUSE_SECRET_KEY=sk-lf-...
-LANGFUSE_HOST=https://cloud.langfuse.com
-
 # Tools (optional - enables specific functionality)
 EXA_API_KEY=...                      # SearchTool
 GRIDSTATUS_API_KEY=...               # GridStatusAPITool
@@ -93,15 +88,15 @@ in your `.env` file. Set the URL env vars below to enable them; if neither is se
 MCP is effectively disabled even with `mcp.enabled: true`.
 
 ```bash
-RAG_SERVER_URL=https://your-rag-server.com/sse
-DATABASE_SERVER_URL=https://your-db-server.com/sse
+RAG_SERVER_URL=https://energyevals-rag-mcp.tume.ai/sse
+DATABASE_SERVER_URL=https://energyevals-db-mcp.tume.ai/sse
 ```
 
 ## Usage
 
 ### Ask a Question (Interactive)
 
-The quickest way to use energBench is the interactive agent script. Type a question, get an answer:
+The quickest way to use EnergyEvals is the interactive agent script. Type a question, get an answer:
 
 ```bash
 # Start interactive mode (defaults to openai / gpt-4o-mini)
@@ -185,10 +180,7 @@ Traces capture full execution:
 - Token usage and latency
 - Failed calls with errors
 
-Backends:
-- **Langfuse**: Cloud platform with UI
-- **JSON**: Local JSONL or individual files
-- **Both**: Use multiple observers simultaneously
+Trace output is stored as local JSON or JSONL files.
 
 
 ## Development
@@ -203,7 +195,7 @@ Lint and type check:
 
 ```bash
 ruff check .
-mypy energbench
+mypy energyevals
 ```
 
 ## Documentation

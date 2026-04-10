@@ -1,0 +1,87 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 4.0,
+    "reasoning": "The agent framed the problem correctly (identify fees tied to decision points) and used appropriate sources and tools (multiple targeted searches across documents and web, and retrieval of the NYISO TEI/M-23 manual). The sequence of queries shows logical steps to locate application, deposit and study-fee information. Tool usage was appropriate — iterative searches then page retrieval. Minor gaps: the agent did not explicitly retrieve or cite Guide UG-21 (which the ground-truth approach specified) and some queries were somewhat broad rather than explicitly targeting tariff sections/attachments (e.g., Attachment HH or specific tariff filings). To reach an expert-level result the agent should directly fetch NYISO manuals M-23 and UG-21 and relevant tariff/attachment filings and extract the fee table entries for each decision point. Overall the approach is solid with only modest omissions.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 0.6,
+    "reasoning": "The agent correctly reported the application fee amounts (standard and CRIS-only), the study deposit tier amounts including the CRIS-only exception, and the 100% security deposit requirement tied to Phase 1/Phase 2 cost allocations. The agent also correctly described the Phase 2 deposit formula as the greater of $4,000/MW and 20% of Phase 1 cost estimates. However, the agent omitted timing details for two decision-point deposits: the RD1 timing (due 5 business days after the customer engagement window) and the RD2 timing (required 10 business days after Phase 1). The agent also did not state that RD1 does not apply to CRIS-only projects. Because of those omitted timing/exception details, two attributes were marked as not fully matched.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 2.0,
+    "reasoning": "The agent provides detailed fee amounts and stage names but fails to cite any primary authoritative sources (NYISO Interconnection Manuals such as Manual 23, Guide UG‑21, NYISO OATT/Attachments, or applicable FERC filings/orders). Because the question specifically suggested extracting fees from NYISO Manual 23 and UG21, the absence of explicit citations is a major shortcoming: reviewers cannot verify the numeric claims or determine which version/year of the manuals was used.\n\nAssessment of authority and alignment:\n- Required/expected authoritative sources: NYISO Manual 23 (or the NYISO interconnection procedures manual), UG‑21 guide, NYISO OATT/Attachment(s) that set application/study/security fees, and relevant FERC orders (e.g., Order No. 2023 implementation materials). These are the appropriate sources for the claimed figures. The agent did not reference them.\n\nAppropriateness and plausibility of claims:\n- Some line items and terminology appear plausible (application fee, study deposits, site control deposit, study‑phase readiness/security deposits, withdrawal penalties, CT OAF/SUF/SDU cost allocation). However, several specific numeric values look inconsistent with typical NYISO posted schedules and with the suggested source names (for example, a flat “$4,000/MW RD1” and a $10,000 per MW site control deposit with stated min/max are unusual and require citation). The agent also mixes legacy LFIP/TIP terms with references to Order No. 2023/Attachment HH without showing source mapping—this raises concern about versioning and procedural applicability.\n\nMissing or weak elements that reduce validity:\n- No citations, no document version or effective date, no page or section pointers.\n- No distinction between rules for different interconnection procedures (e.g., cluster vs. serial/LFIP differences) with authoritative references.\n- Some numeric aggregates (Class Year 2023 cost totals, per‑kW allocations) are presented without source data; these could be correct but are unverifiable as given.\n\nOverall judgment:\n- The answer may contain some plausible elements but is unreliable as a factual reference because it lacks explicit, authoritative citations and versioning. To be acceptable, the agent should cite specific NYISO manuals/sections (Manual 23, UG‑21 or their equivalents in NYISO’s current documentation), the NYISO OATT attachment(s) that list fees, and any relevant FERC order or NYISO tariff filing used, including effective dates.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 4,
+    "reasoning": "The agent framed the problem correctly (identify fees tied to decision points) and used appropriate sources and tools (multiple targeted searches across documents and web, and retrieval of the NYISO TEI/M-23 manual). The sequence of queries shows logical steps to locate application, deposit and study-fee information. Tool usage was appropriate — iterative searches then page retrieval. Minor gaps: the agent did not explicitly retrieve or cite Guide UG-21 (which the ground-truth approach specified) and some queries were somewhat broad rather than explicitly targeting tariff sections/attachments (e.g., Attachment HH or specific tariff filings). To reach an expert-level result the agent should directly fetch NYISO manuals M-23 and UG-21 and relevant tariff/attachment filings and extract the fee table entries for each decision point. Overall the approach is solid with only modest omissions."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 3,
+    "alignment_score": 0.6,
+    "attribute_details": [
+      {
+        "name": "Application fee amount and CRIS-only exception",
+        "expected": "$10,000 per project application; $5,000 for CRIS-only projects",
+        "found": true,
+        "agent_value": "$10,000 non-refundable application fee; $5,000 non-refundable for CRIS-only projects"
+      },
+      {
+        "name": "Study deposit tiers by project size and CRIS-only exception",
+        "expected": "$100,000 for projects <80 MW; $150,000 for projects >=80 MW and <200 MW; $250,000 for projects >=200 MW; $50,000 for CRIS-only projects",
+        "found": true,
+        "agent_value": "$100,000 for <80 MW; $150,000 for 80 MW to <200 MW; $250,000 for ≥200 MW; $50,000 for CRIS-only"
+      },
+      {
+        "name": "Readiness deposit at Decision Point 1 and CRIS-only exception",
+        "expected": "Readiness deposit of $4,000 per MW due 5 business days after customer engagement window; does not apply to CRIS-only projects",
+        "found": false,
+        "agent_value": "$4,000/MW (RD1) — agent did not state the 5 business day timing nor the CRIS-only exception"
+      },
+      {
+        "name": "Decision Point 2 study deposit calculation",
+        "expected": "Study deposit required 10 business days after Phase 1 study equal to the maximum of $4,000 per MW and 20% of project cost estimates determined during Phase 1",
+        "found": false,
+        "agent_value": "RD2 = greater of $4,000/MW or 20% of Phase 1 cost estimate — agent did not state the 10 business day timing"
+      },
+      {
+        "name": "Iterative final decision security deposit",
+        "expected": "Security deposit equal to 100% of cost estimates allocated to the project from Phase 1 and Phase 2 studies (due during iterative final decision period)",
+        "found": true,
+        "agent_value": "Security deposit equal to 100% of cost estimates for SUFs, SDUs, and CTOAFs identified in Phase 1 and Phase 2"
+      }
+    ],
+    "reasoning": "The agent correctly reported the application fee amounts (standard and CRIS-only), the study deposit tier amounts including the CRIS-only exception, and the 100% security deposit requirement tied to Phase 1/Phase 2 cost allocations. The agent also correctly described the Phase 2 deposit formula as the greater of $4,000/MW and 20% of Phase 1 cost estimates. However, the agent omitted timing details for two decision-point deposits: the RD1 timing (due 5 business days after the customer engagement window) and the RD2 timing (required 10 business days after Phase 1). The agent also did not state that RD1 does not apply to CRIS-only projects. Because of those omitted timing/exception details, two attributes were marked as not fully matched."
+  },
+  "raw_sources": {
+    "source_validity": 2,
+    "reasoning": "The agent provides detailed fee amounts and stage names but fails to cite any primary authoritative sources (NYISO Interconnection Manuals such as Manual 23, Guide UG‑21, NYISO OATT/Attachments, or applicable FERC filings/orders). Because the question specifically suggested extracting fees from NYISO Manual 23 and UG21, the absence of explicit citations is a major shortcoming: reviewers cannot verify the numeric claims or determine which version/year of the manuals was used.\n\nAssessment of authority and alignment:\n- Required/expected authoritative sources: NYISO Manual 23 (or the NYISO interconnection procedures manual), UG‑21 guide, NYISO OATT/Attachment(s) that set application/study/security fees, and relevant FERC orders (e.g., Order No. 2023 implementation materials). These are the appropriate sources for the claimed figures. The agent did not reference them.\n\nAppropriateness and plausibility of claims:\n- Some line items and terminology appear plausible (application fee, study deposits, site control deposit, study‑phase readiness/security deposits, withdrawal penalties, CT OAF/SUF/SDU cost allocation). However, several specific numeric values look inconsistent with typical NYISO posted schedules and with the suggested source names (for example, a flat “$4,000/MW RD1” and a $10,000 per MW site control deposit with stated min/max are unusual and require citation). The agent also mixes legacy LFIP/TIP terms with references to Order No. 2023/Attachment HH without showing source mapping—this raises concern about versioning and procedural applicability.\n\nMissing or weak elements that reduce validity:\n- No citations, no document version or effective date, no page or section pointers.\n- No distinction between rules for different interconnection procedures (e.g., cluster vs. serial/LFIP differences) with authoritative references.\n- Some numeric aggregates (Class Year 2023 cost totals, per‑kW allocations) are presented without source data; these could be correct but are unverifiable as given.\n\nOverall judgment:\n- The answer may contain some plausible elements but is unreliable as a factual reference because it lacks explicit, authoritative citations and versioning. To be acceptable, the agent should cite specific NYISO manuals/sections (Manual 23, UG‑21 or their equivalents in NYISO’s current documentation), the NYISO OATT attachment(s) that list fees, and any relevant FERC order or NYISO tariff filing used, including effective dates."
+  },
+  "metrics": {
+    "tool_calls": 11,
+    "total_tokens": 468743,
+    "duration_seconds": 221.73146867752075,
+    "latency": {
+      "wall_clock_ms": 221576.65729522705,
+      "llm_thinking_ms": 210395.99442481995,
+      "tool_execution_ms": 11180.662870407104,
+      "per_tool_ms": {
+        "search_documents": 3240.0290966033936,
+        "search_web": 7391.632080078125,
+        "get_page_contents": 549.0016937255859
+      }
+    },
+    "cost": {
+      "input_tokens": 466429,
+      "output_tokens": 2314,
+      "cached_tokens": 353216,
+      "reasoning_tokens": 0,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

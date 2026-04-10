@@ -1,0 +1,86 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 4.0,
+    "reasoning": "The agent correctly framed the task as a web/document search for CAISO participation and telemetry/AGC requirements and used targeted queries including relevant keywords (regulation, ancillary services, telemetry, AGC, BPM) and constrained the domain to caiso.com. This aligns with the ground-truth approach of using ISO postings/tariffs and operator manuals. Tool usage was appropriate (search_documents and search_web). Minor gaps: the agent did not show evidence of explicitly retrieving primary authoritative items such as the CAISO Tariff, BPM/Market Manual numbers, or the most recent Market Notice/Business Practice Manual pages and did not indicate verifying the effective date/version to ensure currency. These are small but important for regulatory compliance, hence a near-expert but not perfect score.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 0.6,
+    "reasoning": "Agent answer covers registration/contracting, telemetry/metering, and the ability to follow AGC/meet performance standards with explicit references to certification/testing and performance framework. It omits explicit mention of GRDT and documented control/protection settings required by CAISO (expected attribute 3). It also fails to mention specific demand-response/DER requirements such as the Net Benefits Test, Sub-LAP mapping, and explicit resource ID/aggregation procedures referenced in the expected attribute 5, although it generically references state-of-charge and aggregations. Therefore 3 of 5 attributes match.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 4.0,
+    "reasoning": "The agent cited the correct and authoritative types of sources for CAISO regulation participation (CAISO Tariff Section 8, relevant Appendices, and specific Business Practice Manuals such as Market Operations BPM, Direct Telemetry BPM, and Compliance/Resource Performance manuals). Those sources are appropriate and expected for verifying participation, telemetry, certification, bidding, and performance rules. Strengths: citations point to the primary authoritative documents where definitive technical and numeric thresholds are found; the high‑level requirements listed align with typical CAISO rules (registration, credit, AGC/telemetry, certification/testing, performance framework). Weaknesses: the agent did not provide explicit document versions, section numbers beyond “Section 8,” publication dates, or direct links to the exact BPMs/OPs, and it did not quote or reference exact numeric thresholds or the definitive clause citations that would be needed for compliance work. A few specific claims (e.g., the stated 1.0 MW minimum) should be backed by an exact citation or noted as dependent on aggregation/exception rules and recent tariff updates. Recommendation: score high for appropriate and authoritative source selection (4/5) but deduct one point for lack of precise citations/versions and absence of direct references to the exact tariff/BPM clauses needed for authoritative verification.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 4,
+    "reasoning": "The agent correctly framed the task as a web/document search for CAISO participation and telemetry/AGC requirements and used targeted queries including relevant keywords (regulation, ancillary services, telemetry, AGC, BPM) and constrained the domain to caiso.com. This aligns with the ground-truth approach of using ISO postings/tariffs and operator manuals. Tool usage was appropriate (search_documents and search_web). Minor gaps: the agent did not show evidence of explicitly retrieving primary authoritative items such as the CAISO Tariff, BPM/Market Manual numbers, or the most recent Market Notice/Business Practice Manual pages and did not indicate verifying the effective date/version to ensure currency. These are small but important for regulatory compliance, hence a near-expert but not perfect score."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 3,
+    "alignment_score": 0.6,
+    "attribute_details": [
+      {
+        "name": "Registration and contracting",
+        "expected": "Resource must be fully registered and contracted with CAISO: complete the New Resource Implementation (NRI) process, have an appointed Scheduling Coordinator (SC), and execute required agreements (e.g., Participating Generator Agreement).",
+        "found": true,
+        "agent_value": "Be a registered Market Participant / Scheduling Coordinator with CAISO and be enrolled to participate in ancillary services. Meet CAISO creditworthiness and contracting/registration requirements."
+      },
+      {
+        "name": "Metering and real-time telemetry",
+        "expected": "Install ISO-certified revenue-quality meters and provide direct real-time telemetry to CAISO's EMS to support fast response and accurate control.",
+        "found": true,
+        "agent_value": "Install and maintain CAISO-approved direct telemetry (Remote Intelligent Gateway / ECN) to the CAISO EMS per the Direct Telemetry BPM. Provide Settlement Quality Meter (SQM) data and required SCADA/telemetry points (DNP values) for the resource/point(s)."
+      },
+      {
+        "name": "Ancillary service (regulation) certification and data templates",
+        "expected": "Obtain regulation ancillary-service certification, supply documented control/protection settings and a completed Generator Resource Data Template (GRDT).",
+        "found": false,
+        "agent_value": "Complete CAISO Ancillary Services certification testing before providing Regulation (use Ancillary Services Certification Test Request process). Subject to periodic audits, monthly regulation performance audits and unannounced compliance tests."
+      },
+      {
+        "name": "Ability to follow dispatch and meet performance standards",
+        "expected": "Demonstrate capability to follow Dispatch Operating Points (DOP) and meet CAISO's regulation performance standards (response, accuracy, and any testing requirements).",
+        "found": true,
+        "agent_value": "Must be AGC-capable (able to accept Automatic Generation Control signals from CAISO) and able to ramp in a linear fashion to requested setpoints. Meet the operating characteristics in the Tariff/BPMs (response speed, minimum/maximum sustainable limits, ramp rates, accuracy). Participate under CAISO’s performance framework (Pay-for-Performance / performance score)."
+      },
+      {
+        "name": "Resource-type specific requirements",
+        "expected": "Comply with type-specific rules: storage must maintain sufficient state-of-charge for awarded regulation (e.g., ~30 minutes at awarded level); demand response/DERs/PDRs must meet Net Benefits Test, be correctly mapped to Sub-LAPs, and use proper resource IDs/aggregation per BPM.",
+        "found": false,
+        "agent_value": "Resources with use limitations, state-of-charge (for storage), hybrid configurations, or aggregate capability constraints must follow additional CAISO rules/constraints (state-of-charge management, attenuation factors, etc.). Minimum resource size is generally 1.0 MW unless participating as an approved aggregation."
+      }
+    ],
+    "reasoning": "Agent answer covers registration/contracting, telemetry/metering, and the ability to follow AGC/meet performance standards with explicit references to certification/testing and performance framework. It omits explicit mention of GRDT and documented control/protection settings required by CAISO (expected attribute 3). It also fails to mention specific demand-response/DER requirements such as the Net Benefits Test, Sub-LAP mapping, and explicit resource ID/aggregation procedures referenced in the expected attribute 5, although it generically references state-of-charge and aggregations. Therefore 3 of 5 attributes match."
+  },
+  "raw_sources": {
+    "source_validity": 4,
+    "reasoning": "The agent cited the correct and authoritative types of sources for CAISO regulation participation (CAISO Tariff Section 8, relevant Appendices, and specific Business Practice Manuals such as Market Operations BPM, Direct Telemetry BPM, and Compliance/Resource Performance manuals). Those sources are appropriate and expected for verifying participation, telemetry, certification, bidding, and performance rules. Strengths: citations point to the primary authoritative documents where definitive technical and numeric thresholds are found; the high‑level requirements listed align with typical CAISO rules (registration, credit, AGC/telemetry, certification/testing, performance framework). Weaknesses: the agent did not provide explicit document versions, section numbers beyond “Section 8,” publication dates, or direct links to the exact BPMs/OPs, and it did not quote or reference exact numeric thresholds or the definitive clause citations that would be needed for compliance work. A few specific claims (e.g., the stated 1.0 MW minimum) should be backed by an exact citation or noted as dependent on aggregation/exception rules and recent tariff updates. Recommendation: score high for appropriate and authoritative source selection (4/5) but deduct one point for lack of precise citations/versions and absence of direct references to the exact tariff/BPM clauses needed for authoritative verification."
+  },
+  "metrics": {
+    "tool_calls": 2,
+    "total_tokens": 47313,
+    "duration_seconds": 32.41701889038086,
+    "latency": {
+      "wall_clock_ms": 32406.49914741516,
+      "llm_thinking_ms": 25251.545429229736,
+      "tool_execution_ms": 7154.953718185425,
+      "per_tool_ms": {
+        "search_documents": 450.5751132965088,
+        "search_web": 6704.378604888916
+      }
+    },
+    "cost": {
+      "input_tokens": 46086,
+      "output_tokens": 1227,
+      "cached_tokens": 32256,
+      "reasoning_tokens": 256,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

@@ -2,8 +2,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from energbench.agent.react_agent import ReActAgent
-from energbench.tools.base_tool import BaseTool, ToolRegistry, tool_method
+from energyevals.agent.react_agent import ReActAgent
+from energyevals.tools.base_tool import BaseTool, ToolRegistry, tool_method
 
 
 class SimpleTestTool(BaseTool):
@@ -72,7 +72,7 @@ class TestReActAgentInitialization:
         """Test registering a tool after initialization."""
         agent = ReActAgent(provider=mock_provider)
 
-        from energbench.agent.schema import ToolDefinition
+        from energyevals.agent.schema import ToolDefinition
         tool = ToolDefinition(
             name="test_tool",
             description="Test tool",

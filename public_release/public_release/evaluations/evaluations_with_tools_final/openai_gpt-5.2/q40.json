@@ -1,0 +1,87 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 5.0,
+    "reasoning": "Expert-like approach. The agent framed the task correctly (identify CAISO participation requirements) and used appropriate primary sources (CAISO BPM, direct telemetry guidance, ancillary services presentations) via web search and document retrieval. Logical steps followed: targeted queries for regulation up/down, telemetry, AGC and retrieval of relevant CAISO documents. Tool usage was appropriate and effective (search_web/search_documents followed by get_page_contents of caiso.com BPM and telemetry docs). No significant gaps in methodology for a requirements question that should be answered from ISO postings and manuals.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 0.2,
+    "reasoning": "I compared each canonical attribute to the agent's answer for explicit coverage of required elements. The agent correctly and explicitly covered the ability to follow AGC/dispatch and meet performance standards (attribute 4). For other attributes the agent provided partial coverage: it referenced participation via a Scheduling Coordinator and AS certification but omitted explicit NRI and required agreement execution (attribute 1); it described telemetry/AGC points but did not mention ISO-certified revenue-quality meters (attribute 2); it noted AS certification and testing but did not mention provision of documented control/protection settings or the Generator Resource Data Template (GRDT) (attribute 3); and it offered to map resource-specific rules but did not state the concrete resource-type requirements such as storage state-of-charge, Net Benefits Test, Sub-LAP mapping, or aggregation/ID rules (attribute 5). Therefore only attribute 4 fully matches. Alignment score = matched/total = 1/5 = 0.2.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 4.0,
+    "reasoning": "The agent cites appropriate, authoritative CAISO sources (Business Practice Manuals for Direct Telemetry, Compliance Monitoring, and Market Operations; CAISO Tariff auditing/testing sections; and CAISO operating procedure OP 5330) that are the correct classes of documents to support the participation requirements described. The claims (AS certification, AGC/telemetry capability, monitoring/audits, and pay-for-performance performance expectations) align with established CAISO requirements and standard industry practice. Shortcomings: the answer does not provide precise citations or links (exact BPM names/versions, Tariff section text, or URLs) nor clear differentiation for specific resource types (e.g., distributed resources, NGR/battery, demand response) or EIM/EDAM contexts. A few referenced items (e.g., specific Tariff section numbers and Market Operations BPM section 4.6.1) are plausible but unverified in-text citations and should be backed with exact clause citations or links for full verifiability. Overall, sources are appropriate and authoritative but the agent should have provided explicit, exact references to the CAISO documents and any resource-type exceptions to achieve full scoring.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 5,
+    "reasoning": "Expert-like approach. The agent framed the task correctly (identify CAISO participation requirements) and used appropriate primary sources (CAISO BPM, direct telemetry guidance, ancillary services presentations) via web search and document retrieval. Logical steps followed: targeted queries for regulation up/down, telemetry, AGC and retrieval of relevant CAISO documents. Tool usage was appropriate and effective (search_web/search_documents followed by get_page_contents of caiso.com BPM and telemetry docs). No significant gaps in methodology for a requirements question that should be answered from ISO postings and manuals."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 1,
+    "alignment_score": 0.2,
+    "attribute_details": [
+      {
+        "name": "Registration and contracting",
+        "expected": "Resource must be fully registered and contracted with CAISO: complete the New Resource Implementation (NRI) process, have an appointed Scheduling Coordinator (SC), and execute required agreements (e.g., Participating Generator Agreement).",
+        "found": false,
+        "agent_value": "Says resource must be a Participating Resource submitted through a Scheduling Coordinator (SC) and be AS-certified; mentions CAISO can audit/test and references Tariff sections. Does not mention NRI or execution of required agreements (e.g., Participating Generator Agreement)."
+      },
+      {
+        "name": "Metering and real-time telemetry",
+        "expected": "Install ISO-certified revenue-quality meters and provide direct real-time telemetry to CAISO's EMS to support fast response and accurate control.",
+        "found": false,
+        "agent_value": "Describes direct telemetry requirements (real-time MW, operating limits, status/enablement indications, AGC points) and that smaller units may be exempt unless certified; does not state ISO-certified revenue-quality meter requirement explicitly."
+      },
+      {
+        "name": "Ancillary service (regulation) certification and data templates",
+        "expected": "Obtain regulation ancillary-service certification, supply documented control/protection settings and a completed Generator Resource Data Template (GRDT).",
+        "found": false,
+        "agent_value": "States requirement for CAISO Ancillary Service (AS) certification and references testing (OP 5330) and certification process; does not mention providing documented control/protection settings or the GRDT specifically."
+      },
+      {
+        "name": "Ability to follow dispatch and meet performance standards",
+        "expected": "Demonstrate capability to follow Dispatch Operating Points (DOP) and meet CAISO's regulation performance standards (response, accuracy, and any testing requirements).",
+        "found": true,
+        "agent_value": "Explicitly states resource must receive AGC setpoints and respond, remain visible/controllable in real time, follow CAISO dispatch/operating instructions, and meet performance thresholds with audits/testing and potential penalties for poor performance."
+      },
+      {
+        "name": "Resource-type specific requirements",
+        "expected": "Comply with type-specific rules: storage must maintain sufficient state-of-charge for awarded regulation (e.g., ~30 minutes at awarded level); demand response/DERs/PDRs must meet Net Benefits Test, be correctly mapped to Sub-LAPs, and use proper resource IDs/aggregation per BPM.",
+        "found": false,
+        "agent_value": "Offers to map requirements by resource type if user provides type and context, but does not state the specific type-based requirements (state-of-charge targets, Net Benefits Test, Sub-LAP mapping, resource ID/aggregation rules)."
+      }
+    ],
+    "reasoning": "I compared each canonical attribute to the agent's answer for explicit coverage of required elements. The agent correctly and explicitly covered the ability to follow AGC/dispatch and meet performance standards (attribute 4). For other attributes the agent provided partial coverage: it referenced participation via a Scheduling Coordinator and AS certification but omitted explicit NRI and required agreement execution (attribute 1); it described telemetry/AGC points but did not mention ISO-certified revenue-quality meters (attribute 2); it noted AS certification and testing but did not mention provision of documented control/protection settings or the Generator Resource Data Template (GRDT) (attribute 3); and it offered to map resource-specific rules but did not state the concrete resource-type requirements such as storage state-of-charge, Net Benefits Test, Sub-LAP mapping, or aggregation/ID rules (attribute 5). Therefore only attribute 4 fully matches. Alignment score = matched/total = 1/5 = 0.2."
+  },
+  "raw_sources": {
+    "source_validity": 4,
+    "reasoning": "The agent cites appropriate, authoritative CAISO sources (Business Practice Manuals for Direct Telemetry, Compliance Monitoring, and Market Operations; CAISO Tariff auditing/testing sections; and CAISO operating procedure OP 5330) that are the correct classes of documents to support the participation requirements described. The claims (AS certification, AGC/telemetry capability, monitoring/audits, and pay-for-performance performance expectations) align with established CAISO requirements and standard industry practice. Shortcomings: the answer does not provide precise citations or links (exact BPM names/versions, Tariff section text, or URLs) nor clear differentiation for specific resource types (e.g., distributed resources, NGR/battery, demand response) or EIM/EDAM contexts. A few referenced items (e.g., specific Tariff section numbers and Market Operations BPM section 4.6.1) are plausible but unverified in-text citations and should be backed with exact clause citations or links for full verifiability. Overall, sources are appropriate and authoritative but the agent should have provided explicit, exact references to the CAISO documents and any resource-type exceptions to achieve full scoring."
+  },
+  "metrics": {
+    "tool_calls": 4,
+    "total_tokens": 57231,
+    "duration_seconds": 41.08639216423035,
+    "latency": {
+      "wall_clock_ms": 41071.988344192505,
+      "llm_thinking_ms": 28842.64850616455,
+      "tool_execution_ms": 12229.339838027954,
+      "per_tool_ms": {
+        "search_web": 11358.283996582031,
+        "search_documents": 417.7103042602539,
+        "get_page_contents": 453.34553718566895
+      }
+    },
+    "cost": {
+      "input_tokens": 55804,
+      "output_tokens": 1427,
+      "cached_tokens": 40064,
+      "reasoning_tokens": 144,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

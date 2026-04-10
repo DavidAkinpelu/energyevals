@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from energbench.agent.react_agent import ReActAgent
-from energbench.agent.schema import ProviderResponse, StepType, ToolCall, ToolDefinition
+from energyevals.agent.react_agent import ReActAgent
+from energyevals.agent.schema import ProviderResponse, StepType, ToolCall, ToolDefinition
 
 
 def _make_provider(responses):

@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from energbench.evaluation import runner as eval_runner
-from energbench.evaluation.config import EvalConfig, load_eval_config
-from energbench.evaluation.models import (
+from energyevals.evaluation import runner as eval_runner
+from energyevals.evaluation.config import EvalConfig, load_eval_config
+from energyevals.evaluation.models import (
     AccuracyResult,
     ApproachResult,
     AttributeAlignmentResult,

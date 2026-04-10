@@ -1,21 +1,24 @@
 import json
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 import yaml
 
-from energbench.agent.schema import ModelSpec, ToolDefinition
-from energbench.benchmark.config import (
+from energyevals.agent.schema import AgentRun, ModelSpec, ToolDefinition
+from energyevals.benchmark.runner import _trace_run
+from energyevals.benchmark.models import Question
+from energyevals.benchmark.config import (
     BenchmarkConfig,
     ToolsConfig,
     load_config,
 )
-from energbench.benchmark.data_loader import load_questions
-from energbench.benchmark.models import BenchmarkResult, Question
-from energbench.benchmark.results import save_results
-from energbench.benchmark.tools import _build_tool_groups, _expand_names, filter_tools, merge_tools
-from energbench.core.errors import ConfigurationError
-from energbench.tools.base_tool import ToolRegistry
+from energyevals.benchmark.data_loader import load_questions
+from energyevals.benchmark.models import BenchmarkResult, Question
+from energyevals.benchmark.results import save_results
+from energyevals.benchmark.tools import _build_tool_groups, _expand_names, filter_tools, merge_tools
+from energyevals.core.errors import ConfigurationError
+from energyevals.tools.base_tool import ToolRegistry
 
 
 class TestBenchmarkConfig:
@@ -137,7 +140,7 @@ class TestBenchmarkConfig:
                 questions_file=questions_file,
                 questions=None,
                 observability_enabled=False,
-                observability_backend="json",
+    
                 observability_output_dir=Path("."),
                 observability_run_name=None,
                 mcp_enabled=False,
@@ -159,7 +162,7 @@ class TestBenchmarkConfig:
                 questions_file=questions_file,
                 questions=None,
                 observability_enabled=False,
-                observability_backend="json",
+    
                 observability_output_dir=Path("."),
                 observability_run_name=None,
                 mcp_enabled=False,
@@ -183,7 +186,7 @@ class TestBenchmarkConfig:
                 questions_file=questions_file,
                 questions=None,
                 observability_enabled=False,
-                observability_backend="json",
+    
                 observability_output_dir=Path("."),
                 observability_run_name=None,
                 mcp_enabled=False,
@@ -323,7 +326,7 @@ class TestResultsSaving:
             questions_file=questions_file,
             questions=None,
             observability_enabled=False,
-            observability_backend="json",
+
             observability_output_dir=Path("."),
             observability_run_name=None,
             mcp_enabled=False,
@@ -389,7 +392,7 @@ class TestResultsSaving:
             questions_file=questions_file,
             questions=None,
             observability_enabled=False,
-            observability_backend="json",
+
             observability_output_dir=Path("."),
             observability_run_name=None,
             mcp_enabled=False,
@@ -429,7 +432,7 @@ class TestProviderValidation:
             questions_file=questions_file,
             questions=None,
             observability_enabled=False,
-            observability_backend="json",
+
             observability_output_dir=Path("."),
             observability_run_name=None,
             mcp_enabled=False,
@@ -450,7 +453,7 @@ class TestProviderValidation:
                 questions_file=questions_file,
                 questions=None,
                 observability_enabled=False,
-                observability_backend="json",
+    
                 observability_output_dir=Path("."),
                 observability_run_name=None,
                 mcp_enabled=False,
@@ -568,7 +571,7 @@ class TestMergeTools:
     def test_collision_logs_warning(self, std_tools, mcp_tools, caplog):
         """A warning containing the colliding tool name is emitted for each collision."""
         import logging
-        with caplog.at_level(logging.WARNING, logger="energbench.benchmark.tools"):
+        with caplog.at_level(logging.WARNING, logger="energyevals.benchmark.tools"):
             merge_tools(std_tools, mcp_tools)
         assert any("shared_tool" in record.message for record in caplog.records)
         assert any("Standard tool takes priority" in record.message for record in caplog.records)
@@ -582,3 +585,95 @@ class TestMergeTools:
         """With no standard tools the result equals mcp_tools in original order."""
         result = merge_tools([], mcp_tools)
         assert result == mcp_tools
+
+
+class TestTraceRunEnrichment:
+    """Tests that _trace_run() enriches metadata with model_params and tools."""
+
+    @pytest.fixture
+    def question(self):
+        return Question(id=1, category="Markets", question_type="Data", difficulty="Hard", question="What is the price?")
+
+    @pytest.fixture
+    def agent_run(self):
+        return AgentRun(query="What is the price?", success=True)
+
+    def test_model_params_effort_written(self, question, agent_run):
+        observer = MagicMock()
+        observer.trace_agent_run.return_value = "trace-123"
+        model_spec = ModelSpec(provider="anthropic", model="claude-sonnet-4-6", effort="high")
+
+        _trace_run(observer, agent_run, question, "anthropic", "claude-sonnet-4-6", model_spec=model_spec)
+
+        call_kwargs = observer.trace_agent_run.call_args.kwargs
+        metadata = call_kwargs["metadata"]
+        assert metadata["model_params"] == {"effort": "high"}
+
+    def test_model_params_reasoning_model_written(self, question, agent_run):
+        observer = MagicMock()
+        observer.trace_agent_run.return_value = "trace-456"
+        model_spec = ModelSpec(provider="openai", model="o3-mini", is_reasoning_model=True)
+
+        _trace_run(observer, agent_run, question, "openai", "o3-mini", model_spec=model_spec)
+
+        metadata = observer.trace_agent_run.call_args.kwargs["metadata"]
+        assert metadata["model_params"] == {"is_reasoning_model": True}
+
+    def test_model_params_omitted_when_both_none(self, question, agent_run):
+        observer = MagicMock()
+        observer.trace_agent_run.return_value = "trace-789"
+        model_spec = ModelSpec(provider="anthropic", model="claude-haiku-4-5")
+
+        _trace_run(observer, agent_run, question, "anthropic", "claude-haiku-4-5", model_spec=model_spec)
+
+        metadata = observer.trace_agent_run.call_args.kwargs["metadata"]
+        assert "model_params" not in metadata
+
+    def test_tools_dict_written(self, question, agent_run):
+        observer = MagicMock()
+        observer.trace_agent_run.return_value = "trace-abc"
+        tools = [
+            ToolDefinition(name="search_web", description="Search"),
+            ToolDefinition(name="run_query", description="Query"),
+        ]
+
+        _trace_run(observer, agent_run, question, "anthropic", "claude-sonnet-4-6", tools=tools)
+
+        metadata = observer.trace_agent_run.call_args.kwargs["metadata"]
+        assert metadata["tools"] == {"count": 2, "names": ["search_web", "run_query"]}
+
+    def test_tools_empty_list_written(self, question, agent_run):
+        observer = MagicMock()
+        observer.trace_agent_run.return_value = "trace-def"
+
+        _trace_run(observer, agent_run, question, "anthropic", "claude-sonnet-4-6", tools=[])
+
+        metadata = observer.trace_agent_run.call_args.kwargs["metadata"]
+        assert metadata["tools"] == {"count": 0, "names": []}
+
+    def test_tools_omitted_when_none(self, question, agent_run):
+        observer = MagicMock()
+        observer.trace_agent_run.return_value = "trace-ghi"
+
+        _trace_run(observer, agent_run, question, "anthropic", "claude-sonnet-4-6")
+
+        metadata = observer.trace_agent_run.call_args.kwargs["metadata"]
+        assert "tools" not in metadata
+
+    def test_combined_model_params_and_tools(self, question, agent_run):
+        observer = MagicMock()
+        observer.trace_agent_run.return_value = "trace-xyz"
+        model_spec = ModelSpec(provider="anthropic", model="claude-sonnet-4-6", effort="medium")
+        tools = [ToolDefinition(name="show_tables", description="Show tables")]
+
+        _trace_run(
+            observer, agent_run, question, "anthropic", "claude-sonnet-4-6",
+            model_spec=model_spec, tools=tools,
+        )
+
+        metadata = observer.trace_agent_run.call_args.kwargs["metadata"]
+        assert metadata["model_params"] == {"effort": "medium"}
+        assert metadata["tools"] == {"count": 1, "names": ["show_tables"]}
+        assert metadata["provider"] == "anthropic"
+        assert metadata["model"] == "claude-sonnet-4-6"
+        assert metadata["question_id"] == 1

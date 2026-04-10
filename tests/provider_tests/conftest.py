@@ -1,7 +1,7 @@
 import pytest
 
-from energbench.agent.providers import Message, ToolDefinition
-from energbench.agent.schema.messages import ImageContent, TextContent
+from energyevals.agent.providers import Message, ToolDefinition
+from energyevals.agent.schema.messages import ImageContent, TextContent
 
 
 @pytest.fixture

@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import pytest
 import requests
 
-from energbench.tools.dockets import TexasDocketTool
+from energyevals.tools.dockets import TexasDocketTool
 
 
 class TestTexasDocketToolUnit:
@@ -55,7 +55,7 @@ class TestTexasDocketToolUnit:
         mock_response.text = html
 
         mocker.patch(
-            "energbench.tools.dockets.texas_tool.requests.get",
+            "energyevals.tools.dockets.texas_tool.requests.get",
             return_value=mock_response,
         )
         mocker.patch.object(TexasDocketTool, "_save_csv", return_value=None)
@@ -94,7 +94,7 @@ class TestTexasDocketToolUnit:
         mock_response.text = html
 
         mock_get = mocker.patch(
-            "energbench.tools.dockets.texas_tool.requests.get",
+            "energyevals.tools.dockets.texas_tool.requests.get",
             return_value=mock_response,
         )
         mocker.patch.object(TexasDocketTool, "_save_csv", return_value=None)
@@ -118,7 +118,7 @@ class TestTexasDocketToolUnit:
         )
 
         mocker.patch(
-            "energbench.tools.dockets.texas_tool.requests.get",
+            "energyevals.tools.dockets.texas_tool.requests.get",
             return_value=mock_response,
         )
 
@@ -134,7 +134,7 @@ class TestTexasDocketToolUnit:
     def test_search_texas_exception_handling(self, mocker):
         """Test generic exception handling in Texas PUC search."""
         mocker.patch(
-            "energbench.tools.dockets.texas_tool.requests.get",
+            "energyevals.tools.dockets.texas_tool.requests.get",
             side_effect=Exception("Read timed out"),
         )
 

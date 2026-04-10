@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from energbench.agent.schema import ModelSpec
-from energbench.benchmark.config import BenchmarkConfig
-from energbench.core.errors import ConfigurationError
+from energyevals.agent.schema import ModelSpec
+from energyevals.benchmark.config import BenchmarkConfig
+from energyevals.core.errors import ConfigurationError
 
 
 class TestBenchmarkConfig:
@@ -20,7 +20,7 @@ class TestBenchmarkConfig:
             questions_file=questions_file,
             questions=None,
             observability_enabled=True,
-            observability_backend="json",
+
             observability_output_dir=Path("./traces"),
             observability_run_name=None,
             mcp_enabled=True,
@@ -43,7 +43,7 @@ class TestBenchmarkConfig:
                 questions_file=questions_file,
                 questions=None,
                 observability_enabled=True,
-                observability_backend="json",
+
                 observability_output_dir=Path("./traces"),
                 observability_run_name=None,
                 mcp_enabled=True,
@@ -62,7 +62,7 @@ class TestBenchmarkConfig:
                 questions_file=Path("/nonexistent/file.csv"),
                 questions=None,
                 observability_enabled=True,
-                observability_backend="json",
+
                 observability_output_dir=Path("./traces"),
                 observability_run_name=None,
                 mcp_enabled=True,
@@ -72,49 +72,6 @@ class TestBenchmarkConfig:
             )
 
         assert "Questions file not found" in str(exc_info.value)
-
-    def test_invalid_backend_raises_error(self, tmp_path):
-        """Test that invalid observability backend raises error."""
-        questions_file = tmp_path / "questions.csv"
-        questions_file.touch()
-
-        with pytest.raises(ConfigurationError) as exc_info:
-            BenchmarkConfig(
-                models=[ModelSpec(provider="openai", model="gpt-4o-mini")],
-                questions_file=questions_file,
-                questions=None,
-                observability_enabled=True,
-                observability_backend="invalid_backend",
-                observability_output_dir=Path("./traces"),
-                observability_run_name=None,
-                mcp_enabled=True,
-                max_iterations=25,
-                results_dir=Path("./results"),
-                save_answers=True,
-            )
-
-        assert "Invalid observability backend" in str(exc_info.value)
-
-    @pytest.mark.parametrize("backend", ["json", "langfuse", "both", "auto"])
-    def test_valid_observability_backends(self, backend, tmp_path):
-        """All documented backends must be accepted."""
-        questions_file = tmp_path / "questions.csv"
-        questions_file.touch()
-
-        config = BenchmarkConfig(
-            models=[ModelSpec(provider="openai", model="gpt-4o-mini")],
-            questions_file=questions_file,
-            questions=None,
-            observability_enabled=True,
-            observability_backend=backend,
-            observability_output_dir=Path("./traces"),
-            observability_run_name=None,
-            mcp_enabled=True,
-            max_iterations=25,
-            results_dir=Path("./results"),
-            save_answers=True,
-        )
-        assert config.observability_backend == backend
 
     def test_invalid_max_iterations_raises_error(self, tmp_path):
         """Test that invalid max_iterations raises error."""
@@ -127,7 +84,7 @@ class TestBenchmarkConfig:
                 questions_file=questions_file,
                 questions=None,
                 observability_enabled=True,
-                observability_backend="json",
+
                 observability_output_dir=Path("./traces"),
                 observability_run_name=None,
                 mcp_enabled=True,
@@ -149,7 +106,7 @@ class TestBenchmarkConfig:
                 questions_file=questions_file,
                 questions=None,
                 observability_enabled=True,
-                observability_backend="json",
+
                 observability_output_dir=Path("./traces"),
                 observability_run_name=None,
                 mcp_enabled=True,
@@ -172,7 +129,7 @@ class TestBenchmarkConfig:
                 questions_file=questions_file,
                 questions=None,
                 observability_enabled=True,
-                observability_backend="json",
+
                 observability_output_dir=Path("./traces"),
                 observability_run_name=None,
                 mcp_enabled=True,

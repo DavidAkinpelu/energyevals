@@ -1,6 +1,6 @@
 import pytest
 
-from energbench.agent.exceptions import (
+from energyevals.agent.exceptions import (
     AgentError,
     ConfigurationError,
     ProviderError,

@@ -3,9 +3,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from energbench.agent.providers import Message, ToolDefinition
-from energbench.agent.providers.openai_provider import OpenAIProvider
-from energbench.agent.schema.messages import TextContent
+from energyevals.agent.providers import Message, ToolDefinition
+from energyevals.agent.providers.openai_provider import OpenAIProvider
+from energyevals.agent.schema.messages import TextContent
 
 
 class TestOpenAIProviderUnit:

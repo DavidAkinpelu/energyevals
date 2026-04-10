@@ -1,4 +1,4 @@
-"""Tests for energbench/evaluation/data_loader.py using tmp_path fixtures."""
+"""Tests for energyevals/evaluation/data_loader.py using tmp_path fixtures."""
 
 import json
 import time
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from energbench.evaluation.data_loader import (
+from energyevals.evaluation.data_loader import (
     _resolve_trace_file,
     discover_trials,
     load_benchmark_result,

@@ -25,7 +25,7 @@ from dashboard.loader import (
 
 st.set_page_config(
     layout="wide",
-    page_title="energBench Traces",
+    page_title="EnergyEvals Traces",
     page_icon="⚡",
 )
 
@@ -122,13 +122,42 @@ def _badge_html(success: bool | None) -> str:
     )
 
 
+def _tool_call_label(tool_call: Any) -> str:
+    """Extract a readable tool identifier from step summary entries."""
+    if isinstance(tool_call, str):
+        return tool_call
+    if isinstance(tool_call, dict):
+        for key in ("tool", "tool_name", "name"):
+            value = tool_call.get(key)
+            if value:
+                return str(value)
+        return json.dumps(tool_call, ensure_ascii=True)
+    return str(tool_call)
+
+
+def _failed_tool_call_label(tool_call: Any) -> str:
+    """Extract readable tool failure text from summary entries."""
+    if not isinstance(tool_call, dict):
+        return _tool_call_label(tool_call)
+
+    tool_name = _tool_call_label(tool_call)
+    preview = (
+        tool_call.get("error_preview")
+        or tool_call.get("error")
+        or tool_call.get("message")
+    )
+    if preview:
+        return f"{tool_name}: {preview}"
+    return tool_name
+
+
 # ---------------------------------------------------------------------------
 # Sidebar
 # ---------------------------------------------------------------------------
 
 def render_sidebar(index: list[TraceRef], corrupt: int) -> list[TraceRef]:
     with st.sidebar:
-        st.title("⚡ energBench")
+        st.title("⚡ EnergyEvals")
 
         runs = list_runs(str(TRACES_ROOT))
         if not runs:
@@ -222,7 +251,7 @@ def render_sidebar(index: list[TraceRef], corrupt: int) -> list[TraceRef]:
 
         st.divider()
 
-        if st.button("Model Overview", use_container_width=True):
+        if st.button("Model Overview", width="stretch"):
             st.session_state["selected_trace_path"] = None
 
         st.subheader("Traces")
@@ -236,7 +265,7 @@ def render_sidebar(index: list[TraceRef], corrupt: int) -> list[TraceRef]:
             if st.button(
                 btn_label,
                 key=f"btn_{ref.path}",
-                use_container_width=True,
+                width="stretch",
                 type="primary" if is_selected else "secondary",
             ):
                 st.session_state["selected_trace_path"] = str(ref.path)
@@ -304,7 +333,7 @@ def render_overview(index: list[TraceRef]) -> None:
                 )
                 .properties(height=max(120, len(df_model) * 40))
             )
-            st.altair_chart(chart, use_container_width=True)
+            st.altair_chart(chart, width="stretch")
 
     with col_right:
         st.subheader("Success / Fail by Difficulty")
@@ -332,7 +361,7 @@ def render_overview(index: list[TraceRef]) -> None:
                 )
                 .properties(height=250)
             )
-            st.altair_chart(chart, use_container_width=True)
+            st.altair_chart(chart, width="stretch")
 
     # Charts row 2
     col_l2, col_r2 = st.columns(2)
@@ -351,7 +380,7 @@ def render_overview(index: list[TraceRef]) -> None:
                 )
                 .properties(height=220)
             )
-            st.altair_chart(chart, use_container_width=True)
+            st.altair_chart(chart, width="stretch")
 
     with col_r2:
         st.subheader("Duration Distribution")
@@ -367,7 +396,7 @@ def render_overview(index: list[TraceRef]) -> None:
                 )
                 .properties(height=220)
             )
-            st.altair_chart(chart, use_container_width=True)
+            st.altair_chart(chart, width="stretch")
 
     st.divider()
 
@@ -393,11 +422,11 @@ def render_overview(index: list[TraceRef]) -> None:
         return pd.DataFrame(rows)
 
     with t1:
-        st.dataframe(_stats_df(stats["by_model"]), use_container_width=True, hide_index=True)
+        st.dataframe(_stats_df(stats["by_model"]), width="stretch", hide_index=True)
     with t2:
-        st.dataframe(_stats_df(stats["by_difficulty"]), use_container_width=True, hide_index=True)
+        st.dataframe(_stats_df(stats["by_difficulty"]), width="stretch", hide_index=True)
     with t3:
-        st.dataframe(_stats_df(stats["by_category"]), use_container_width=True, hide_index=True)
+        st.dataframe(_stats_df(stats["by_category"]), width="stretch", hide_index=True)
 
 
 # ---------------------------------------------------------------------------
@@ -485,7 +514,7 @@ def render_trace_detail(trace_path_str: str, index: list[TraceRef]) -> None:
             df_st = pd.DataFrame(
                 [{"Type": k, "Count": v} for k, v in step_types.items()]
             )
-            st.dataframe(df_st, hide_index=True, use_container_width=True)
+            st.dataframe(df_st, hide_index=True, width="stretch")
 
     with sc2:
         st.subheader("Tool Calls")
@@ -494,13 +523,16 @@ def render_trace_detail(trace_path_str: str, index: list[TraceRef]) -> None:
         if tool_calls:
             from collections import Counter
 
-            counts = Counter(tool_calls)
+            counts = Counter(_tool_call_label(call) for call in tool_calls)
             df_tc = pd.DataFrame(
                 [{"Tool": k, "Calls": v} for k, v in counts.most_common()]
             )
-            st.dataframe(df_tc, hide_index=True, use_container_width=True)
+            st.dataframe(df_tc, hide_index=True, width="stretch")
             if failed_tool_calls:
-                st.warning(f"Failed tool calls: {', '.join(failed_tool_calls)}")
+                failed_labels = [
+                    _failed_tool_call_label(call) for call in failed_tool_calls
+                ]
+                st.warning(f"Failed tool calls: {', '.join(failed_labels)}")
         else:
             st.caption("No tool calls recorded.")
 
@@ -535,7 +567,7 @@ def render_trace_detail(trace_path_str: str, index: list[TraceRef]) -> None:
             )
             .properties(height=200)
         )
-        st.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart, width="stretch")
 
     st.divider()
 
