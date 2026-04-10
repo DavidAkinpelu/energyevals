@@ -1,0 +1,87 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 5.0,
+    "reasoning": "Expert-like approach. The agent framed the problem correctly (identify valid resource types via authoritative documentation), used appropriate data sources (SPP website, Integrated Marketplace/Markets+ protocols PDFs), and executed logical search steps with correct tool usage (search_documents, search_web, get_page_contents) to retrieve primary source materials. No notable gaps given the ground-truth suggestion to answer via web search.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 0.6,
+    "reasoning": "The agent explicitly named Dispatchable Variable Energy Resources, Electric Storage Resources (ESR), and Non-Dispatchable Variable Energy Resources (VER), which correspond directly to three of the five expected attributes. The agent did not explicitly present a standalone 'Dispatchable Resource' type described as a fully dispatchable generation/injection asset—while dispatchable categories were mentioned, a general Dispatchable Resource label and description were not clearly provided. The agent also did not explicitly list 'Market Storage Resource (MSR)'; it mentioned a similarly named 'Hybrid Storage Market Resources (HSMR)' but that is not the canonical MSR label. Therefore 3 of 5 attributes match (alignment score 0.6).",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 2.0,
+    "reasoning": "The agent's answer does not include any explicit sources or citations. For a question about SPP asset registration, authoritative sources would be SPP documentation (SPP Market Protocols, SPP Tariff, SPP Integrated Marketplace User Manuals/Market Participant Guides, and SPP registration/CSC documentation) or SPP website pages that list valid resource types; none are cited. The listed resource types contain plausible items (generating units, ESR, variable energy resources, demand response) but also use terms that are ambiguous or not clearly aligned with SPP's formal nomenclature (e.g., \"Hybrid Storage Market Resources (HSMR)\", \"Block Demand Response Resources\", and \"External Dynamic Resources\") without citation — these may be inaccurate or nonstandard. Status categories listed mix operational statuses and market participation designations but are not referenced to SPP definitions (e.g., \"Supplemental\" and exact time thresholds like 10 minutes should be verified against SPP protocols). Because the agent provided no primary sources and used possibly nonstandard terminology, the authority and verifiability are low. A proper answer should cite specific SPP documentation pages or protocol sections that enumerate valid resource types and registration categories.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 5,
+    "reasoning": "Expert-like approach. The agent framed the problem correctly (identify valid resource types via authoritative documentation), used appropriate data sources (SPP website, Integrated Marketplace/Markets+ protocols PDFs), and executed logical search steps with correct tool usage (search_documents, search_web, get_page_contents) to retrieve primary source materials. No notable gaps given the ground-truth suggestion to answer via web search."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 3,
+    "alignment_score": 0.6,
+    "attribute_details": [
+      {
+        "name": "Dispatchable Resource",
+        "expected": "Fully dispatchable generation/injection asset (can be centrally dispatched by SPP)",
+        "found": false,
+        "agent_value": "Agent listed 'Generating Units/Plants' and various dispatchable categories (e.g., Dispatchable Demand Response, Dispatchable Variable Energy Resources) but did not explicitly identify a general 'Dispatchable Resource' type as a fully dispatchable generation/injection asset that SPP can centrally dispatch."
+      },
+      {
+        "name": "Dispatchable Variable Energy Resource (DVER)",
+        "expected": "Variable generator that can be controlled/curtailed by SPP dispatch (variable but dispatchable)",
+        "found": true,
+        "agent_value": "Agent included 'Dispatchable Variable Energy Resources' (explicit match)."
+      },
+      {
+        "name": "Electric Storage Resource (ESR)",
+        "expected": "Energy storage asset (battery, pumped hydro, etc.) registered as storage",
+        "found": true,
+        "agent_value": "Agent included 'Electric Storage Resources (ESR)' (explicit match)."
+      },
+      {
+        "name": "Market Storage Resource (MSR)",
+        "expected": "Storage variant with specific market/modeling rules distinct from ESR",
+        "found": false,
+        "agent_value": "Agent listed 'Hybrid Storage Market Resources (HSMR)' and other storage-related types but did not explicitly list 'Market Storage Resource (MSR)'."
+      },
+      {
+        "name": "Variable Energy Resource (VER)",
+        "expected": "Variable generation that is not centrally dispatchable (e.g., wind/solar without dispatch control)",
+        "found": true,
+        "agent_value": "Agent included 'Non-Dispatchable Variable Energy Resources' (explicitly matches the VER concept)."
+      }
+    ],
+    "reasoning": "The agent explicitly named Dispatchable Variable Energy Resources, Electric Storage Resources (ESR), and Non-Dispatchable Variable Energy Resources (VER), which correspond directly to three of the five expected attributes. The agent did not explicitly present a standalone 'Dispatchable Resource' type described as a fully dispatchable generation/injection asset—while dispatchable categories were mentioned, a general Dispatchable Resource label and description were not clearly provided. The agent also did not explicitly list 'Market Storage Resource (MSR)'; it mentioned a similarly named 'Hybrid Storage Market Resources (HSMR)' but that is not the canonical MSR label. Therefore 3 of 5 attributes match (alignment score 0.6)."
+  },
+  "raw_sources": {
+    "source_validity": 2,
+    "reasoning": "The agent's answer does not include any explicit sources or citations. For a question about SPP asset registration, authoritative sources would be SPP documentation (SPP Market Protocols, SPP Tariff, SPP Integrated Marketplace User Manuals/Market Participant Guides, and SPP registration/CSC documentation) or SPP website pages that list valid resource types; none are cited. The listed resource types contain plausible items (generating units, ESR, variable energy resources, demand response) but also use terms that are ambiguous or not clearly aligned with SPP's formal nomenclature (e.g., \"Hybrid Storage Market Resources (HSMR)\", \"Block Demand Response Resources\", and \"External Dynamic Resources\") without citation — these may be inaccurate or nonstandard. Status categories listed mix operational statuses and market participation designations but are not referenced to SPP definitions (e.g., \"Supplemental\" and exact time thresholds like 10 minutes should be verified against SPP protocols). Because the agent provided no primary sources and used possibly nonstandard terminology, the authority and verifiability are low. A proper answer should cite specific SPP documentation pages or protocol sections that enumerate valid resource types and registration categories."
+  },
+  "metrics": {
+    "tool_calls": 6,
+    "total_tokens": 234818,
+    "duration_seconds": 88.5757520198822,
+    "latency": {
+      "wall_clock_ms": 88557.83915519714,
+      "llm_thinking_ms": 56638.68808746338,
+      "tool_execution_ms": 31919.151067733765,
+      "per_tool_ms": {
+        "search_documents": 1163.3641719818115,
+        "search_web": 22344.048261642456,
+        "get_page_contents": 8411.738634109497
+      }
+    },
+    "cost": {
+      "input_tokens": 233960,
+      "output_tokens": 858,
+      "cached_tokens": 0,
+      "reasoning_tokens": 0,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

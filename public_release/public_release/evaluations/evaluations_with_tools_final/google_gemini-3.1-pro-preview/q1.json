@@ -1,0 +1,87 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 4.0,
+    "reasoning": "The agent framed the problem correctly (identify fees tied to decision points in NYISO interconnection manuals) and used appropriate sources/tools (search_documents and web searches targeting Manual 23 and UG21). The steps show relevant queries and use of the marketplace/document search tools, which is the right analytic path for locating the authoritative sources (NYISO manuals/guides). However, the trace does not show retrieval or parsing of the specific manuals or explicit extraction of fee items from the identified documents. The agent could have been more targeted (direct NYISO site, exact document filenames/URLs, or tariff pages) and should demonstrate downloading/extracting fee tables from Manual 23 and UG21. Overall approach is solid but missing the concrete retrieval/extraction step, hence a minor issue rather than a fundamental flaw.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 0.8,
+    "reasoning": "The agent correctly reported the application fee and CRIS-only fee (attribute 1). It omitted the specified tiered study deposit amounts for standard projects at application (attribute 2) but did include the CRIS-only $50k. The Decision Point 1 readiness deposit value ($4,000/MW) and CRIS-only exemption were stated (attribute 3) though the agent did not explicitly state the 5-business-day timing; value matched so counted as matched. Decision Point 2 deposit as the maximum of $4,000/MW and 20% of Phase 1 cost estimate was correctly stated (attribute 4). The final security equal to 100% of final cost estimates was also correctly stated (attribute 5). Using these determinations, 4 of 5 attributes match, yielding an alignment score of 0.8.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 2.0,
+    "reasoning": "The agent names appropriate primary sources (NYISO Manual 23 and UG‑21), which are authoritative for NYISO interconnection fees, so the choice of sources is relevant. However the answer fails in key source‑related aspects: it does not provide explicit citations (section numbers, page references, or URLs) or date/version identifiers for Manual 23 or UG‑21, preventing verification against the stated documents. Several specific fee figures and deposit rules are presented without citation or provenance; some items (e.g., the $10,000 application fee, the $4,000/MW commercial readiness deposit, the 20% rule, the site‑control deposit floor/ceiling, and the final 100% security requirement) may reflect NYISO practice or historical values but cannot be confirmed from the answer as provided. The claim that these materials were updated to comply with “FERC Order No. 2023” is vague (FERC orders are normally referenced by number and year—e.g., Order No. 2023 is ambiguous) and should cite the specific FERC order and how it maps to UG‑21/Manual 23 changes. The legacy TIP deposit numbers are asserted without source and may mix different procedures (generation interconnection vs. transmission studies) in a way that confuses applicability. Overall the sources referenced are appropriate and authoritative in principle, but the answer lacks the explicit, verifiable citations and versioning required for claims about specific fee amounts and decision‑point requirements; therefore the source validity rating is low but not zero because the correct primary documents were named.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 4,
+    "reasoning": "The agent framed the problem correctly (identify fees tied to decision points in NYISO interconnection manuals) and used appropriate sources/tools (search_documents and web searches targeting Manual 23 and UG21). The steps show relevant queries and use of the marketplace/document search tools, which is the right analytic path for locating the authoritative sources (NYISO manuals/guides). However, the trace does not show retrieval or parsing of the specific manuals or explicit extraction of fee items from the identified documents. The agent could have been more targeted (direct NYISO site, exact document filenames/URLs, or tariff pages) and should demonstrate downloading/extracting fee tables from Manual 23 and UG21. Overall approach is solid but missing the concrete retrieval/extraction step, hence a minor issue rather than a fundamental flaw."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 4,
+    "alignment_score": 0.8,
+    "attribute_details": [
+      {
+        "name": "Application fee per project (including CRIS-only)",
+        "expected": "$10,000 application fee per project; $5,000 application fee for CRIS-only projects",
+        "found": true,
+        "agent_value": "$10,000 non-refundable cash fee ($5,000 for CRIS-only projects)"
+      },
+      {
+        "name": "Study deposit tiers during application window",
+        "expected": "For standard projects: $100,000 if <80 MW; $150,000 if >=80 MW and <200 MW; $250,000 if >=200 MW. For CRIS-only projects: $50,000 study deposit",
+        "found": false,
+        "agent_value": "A deposit to cover actual study costs (e.g., $50,000 for a CRIS-only request). No tiered standard-project amounts provided."
+      },
+      {
+        "name": "Readiness deposit at Decision Point 1",
+        "expected": "Readiness deposit of $4,000 per MW required 5 business days after customer engagement window; does not apply to CRIS-only projects",
+        "found": true,
+        "agent_value": "Commercial Readiness Deposit 1: $4,000 per MW of requested capacity. (Not applicable for CRIS-only projects.)"
+      },
+      {
+        "name": "Study deposit at Decision Point 2 (Phase 1 outcome)",
+        "expected": "Deposit required equal to the maximum of $4,000 per MW and 20% of the project's cost estimates identified during the Phase 1 study",
+        "found": true,
+        "agent_value": "Commercial Readiness Deposit 2: The greater of either Readiness Deposit 1 ($4,000/MW) or 20% of the Phase 1 cost estimate."
+      },
+      {
+        "name": "Security deposit for iterative final decision period (Post-Phase 2)",
+        "expected": "Security deposit equal to 100% of the cost estimates allocated to the project from Phase 1 and Phase 2 studies",
+        "found": true,
+        "agent_value": "Final security/payment: cash or posted security equivalent to 100% of the final cost estimates for identified SUFs, SDUs, and CTOAFs."
+      }
+    ],
+    "reasoning": "The agent correctly reported the application fee and CRIS-only fee (attribute 1). It omitted the specified tiered study deposit amounts for standard projects at application (attribute 2) but did include the CRIS-only $50k. The Decision Point 1 readiness deposit value ($4,000/MW) and CRIS-only exemption were stated (attribute 3) though the agent did not explicitly state the 5-business-day timing; value matched so counted as matched. Decision Point 2 deposit as the maximum of $4,000/MW and 20% of Phase 1 cost estimate was correctly stated (attribute 4). The final security equal to 100% of final cost estimates was also correctly stated (attribute 5). Using these determinations, 4 of 5 attributes match, yielding an alignment score of 0.8."
+  },
+  "raw_sources": {
+    "source_validity": 2,
+    "reasoning": "The agent names appropriate primary sources (NYISO Manual 23 and UG‑21), which are authoritative for NYISO interconnection fees, so the choice of sources is relevant. However the answer fails in key source‑related aspects: it does not provide explicit citations (section numbers, page references, or URLs) or date/version identifiers for Manual 23 or UG‑21, preventing verification against the stated documents. Several specific fee figures and deposit rules are presented without citation or provenance; some items (e.g., the $10,000 application fee, the $4,000/MW commercial readiness deposit, the 20% rule, the site‑control deposit floor/ceiling, and the final 100% security requirement) may reflect NYISO practice or historical values but cannot be confirmed from the answer as provided. The claim that these materials were updated to comply with “FERC Order No. 2023” is vague (FERC orders are normally referenced by number and year—e.g., Order No. 2023 is ambiguous) and should cite the specific FERC order and how it maps to UG‑21/Manual 23 changes. The legacy TIP deposit numbers are asserted without source and may mix different procedures (generation interconnection vs. transmission studies) in a way that confuses applicability. Overall the sources referenced are appropriate and authoritative in principle, but the answer lacks the explicit, verifiable citations and versioning required for claims about specific fee amounts and decision‑point requirements; therefore the source validity rating is low but not zero because the correct primary documents were named."
+  },
+  "metrics": {
+    "tool_calls": 3,
+    "iterations": 4,
+    "total_tokens": 102223,
+    "duration_seconds": 35.69680452346802,
+    "latency": {
+      "wall_clock_ms": 35651.5109539032,
+      "llm_thinking_ms": 30807.162284851074,
+      "tool_execution_ms": 4844.348669052124,
+      "per_tool_ms": {
+        "search_documents": 1318.6924457550049,
+        "search_web": 3525.656223297119
+      }
+    },
+    "cost": {
+      "input_tokens": 101386,
+      "output_tokens": 837,
+      "cached_tokens": 0,
+      "reasoning_tokens": 1715,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

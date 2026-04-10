@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from energbench.agent.providers import Message
-from energbench.agent.providers.google_provider import GoogleProvider
+from energyevals.agent.providers import Message
+from energyevals.agent.providers.google_provider import GoogleProvider
 
 
 class TestGoogleProviderUnit:
@@ -176,6 +176,150 @@ class TestGoogleProviderUnit:
 
         # format_messages decodes the base64 str to bytes for Google's API
         assert created_parts[0].thought_signature == b"sig"
+
+    def test_is_gemini3_model_detection(self, monkeypatch):
+        """_is_gemini3_model() returns True only for gemini-3+ model names."""
+        monkeypatch.setenv("GOOGLE_API_KEY", "test")
+
+        mock_genai = MagicMock()
+        mock_types = MagicMock()
+        mock_google = MagicMock()
+        mock_google.genai = mock_genai
+
+        with patch.dict(sys.modules, {
+            "google": mock_google,
+            "google.genai": mock_genai,
+            "google.genai.types": mock_types,
+        }):
+            p2 = GoogleProvider(model="gemini-2.0-flash")
+            p3 = GoogleProvider(model="gemini-3.1-pro-preview")
+
+        assert p2._is_gemini3_model() is False
+        assert p3._is_gemini3_model() is True
+
+    @pytest.mark.asyncio
+    async def test_no_thinking_config_for_pre_gemini3(self, monkeypatch):
+        """complete() does NOT include thinking_config for pre-Gemini-3 models."""
+        monkeypatch.setenv("GOOGLE_API_KEY", "test")
+
+        mock_genai = MagicMock()
+        mock_types = MagicMock()
+        mock_google = MagicMock()
+        mock_google.genai = mock_genai
+
+        with patch.dict(sys.modules, {
+            "google": mock_google,
+            "google.genai": mock_genai,
+            "google.genai.types": mock_types,
+        }):
+            provider = GoogleProvider(model="gemini-2.0-flash", effort="high")
+
+        mock_part = MagicMock()
+        mock_part.text = "ok"
+        mock_part.function_call = None
+
+        mock_candidate = MagicMock()
+        mock_candidate.content.parts = [mock_part]
+        mock_candidate.finish_reason = "STOP"
+
+        mock_resp = MagicMock()
+        mock_resp.candidates = [mock_candidate]
+        mock_resp.usage_metadata.prompt_token_count = 5
+        mock_resp.usage_metadata.candidates_token_count = 2
+        mock_resp.usage_metadata.thoughts_token_count = 0
+
+        provider.client = MagicMock()
+        provider.client.aio.models.generate_content = AsyncMock(return_value=mock_resp)
+
+        await provider.complete([Message(role="user", content="hi")])
+
+        config_arg = provider._types.GenerateContentConfig.call_args
+        call_kwargs = config_arg.kwargs if config_arg.kwargs else config_arg[1]
+        assert "thinking_config" not in call_kwargs
+
+    @pytest.mark.asyncio
+    async def test_thinking_config_sent_for_gemini3(self, monkeypatch):
+        """complete() includes thinking_config with the correct ThinkingLevel for Gemini 3+."""
+        monkeypatch.setenv("GOOGLE_API_KEY", "test")
+
+        mock_genai = MagicMock()
+        mock_types = MagicMock()
+        mock_google = MagicMock()
+        mock_google.genai = mock_genai
+
+        with patch.dict(sys.modules, {
+            "google": mock_google,
+            "google.genai": mock_genai,
+            "google.genai.types": mock_types,
+        }):
+            provider = GoogleProvider(model="gemini-3.1-pro-preview", effort="high")
+
+        mock_part = MagicMock()
+        mock_part.text = "ok"
+        mock_part.function_call = None
+
+        mock_candidate = MagicMock()
+        mock_candidate.content.parts = [mock_part]
+        mock_candidate.finish_reason = "STOP"
+
+        mock_resp = MagicMock()
+        mock_resp.candidates = [mock_candidate]
+        mock_resp.usage_metadata.prompt_token_count = 5
+        mock_resp.usage_metadata.candidates_token_count = 2
+        mock_resp.usage_metadata.thoughts_token_count = 0
+
+        provider.client = MagicMock()
+        provider.client.aio.models.generate_content = AsyncMock(return_value=mock_resp)
+
+        await provider.complete([Message(role="user", content="hi")])
+
+        config_arg = provider._types.GenerateContentConfig.call_args
+        call_kwargs = config_arg.kwargs if config_arg.kwargs else config_arg[1]
+        assert "thinking_config" in call_kwargs
+        # Verify ThinkingConfig was constructed with ThinkingLevel.HIGH
+        provider._types.ThinkingConfig.assert_called_once_with(
+            thinking_level=provider._types.ThinkingLevel.HIGH
+        )
+
+    @pytest.mark.asyncio
+    async def test_default_effort_low_for_gemini3(self, monkeypatch):
+        """Default effort 'low' maps to ThinkingLevel.LOW for Gemini 3+ models."""
+        monkeypatch.setenv("GOOGLE_API_KEY", "test")
+
+        mock_genai = MagicMock()
+        mock_types = MagicMock()
+        mock_google = MagicMock()
+        mock_google.genai = mock_genai
+
+        with patch.dict(sys.modules, {
+            "google": mock_google,
+            "google.genai": mock_genai,
+            "google.genai.types": mock_types,
+        }):
+            provider = GoogleProvider(model="gemini-3-flash-preview")
+
+        mock_part = MagicMock()
+        mock_part.text = "ok"
+        mock_part.function_call = None
+
+        mock_candidate = MagicMock()
+        mock_candidate.content.parts = [mock_part]
+        mock_candidate.finish_reason = "STOP"
+
+        mock_resp = MagicMock()
+        mock_resp.candidates = [mock_candidate]
+        mock_resp.usage_metadata.prompt_token_count = 5
+        mock_resp.usage_metadata.candidates_token_count = 2
+        mock_resp.usage_metadata.thoughts_token_count = 0
+
+        provider.client = MagicMock()
+        provider.client.aio.models.generate_content = AsyncMock(return_value=mock_resp)
+
+        await provider.complete([Message(role="user", content="hi")])
+
+        provider._types.ThinkingConfig.assert_called_once_with(
+            thinking_level=provider._types.ThinkingLevel.LOW
+        )
 
 
 @pytest.mark.integration

@@ -1,0 +1,87 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 5.0,
+    "reasoning": "Expert-like. The agent correctly framed the problem (locate NYISO Process Manual M-23 and UG-21 to extract fees), targeted authoritative sources (NYISO manuals, standard interconnection procedures/FAQ and tariff viewer), and issued focused searches for application/deposit/study fees and decision points. Tool usage was appropriate: iterative search_documents/search_web queries followed by get_page_contents retrievals of the identified PDFs. The sequence is logical and sufficient to extract the required fee details; no material gaps in the chosen approach or sources.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 0.2,
+    "reasoning": "The agent correctly reported the application fee amounts ($10,000 standard, $5,000 CRIS-only) matching the expected attribute. The remaining expected attributes concern specific deposit amounts and formulas tied to decision points (tiered study deposit amounts by MW at application, $4,000/MW readiness deposit at DP1, DP2 deposit equal to max($4,000/MW, 20% of Phase 1 estimates), and 100% security deposit post-Phase 2). The agent's answer referenced generic study deposits (various fixed deposit amounts for different study types and a $50,000 CRIS study deposit) and mentioned commercial/readiness deposits conceptually but did not provide the specific numeric values or the required formulas for Decision Point 1, Decision Point 2, or the 100% security deposit. Therefore only the application-fee attribute is matched; the other four are not supported by the agent's response.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 3.0,
+    "reasoning": "The agent cites authoritative and appropriate sources for the question (NYISO Process Manual 23 and UG-21, OATT Attachment HH, NYISO technical bulletins). Those are the correct primary/documentary sources for NYISO interconnection fees and decision-point deposits, so the choice of sources is appropriate and would be sufficient if accurately and transparently referenced. However, the answer has several shortcomings that reduce its overall source validity score: 1) Lack of specific citations: the agent does not provide section, page, or effective‑date references within Manual 23, UG‑21, Attachment HH or the named technical bulletin, which is important because NYISO fees and processes depend on specific versions/effective dates and can change with tariff revisions. 2) Unsupported numeric detail: many fee amounts and thresholds are presented as definitive (e.g., $5,000 pre‑application fee, $10,000 application fee, $50k/60k/120k/100k study deposits, SGIP $750 application fee, etc.) without citing the exact clause or version that authorizes those amounts. Some of these figures are plausible but cannot be verified from the answer alone and may be inaccurate or out of date. 3) Mixing of regimes and terminology: the agent blends elements from TIP, SGIP, CRIS/ERIS/ DIS/SDU, and the Cluster Study process but does not clearly map each fee to the exact procedural document (Manual 23 vs UG‑21 vs Attachment HH). 4) Missing distinctions and conditionality: key conditional rules (e.g., refund procedures, invoice reconciliation timing, what triggers commercial readiness deposits and exact penalty amounts) are described qualitatively or generically rather than with the precise tariff language or table entries that practitioners require. 5) No citation for the 2024 SOP effective date or Technical Bulletin numbers: the answer references “new Standard Interconnection Procedures (effective May 2, 2024)” and “Technical Bulletin 262” without verifiable pointers; those claims need corroboration. Overall: the listed sources are appropriate and authoritative, but the agent failed to provide precise, verifiable citations and likely overstates certainty of specific fee figures. For a high‑quality response, the agent should quote the exact sections, version/effective date, and page/table numbers from NYISO Manual 23, UG‑21 (or the NYISO tariff/Attachment HH) and any technical bulletins used, and flag items that are variable or dependent on study results. Verification against the current NYISO manuals/tariff is required before using the numeric figures for commercial decisions.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 5,
+    "reasoning": "Expert-like. The agent correctly framed the problem (locate NYISO Process Manual M-23 and UG-21 to extract fees), targeted authoritative sources (NYISO manuals, standard interconnection procedures/FAQ and tariff viewer), and issued focused searches for application/deposit/study fees and decision points. Tool usage was appropriate: iterative search_documents/search_web queries followed by get_page_contents retrievals of the identified PDFs. The sequence is logical and sufficient to extract the required fee details; no material gaps in the chosen approach or sources."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 1,
+    "alignment_score": 0.2,
+    "attribute_details": [
+      {
+        "name": "Application fee per project (including CRIS-only)",
+        "expected": "$10,000 application fee per project; $5,000 application fee for CRIS-only projects",
+        "found": true,
+        "agent_value": "$10,000 standard application fee; $5,000 CRIS-Only"
+      },
+      {
+        "name": "Study deposit tiers during application window",
+        "expected": "For standard projects: $100,000 if <80 MW; $150,000 if >=80 MW and <200 MW; $250,000 if >=200 MW. For CRIS-only projects: $50,000 study deposit",
+        "found": false,
+        "agent_value": null
+      },
+      {
+        "name": "Readiness deposit at Decision Point 1",
+        "expected": "Readiness deposit of $4,000 per MW required 5 business days after customer engagement window; does not apply to CRIS-only projects",
+        "found": false,
+        "agent_value": null
+      },
+      {
+        "name": "Study deposit at Decision Point 2 (Phase 1 outcome)",
+        "expected": "Deposit required equal to the maximum of $4,000 per MW and 20% of the project's cost estimates identified during the Phase 1 study",
+        "found": false,
+        "agent_value": null
+      },
+      {
+        "name": "Security deposit for iterative final decision period (Post-Phase 2)",
+        "expected": "Security deposit equal to 100% of the cost estimates allocated to the project from Phase 1 and Phase 2 studies",
+        "found": false,
+        "agent_value": null
+      }
+    ],
+    "reasoning": "The agent correctly reported the application fee amounts ($10,000 standard, $5,000 CRIS-only) matching the expected attribute. The remaining expected attributes concern specific deposit amounts and formulas tied to decision points (tiered study deposit amounts by MW at application, $4,000/MW readiness deposit at DP1, DP2 deposit equal to max($4,000/MW, 20% of Phase 1 estimates), and 100% security deposit post-Phase 2). The agent's answer referenced generic study deposits (various fixed deposit amounts for different study types and a $50,000 CRIS study deposit) and mentioned commercial/readiness deposits conceptually but did not provide the specific numeric values or the required formulas for Decision Point 1, Decision Point 2, or the 100% security deposit. Therefore only the application-fee attribute is matched; the other four are not supported by the agent's response."
+  },
+  "raw_sources": {
+    "source_validity": 3,
+    "reasoning": "The agent cites authoritative and appropriate sources for the question (NYISO Process Manual 23 and UG-21, OATT Attachment HH, NYISO technical bulletins). Those are the correct primary/documentary sources for NYISO interconnection fees and decision-point deposits, so the choice of sources is appropriate and would be sufficient if accurately and transparently referenced. However, the answer has several shortcomings that reduce its overall source validity score: 1) Lack of specific citations: the agent does not provide section, page, or effective‑date references within Manual 23, UG‑21, Attachment HH or the named technical bulletin, which is important because NYISO fees and processes depend on specific versions/effective dates and can change with tariff revisions. 2) Unsupported numeric detail: many fee amounts and thresholds are presented as definitive (e.g., $5,000 pre‑application fee, $10,000 application fee, $50k/60k/120k/100k study deposits, SGIP $750 application fee, etc.) without citing the exact clause or version that authorizes those amounts. Some of these figures are plausible but cannot be verified from the answer alone and may be inaccurate or out of date. 3) Mixing of regimes and terminology: the agent blends elements from TIP, SGIP, CRIS/ERIS/ DIS/SDU, and the Cluster Study process but does not clearly map each fee to the exact procedural document (Manual 23 vs UG‑21 vs Attachment HH). 4) Missing distinctions and conditionality: key conditional rules (e.g., refund procedures, invoice reconciliation timing, what triggers commercial readiness deposits and exact penalty amounts) are described qualitatively or generically rather than with the precise tariff language or table entries that practitioners require. 5) No citation for the 2024 SOP effective date or Technical Bulletin numbers: the answer references “new Standard Interconnection Procedures (effective May 2, 2024)” and “Technical Bulletin 262” without verifiable pointers; those claims need corroboration. Overall: the listed sources are appropriate and authoritative, but the agent failed to provide precise, verifiable citations and likely overstates certainty of specific fee figures. For a high‑quality response, the agent should quote the exact sections, version/effective date, and page/table numbers from NYISO Manual 23, UG‑21 (or the NYISO tariff/Attachment HH) and any technical bulletins used, and flag items that are variable or dependent on study results. Verification against the current NYISO manuals/tariff is required before using the numeric figures for commercial decisions."
+  },
+  "metrics": {
+    "tool_calls": 15,
+    "total_tokens": 556760,
+    "duration_seconds": 123.43701076507568,
+    "latency": {
+      "wall_clock_ms": 123406.00800514221,
+      "llm_thinking_ms": 99291.77260398865,
+      "tool_execution_ms": 24114.235401153564,
+      "per_tool_ms": {
+        "search_documents": 3249.415397644043,
+        "search_web": 19842.301845550537,
+        "get_page_contents": 1022.5181579589844
+      }
+    },
+    "cost": {
+      "input_tokens": 554411,
+      "output_tokens": 2349,
+      "cached_tokens": 502272,
+      "reasoning_tokens": 0,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

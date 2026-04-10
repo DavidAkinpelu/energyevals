@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import pytest
 import requests
 
-from energbench.tools.dockets import SouthCarolinaDocketTool
+from energyevals.tools.dockets import SouthCarolinaDocketTool
 
 
 class TestSouthCarolinaDocketToolUnit:
@@ -64,7 +64,7 @@ class TestSouthCarolinaDocketToolUnit:
         mock_response.url = "https://dms.psc.sc.gov/Web/Dockets/Search?StartDate=2025-01-01"
 
         mocker.patch(
-            "energbench.tools.dockets.south_carolina_tool.requests.get",
+            "energyevals.tools.dockets.south_carolina_tool.requests.get",
             return_value=mock_response,
         )
         mocker.patch.object(SouthCarolinaDocketTool, "_save_csv", return_value=None)
@@ -94,7 +94,7 @@ class TestSouthCarolinaDocketToolUnit:
         mock_response.url = "https://dms.psc.sc.gov/Web/Dockets/Search"
 
         mocker.patch(
-            "energbench.tools.dockets.south_carolina_tool.requests.get",
+            "energyevals.tools.dockets.south_carolina_tool.requests.get",
             return_value=mock_response,
         )
         mocker.patch.object(SouthCarolinaDocketTool, "_save_csv", return_value=None)
@@ -118,7 +118,7 @@ class TestSouthCarolinaDocketToolUnit:
         )
 
         mocker.patch(
-            "energbench.tools.dockets.south_carolina_tool.requests.get",
+            "energyevals.tools.dockets.south_carolina_tool.requests.get",
             return_value=mock_response,
         )
 
@@ -134,7 +134,7 @@ class TestSouthCarolinaDocketToolUnit:
     def test_search_south_carolina_exception_handling(self, mocker):
         """Test generic exception handling in SC PSC search."""
         mocker.patch(
-            "energbench.tools.dockets.south_carolina_tool.requests.get",
+            "energyevals.tools.dockets.south_carolina_tool.requests.get",
             side_effect=Exception("Timeout exceeded"),
         )
 

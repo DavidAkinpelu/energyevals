@@ -1,102 +1,34 @@
 # Evaluation Pipeline Configuration
-# Used by: scripts/run_eval.py -> energbench.evaluation
-
-# =============================================================================
-# LLM Judge Settings
-# =============================================================================
+# Used by: scripts/run_eval.py -> energyevals.evaluation
+#
+# This config drives the LLM judge that scores benchmark traces.
+# Update results_path and output_dir to point at the experiment you want to evaluate.
 
 judge:
   provider: openai
   model: gpt-5-mini
-  #provider: deepinfra
-  #model: Qwen/Qwen3-Max-Thinking
   temperature: 0.0
   max_tokens: 4096
-  reasoning_effort: low  # Only used with OpenAI reasoning models (o1, o3)
+  reasoning_effort: low
 
-# =============================================================================
-# Paths
-# =============================================================================
+results_path: ./benchmark_traces/with_tools_final
 
-# Path to benchmark trace directory (output of run_benchmark.py)
-results_path: ./benchmark_traces/without_tools_final
+dataset_path: ./data/evals_full_dataset_with_gridstatus.csv
 
-# Dataset CSV with questions, answers, and approaches
-dataset_path: ./data/evals_full_dataset_212.csv
-
-# Directory for evaluation output
-output_dir: ./evaluation_results/reruns
-
-# Canonical attributes file to use directly (optional).
-# If set, attribute generation step is skipped and this file is used.
-attributes_file: ./evaluation_results/attributes_generated_final.json
-
-# Where to save generated canonical attributes (optional).
-# Used only when attributes_file is not provided.
-#attributes_output_file: ./evaluation_results/new_evaluations/with_gridstatus_additional/attributes_generated.json
-
-# Run name -- should match the benchmark observability run_name
-# Uncomment to specify (otherwise auto-discovers model dirs under results_path)
-# run_name: eval_samples
-
-# =============================================================================
-# Strategy (category -> judge mapping)
-# =============================================================================
-# Maps question categories to judge strategies.
-# Valid strategies: "accuracy" (numerical correctness) or "attributes" (key attribute alignment).
-# Categories not listed here use the default strategy.
+output_dir: ./evaluation_results/with_tools
 
 strategy:
   default: attributes
   categories:
-    "Markets data retrieval and analysis": accuracy
+    "Market data retrieval and analysis": accuracy
     "Advanced quantitative modeling and decision analytics": accuracy
-    # "My Custom Category": accuracy
-
-# =============================================================================
-# Tolerances
-# =============================================================================
 
 tolerances:
   abs_tol: 2
   rel_tol: 10
 
-# =============================================================================
-# Statistics
-# =============================================================================
-
 statistics:
   confidence_level: 0.95
   significance_alpha: 0.05
 
-# =============================================================================
-# Comparisons (optional)
-# =============================================================================
-
-# Run paired cross-model significance tests when true
-# compare: true
-
-# =============================================================================
-# Scope (optional)
-# =============================================================================
-
-# Filter to specific models (directory names under results_path/{run_name}/)
-models:
-#  - openai_gpt-5.2
-#  - openai_gpt-5-mini
-#  - deepinfra_deepseek-ai_DeepSeek-V3.2
-#  - anthropic_claude-sonnet-4-6
-#  - deepinfra_moonshotai_Kimi-K2.5
-#  - deepinfra_Qwen_Qwen3-Max-Thinking
-  - google_gemini-3.1-pro-preview
-
-# Filter to specific question IDs
-#questions: [232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250]
-questions: [232,233,245]
-
-# =============================================================================
-# Logging
-# =============================================================================
-
-# Log verbosity: DEBUG | INFO | WARNING | ERROR  (default: INFO)
 log_level: INFO

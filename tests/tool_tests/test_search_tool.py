@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from energbench.tools.search_tool import SearchTool
+from energyevals.tools.search_tool import SearchTool
 
 
 class TestSearchToolUnit:
@@ -48,7 +48,7 @@ class TestSearchToolUnit:
             results=[mock_result]
         )
 
-        mocker.patch("energbench.tools.search_tool.Exa", return_value=mock_exa_instance)
+        mocker.patch("energyevals.tools.search_tool.Exa", return_value=mock_exa_instance)
 
         tool = SearchTool(api_key="test_key")
         result = tool.search(query="energy storage", num_results=3)
@@ -64,7 +64,7 @@ class TestSearchToolUnit:
         mock_exa_instance = Mock()
         mock_exa_instance.search_and_contents.return_value = Mock(results=[])
 
-        mocker.patch("energbench.tools.search_tool.Exa", return_value=mock_exa_instance)
+        mocker.patch("energyevals.tools.search_tool.Exa", return_value=mock_exa_instance)
 
         tool = SearchTool(api_key="test_key")
         tool.search(query="solar energy", num_results=5)
@@ -76,7 +76,7 @@ class TestSearchToolUnit:
     def test_search_error_handling(self, mocker):
         """Test search error handling."""
         mocker.patch(
-            "energbench.tools.search_tool.Exa",
+            "energyevals.tools.search_tool.Exa",
             side_effect=Exception("API connection failed"),
         )
 
@@ -100,7 +100,7 @@ class TestSearchToolUnit:
             results=[mock_result]
         )
 
-        mocker.patch("energbench.tools.search_tool.Exa", return_value=mock_exa_instance)
+        mocker.patch("energyevals.tools.search_tool.Exa", return_value=mock_exa_instance)
 
         tool = SearchTool(api_key="test_key")
         result = tool.get_contents(
@@ -127,7 +127,7 @@ class TestSearchToolUnit:
             results=[mock_result]
         )
 
-        mocker.patch("energbench.tools.search_tool.Exa", return_value=mock_exa_instance)
+        mocker.patch("energyevals.tools.search_tool.Exa", return_value=mock_exa_instance)
 
         tool = SearchTool(api_key="test_key")
         tool.get_contents(

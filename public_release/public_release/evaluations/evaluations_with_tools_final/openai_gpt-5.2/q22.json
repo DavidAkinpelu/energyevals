@@ -1,0 +1,87 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 4.0,
+    "reasoning": "The agent framed the problem correctly — it looked for NYISO tariff/guide documents and manuals that define interconnection fees (OATT Section 30/Attachment X, SGIP/Attachment I, M-23 TEI Manual and LFIP guidance). The agent used appropriate primary sources (nyiso.com PDF manuals and the OATT) and issued targeted searches for decision-point fees (application deposits, SIS/SRIS/LFIP deposits, study refunds). Tool usage was logical (search -> fetch PDFs -> target specific tables/sections) and the sequence of queries shows focus on the right documents. Minor gap: the agent did not explicitly fetch or cite the UG-21 guide mentioned in the suggested approach (or explicitly confirm UG-21 content), though it did retrieve M-23 and key OATT/SGIP documents; ensuring UG-21 (and any current TEI manual version) was retrieved would make the approach fully comprehensive. Overall the approach is expert-like with only a small omission.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 0.4,
+    "reasoning": "The agent correctly provided the application fee and CRIS exception and the cluster study deposit tiers exactly as expected (2 matches). The agent did not state the specific readiness deposit of $4,000/MW due 5 business days after the customer engagement window, nor the Decision Point 2 formula (max of $4,000/MW and 20% of Phase 1 cost estimate), nor the explicit 100% security deposit at iterative final decision. The agent referenced readiness/security posts and true-up mechanics generally but did not give the precise numeric rules required by the canonical attributes.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 4.0,
+    "reasoning": "The agent cites authoritative and appropriate primary sources (NYISO OATT/LFIP excerpts and NYISO Order No. 2023 compliance/tariff materials), which are the correct places to extract fees and deposit schedules for NYISO interconnection processes. The cited documents (tariff excerpts, LFIP appendices, and NYISO compliance decks) are highly relevant and give credibility to the fixed-dollar amounts provided for application fees, feasibility-study deposits, OFES options, and the example cluster-study deposits. Shortcomings: the answer mixes formal tariff citations with presentation/deck materials (compliance plan decks) that summarize proposed/implemented rules rather than always quoting the controlling tariff language; it acknowledges but does not supply exact SRIS and Class Year Facilities Study deposit numbers and therefore leaves some decision-point fees unspecified. The answer appropriately flags where NYISO uses refundable deposits trued up to actual study costs, and where withdrawal liability applies, but would be stronger if it directly quoted the controlling OATT/Attachment X tariff text for SRIS/Class Year deposits or provided exact effective-tariff references and section numbers for the Order 2023 tariff revisions. Overall, sources are authoritative and relevant, but a complete audit would require pulling the current effective Attachment X/TEI Manual tables (or the exact tariff revision text) to confirm the missing fixed deposit figures and to ensure presentation slides reflect the effective tariff language.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 4,
+    "reasoning": "The agent framed the problem correctly — it looked for NYISO tariff/guide documents and manuals that define interconnection fees (OATT Section 30/Attachment X, SGIP/Attachment I, M-23 TEI Manual and LFIP guidance). The agent used appropriate primary sources (nyiso.com PDF manuals and the OATT) and issued targeted searches for decision-point fees (application deposits, SIS/SRIS/LFIP deposits, study refunds). Tool usage was logical (search -> fetch PDFs -> target specific tables/sections) and the sequence of queries shows focus on the right documents. Minor gap: the agent did not explicitly fetch or cite the UG-21 guide mentioned in the suggested approach (or explicitly confirm UG-21 content), though it did retrieve M-23 and key OATT/SGIP documents; ensuring UG-21 (and any current TEI manual version) was retrieved would make the approach fully comprehensive. Overall the approach is expert-like with only a small omission."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 2,
+    "alignment_score": 0.4,
+    "attribute_details": [
+      {
+        "name": "Application fee amount and CRIS-only exception",
+        "expected": "$10,000 per project application; $5,000 for CRIS-only projects",
+        "found": true,
+        "agent_value": "$10,000 application fee ($5,000 for CRIS-only projects); also noted $10,000 non-refundable in legacy LFIP discussion"
+      },
+      {
+        "name": "Study deposit tiers by project size and CRIS-only exception",
+        "expected": "$100,000 for projects <80 MW; $150,000 for projects >=80 MW and <200 MW; $250,000 for projects >=200 MW; $50,000 for CRIS-only projects",
+        "found": true,
+        "agent_value": "<80 MW: $100,000; ≥80 and <200 MW: $150,000; ≥200 MW: $250,000; CRIS-only: $50,000"
+      },
+      {
+        "name": "Readiness deposit at Decision Point 1 and CRIS-only exception",
+        "expected": "Readiness deposit of $4,000 per MW due 5 business days after customer engagement window; does not apply to CRIS-only projects",
+        "found": false,
+        "agent_value": null
+      },
+      {
+        "name": "Decision Point 2 study deposit calculation",
+        "expected": "Study deposit required 10 business days after Phase 1 study equal to the maximum of $4,000 per MW and 20% of project cost estimates determined during Phase 1",
+        "found": false,
+        "agent_value": null
+      },
+      {
+        "name": "Iterative final decision security deposit",
+        "expected": "Security deposit equal to 100% of cost estimates allocated to the project from Phase 1 and Phase 2 studies (due during iterative final decision period)",
+        "found": false,
+        "agent_value": null
+      }
+    ],
+    "reasoning": "The agent correctly provided the application fee and CRIS exception and the cluster study deposit tiers exactly as expected (2 matches). The agent did not state the specific readiness deposit of $4,000/MW due 5 business days after the customer engagement window, nor the Decision Point 2 formula (max of $4,000/MW and 20% of Phase 1 cost estimate), nor the explicit 100% security deposit at iterative final decision. The agent referenced readiness/security posts and true-up mechanics generally but did not give the precise numeric rules required by the canonical attributes."
+  },
+  "raw_sources": {
+    "source_validity": 4,
+    "reasoning": "The agent cites authoritative and appropriate primary sources (NYISO OATT/LFIP excerpts and NYISO Order No. 2023 compliance/tariff materials), which are the correct places to extract fees and deposit schedules for NYISO interconnection processes. The cited documents (tariff excerpts, LFIP appendices, and NYISO compliance decks) are highly relevant and give credibility to the fixed-dollar amounts provided for application fees, feasibility-study deposits, OFES options, and the example cluster-study deposits. Shortcomings: the answer mixes formal tariff citations with presentation/deck materials (compliance plan decks) that summarize proposed/implemented rules rather than always quoting the controlling tariff language; it acknowledges but does not supply exact SRIS and Class Year Facilities Study deposit numbers and therefore leaves some decision-point fees unspecified. The answer appropriately flags where NYISO uses refundable deposits trued up to actual study costs, and where withdrawal liability applies, but would be stronger if it directly quoted the controlling OATT/Attachment X tariff text for SRIS/Class Year deposits or provided exact effective-tariff references and section numbers for the Order 2023 tariff revisions. Overall, sources are authoritative and relevant, but a complete audit would require pulling the current effective Attachment X/TEI Manual tables (or the exact tariff revision text) to confirm the missing fixed deposit figures and to ensure presentation slides reflect the effective tariff language."
+  },
+  "metrics": {
+    "tool_calls": 14,
+    "total_tokens": 539539,
+    "duration_seconds": 162.49600791931152,
+    "latency": {
+      "wall_clock_ms": 162432.758808136,
+      "llm_thinking_ms": 120575.021982193,
+      "tool_execution_ms": 41857.73682594299,
+      "per_tool_ms": {
+        "search_documents": 1985.867977142334,
+        "search_web": 37259.594678878784,
+        "get_page_contents": 2612.274169921875
+      }
+    },
+    "cost": {
+      "input_tokens": 534164,
+      "output_tokens": 5375,
+      "cached_tokens": 457344,
+      "reasoning_tokens": 2014,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

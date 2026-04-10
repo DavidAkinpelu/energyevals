@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, Mock
 import pytest
 import requests
 
-from energbench.tools.dockets import NorthCarolinaDocketTool
+from energyevals.tools.dockets import NorthCarolinaDocketTool
 
 
 class TestNorthCarolinaDocketToolUnit:
@@ -68,7 +68,7 @@ class TestNorthCarolinaDocketToolUnit:
         mock_session_instance.post.return_value = mock_post_resp
 
         mocker.patch(
-            "energbench.tools.dockets.north_carolina_tool.requests.Session",
+            "energyevals.tools.dockets.north_carolina_tool.requests.Session",
             return_value=mock_session_instance,
         )
         mocker.patch.object(NorthCarolinaDocketTool, "_save_csv", return_value=None)
@@ -99,7 +99,7 @@ class TestNorthCarolinaDocketToolUnit:
         mock_session_instance.get.return_value = mock_response
 
         mocker.patch(
-            "energbench.tools.dockets.north_carolina_tool.requests.Session",
+            "energyevals.tools.dockets.north_carolina_tool.requests.Session",
             return_value=mock_session_instance,
         )
 
@@ -118,7 +118,7 @@ class TestNorthCarolinaDocketToolUnit:
         mock_session_instance.get.side_effect = Exception("Connection reset")
 
         mocker.patch(
-            "energbench.tools.dockets.north_carolina_tool.requests.Session",
+            "energyevals.tools.dockets.north_carolina_tool.requests.Session",
             return_value=mock_session_instance,
         )
 

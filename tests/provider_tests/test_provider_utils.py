@@ -1,9 +1,9 @@
-from energbench.agent.providers.provider_utils import (
+from energyevals.agent.providers.provider_utils import (
     format_multimodal_content,
     format_tool_calls_for_openai,
     separate_system_message,
 )
-from energbench.agent.schema import ImageContent, Message, TextContent, ToolCall
+from energyevals.agent.schema import ImageContent, Message, TextContent, ToolCall
 
 
 class TestSeparateSystemMessage:

@@ -1,0 +1,31 @@
+question_id,category,difficulty,strategy,approach_mean,approach_ci,accuracy_mean,accuracy_ci,sources_mean,sources_ci,Failed,iterations,tool_calls,tokens,duration_s,total_input_tokens,total_output_tokens,total_cached_tokens,input_tokens,output_tokens,cached_tokens,reasoning_tokens
+1,Knowledge retrieval and interpretation,Easy,attributes,4,"[4.000, 4.000]",0.8,"[0.800, 0.800]",2,"[2.000, 2.000]",False,4,3,102223,35.7,101386,837,78067.22,101386,837,78067.22,1715
+3,Knowledge retrieval and interpretation,Easy,attributes,3,"[3.000, 3.000]",1.0,"[1.000, 1.000]",3,"[3.000, 3.000]",False,3,2,47798,13.9,47418,380,36511.86,47418,380,36511.86,478
+19,Knowledge retrieval and interpretation,Easy,attributes,4,"[4.000, 4.000]",0.0,"[0.000, 0.000]",3,"[3.000, 3.000]",False,4,3,100395,45.2,99837,558,76874.49,99837,558,76874.49,633
+20,Knowledge retrieval and interpretation,Easy,attributes,4,"[4.000, 4.000]",0.8,"[0.800, 0.800]",2,"[2.000, 2.000]",False,5,4,113142,43.2,112164,978,86366.28,112164,978,86366.28,806
+22,Knowledge retrieval and interpretation,Medium,attributes,4,"[4.000, 4.000]",0.2,"[0.200, 0.200]",2,"[2.000, 2.000]",False,3,2,58404,30.9,57706,698,44433.62,57706,698,44433.62,637
+24,Knowledge retrieval and interpretation,Medium,attributes,4,"[4.000, 4.000]",1.0,"[1.000, 1.000]",2,"[2.000, 2.000]",False,3,2,57109,29.8,56404,705,43431.08,56404,705,43431.08,575
+40,Knowledge retrieval and interpretation,Medium,attributes,4,"[4.000, 4.000]",0.2,"[0.200, 0.200]",3,"[3.000, 3.000]",False,4,3,66585,22.3,65952,633,50783.04,65952,633,50783.04,701
+41,Knowledge retrieval and interpretation,Medium,attributes,4,"[4.000, 4.000]",1.0,"[1.000, 1.000]",2,"[2.000, 2.000]",False,3,2,58769,27.1,58234,535,44840.18,58234,535,44840.18,411
+43,Markets data retrieval only,Medium,attributes,4,"[4.000, 4.000]",0.5,"[0.500, 0.500]",2,"[2.000, 2.000]",False,5,4,82939,28.8,82446,493,63483.42,82446,493,63483.42,681
+65,Markets data retrieval only,Easy,attributes,4,"[4.000, 4.000]",0.5,"[0.500, 0.500]",2,"[2.000, 2.000]",False,5,4,82464,30.6,81981,483,63125.37,81981,483,63125.37,485
+124,Markets data retrieval and analysis,Medium,accuracy,4,"[4.000, 4.000]",1.0,"[1.000, 1.000]",2,"[2.000, 2.000]",False,5,4,82603,190.6,82166,437,63267.82,82166,437,63267.82,471
+127,Markets data retrieval and analysis,Medium,accuracy,5,"[5.000, 5.000]",1.0,"[1.000, 1.000]",3,"[3.000, 3.000]",False,5,4,79577,21.0,79202,375,60985.54,79202,375,60985.54,339
+140,Markets data retrieval and analysis,Medium,accuracy,5,"[5.000, 5.000]",1.0,"[1.000, 1.000]",3,"[3.000, 3.000]",False,4,3,229047,17.9,228770,277,176152.9,228770,277,176152.9,632
+141,Markets data retrieval and analysis,Medium,accuracy,3,"[3.000, 3.000]",1.0,"[1.000, 1.000]",3,"[3.000, 3.000]",False,13,12,925470,140.7,924027,1443,711500.79,924027,1443,711500.79,1575
+144,Markets data retrieval and analysis,Medium,accuracy,5,"[5.000, 5.000]",0.0,"[0.000, 0.000]",3,"[3.000, 3.000]",False,10,9,698020,195.5,697035,985,536716.95,697035,985,536716.95,1244
+153,Markets data retrieval and analysis,Medium,accuracy,5,"[5.000, 5.000]",1.0,"[1.000, 1.000]",2,"[2.000, 2.000]",False,6,5,101980,34.0,101411,569,78086.47,101411,569,78086.47,617
+156,Markets data retrieval and analysis,Medium,accuracy,5,"[5.000, 5.000]",1.0,"[1.000, 1.000]",2,"[2.000, 2.000]",False,6,5,97346,143.1,96888,458,74603.76,96888,458,74603.76,368
+172,Markets data retrieval and analysis,Medium,accuracy,4,"[4.000, 4.000]",0.8,"[0.800, 0.800]",2,"[2.000, 2.000]",False,14,13,998462,137.3,996687,1775,767448.99,996687,1775,767448.99,1691
+188,Knowledge retrieval and interpretation,Easy,attributes,4,"[4.000, 4.000]",0.4,"[0.400, 0.400]",2,"[2.000, 2.000]",False,7,6,603671,52.5,601896,1775,463459.92,601896,1775,463459.92,1639
+196,Knowledge retrieval and interpretation,Easy,attributes,4,"[4.000, 4.000]",0.25,"[0.250, 0.250]",3,"[3.000, 3.000]",False,6,5,484256,42.4,482870,1386,371809.9,482870,1386,371809.9,1958
+204,Knowledge retrieval and interpretation,Easy,attributes,5,"[5.000, 5.000]",1.0,"[1.000, 1.000]",4,"[4.000, 4.000]",False,2,1,28003,10.6,27648,355,21288.96,27648,355,21288.96,349
+208,Knowledge retrieval and interpretation,Hard,attributes,3,"[3.000, 3.000]",0.8,"[0.800, 0.800]",2,"[2.000, 2.000]",False,9,16,2205138,128.0,2202137,3001,1695645.49,2202137,3001,1695645.49,4821
+213,Knowledge retrieval and interpretation,Medium,attributes,4,"[4.000, 4.000]",0.0,"[0.000, 0.000]",2,"[2.000, 2.000]",False,3,2,212923,35.0,212456,467,163591.12,212456,467,163591.12,982
+221,Knowledge retrieval and interpretation,Medium,attributes,3,"[3.000, 3.000]",0.0,"[0.000, 0.000]",3,"[3.000, 3.000]",True,25,25,3070024,193.3,3062988,7036,2358500.76,3062988,7036,2358500.76,337
+229,Knowledge retrieval and interpretation,Medium,attributes,5,"[5.000, 5.000]",1.0,"[1.000, 1.000]",3,"[3.000, 3.000]",False,2,1,28056,16.2,27703,353,21331.31,27703,353,21331.31,495
+232,Advanced quantitative modeling and decision analytics,Hard,accuracy,5,"[5.000, 5.000]",1.0,"[1.000, 1.000]",2,"[2.000, 2.000]",False,10,14,231122,269.7,229485,1637,176703.45,229485,1637,176703.45,2057
+234,Advanced quantitative modeling and decision analytics,Hard,accuracy,3,"[3.000, 3.000]",0.25,"[0.250, 0.250]",2,"[2.000, 2.000]",False,11,14,266274,270.1,264095,2179,203353.15,264095,2179,203353.15,2333
+244,Advanced quantitative modeling and decision analytics,Hard,accuracy,4,"[4.000, 4.000]",1.0,"[1.000, 1.000]",2,"[2.000, 2.000]",False,9,8,213299,63.8,211721,1578,163025.17,211721,1578,163025.17,1501
+245,Advanced quantitative modeling and decision analytics,Hard,accuracy,3,"[3.000, 3.000]",0.0,"[0.000, 0.000]",2,"[2.000, 2.000]",False,20,19,429726,234.3,426583,3143,328468.91,426583,3143,328468.91,2744
+249,Advanced quantitative modeling and decision analytics,Hard,accuracy,3,"[3.000, 3.000]",0.648,"[0.648, 0.648]",3,"[3.000, 3.000]",False,10,9,199254,77.1,196607,2647,151387.39,196607,2647,151387.39,1945

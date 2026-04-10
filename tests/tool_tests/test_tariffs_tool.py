@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from energbench.tools.tariffs_tool import TariffsTool
+from energyevals.tools.tariffs_tool import TariffsTool
 
 
 class TestTariffsToolUnit:
@@ -49,7 +49,7 @@ class TestTariffsToolUnit:
             ]
         })
 
-        mocker.patch("energbench.tools.tariffs_tool.requests.get", return_value=mock_response)
+        mocker.patch("energyevals.tools.tariffs_tool.requests.get", return_value=mock_response)
 
         tool = TariffsTool(api_key="test_key")
         result = tool.get_utility_tariffs(
@@ -68,7 +68,7 @@ class TestTariffsToolUnit:
         mock_response.status_code = 404
         mock_response.text = "Not found"
 
-        mocker.patch("energbench.tools.tariffs_tool.requests.get", return_value=mock_response)
+        mocker.patch("energyevals.tools.tariffs_tool.requests.get", return_value=mock_response)
 
         tool = TariffsTool(api_key="test_key")
         result = tool.get_utility_tariffs(
@@ -85,7 +85,7 @@ class TestTariffsToolUnit:
         mock_response.status_code = 200
         mock_response.text = json.dumps({"items": []})
 
-        mocker.patch("energbench.tools.tariffs_tool.requests.get", return_value=mock_response)
+        mocker.patch("energyevals.tools.tariffs_tool.requests.get", return_value=mock_response)
 
         tool = TariffsTool(api_key="test_key")
         result = tool.get_utility_tariffs(
@@ -99,7 +99,7 @@ class TestTariffsToolUnit:
     def test_get_utility_tariffs_exception_handling(self, mocker):
         """Test exception handling in tariff lookup."""
         mocker.patch(
-            "energbench.tools.tariffs_tool.requests.get",
+            "energyevals.tools.tariffs_tool.requests.get",
             side_effect=Exception("Connection error"),
         )
 

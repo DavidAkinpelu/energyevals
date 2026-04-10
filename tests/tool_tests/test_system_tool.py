@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from energbench.tools.system_tool import SystemTool
+from energyevals.tools.system_tool import SystemTool
 
 
 class TestSystemToolInit:

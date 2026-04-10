@@ -3,10 +3,10 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from energbench.agent.providers import ProviderResponse, ToolCall, get_provider
-from energbench.agent.react_agent import ReActAgent
-from energbench.agent.schema import StepType
-from energbench.tools.base_tool import BaseTool, ToolRegistry, tool_method
+from energyevals.agent.providers import ProviderResponse, ToolCall, get_provider
+from energyevals.agent.react_agent import ReActAgent
+from energyevals.agent.schema import StepType
+from energyevals.tools.base_tool import BaseTool, ToolRegistry, tool_method
 
 
 class SimpleTestTool(BaseTool):

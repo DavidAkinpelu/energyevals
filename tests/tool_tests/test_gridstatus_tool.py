@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 import requests
 
-from energbench.tools.gridstatus_tool import GridStatusAPITool
+from energyevals.tools.gridstatus_tool import GridStatusAPITool
 
 
 class TestGridStatusAPIToolUnit:
@@ -56,7 +56,7 @@ class TestGridStatusAPIToolUnit:
             ]
         }
 
-        mocker.patch("energbench.tools.gridstatus_tool.requests.get", return_value=mock_response)
+        mocker.patch("energyevals.tools.gridstatus_tool.requests.get", return_value=mock_response)
 
         tool = GridStatusAPITool(api_key="test_key")
         result = tool.list_gridstatus_datasets()
@@ -77,7 +77,7 @@ class TestGridStatusAPIToolUnit:
             "row_count": 1000,
         }
 
-        mocker.patch("energbench.tools.gridstatus_tool.requests.get", return_value=mock_response)
+        mocker.patch("energyevals.tools.gridstatus_tool.requests.get", return_value=mock_response)
 
         tool = GridStatusAPITool(api_key="test_key")
         result = tool.inspect_gridstatus_dataset(dataset_id="ercot_lmp")
@@ -98,7 +98,7 @@ class TestGridStatusAPIToolUnit:
             ],
         }
 
-        mocker.patch("energbench.tools.gridstatus_tool.requests.get", return_value=mock_response)
+        mocker.patch("energyevals.tools.gridstatus_tool.requests.get", return_value=mock_response)
 
         tool = GridStatusAPITool(api_key="test_key")
         result = tool.query_gridstatus_dataset(
@@ -117,7 +117,7 @@ class TestGridStatusAPIToolUnit:
         mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Not Found")
         mock_response.text = "Dataset not found"
 
-        mocker.patch("energbench.tools.gridstatus_tool.requests.get", return_value=mock_response)
+        mocker.patch("energyevals.tools.gridstatus_tool.requests.get", return_value=mock_response)
 
         tool = GridStatusAPITool(api_key="test_key")
         result = tool.query_gridstatus_dataset(dataset_id="invalid")

@@ -1,0 +1,51 @@
+# Benchmark configuration: WITHOUT gridstatus API tool
+# Same as with_tools but excludes the gridstatus_api_tool.
+# Uses the question set that does not depend on gridstatus data.
+
+models:
+  - provider: anthropic
+    model: claude-sonnet-4-6
+    effort: low
+  - provider: openai
+    model: gpt-5.2
+    effort: low
+  - provider: openai
+    model: gpt-5-mini
+    effort: low
+  - provider: google
+    model: gemini-3.1-pro-preview
+    effort: low
+  - provider: deepinfra
+    model: deepseek-ai/DeepSeek-V3.2
+  - provider: deepinfra
+    model: moonshotai/Kimi-K2.5
+  - provider: deepinfra
+    model: Qwen/Qwen3-Max-Thinking
+
+questions_file: data/evals_full_dataset_without_gridstatus.csv
+
+observability:
+  enabled: true
+  output_dir: ./benchmark_traces
+  run_name: without_gridstatus
+
+mcp:
+  enabled: true
+
+agent:
+  max_iterations: 25
+  num_trials: 1
+  shuffle: true
+  seed_mode: rotate
+  seed: 101
+  tool_timeout: 240.0
+  max_tool_result_chars: 250000
+
+tools:
+  enabled: true
+  include: []
+  exclude: [gridstatus_api_tool]
+
+output:
+  results_dir: ./benchmark_results
+  save_answers: true

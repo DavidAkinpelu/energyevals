@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from energbench.agent.providers import Message
-from energbench.agent.providers.deepinfra_provider import DeepInfraProvider
+from energyevals.agent.providers import Message
+from energyevals.agent.providers.deepinfra_provider import DeepInfraProvider
 
 
 class TestDeepInfraProviderUnit:

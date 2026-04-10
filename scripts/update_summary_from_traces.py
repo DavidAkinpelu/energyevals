@@ -11,7 +11,7 @@ import argparse
 import sys
 from pathlib import Path
 
-EVAL_MODULE_DIR = Path(__file__).parent.parent / "energbench" / "evaluation"
+EVAL_MODULE_DIR = Path(__file__).parent.parent / "energyevals" / "evaluation"
 sys.path.insert(0, str(EVAL_MODULE_DIR))
 
 from summary_postprocess import update_summary_from_traces

@@ -1,0 +1,87 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 4.0,
+    "reasoning": "The agent framed the problem correctly — it sought official NYISO documentation on interconnection process fees and decision points rather than relying on tertiary summaries. The agent targeted appropriate primary sources (UG-21 TEI Guide, NYISO interconnection process report) and also searched for tariff references (OATT Attachment HH) and application/study deposit language, which are the right document types to extract fee schedules and deposit rules. Tool usage appears logical and consistent: web/document searches followed by retrievals of relevant PDFs. Minor gap: the trace does not show an explicit retrieval of \"Manual 23\" (the suggested specific source), so there is a small risk a definitive fee table in that manual could have been missed. Overall the approach is expert-like with only a minor omission.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 0.6,
+    "reasoning": "I compared each expected attribute to the agent's answer. The agent correctly reported the application fee and CRIS-only amount (attribute 1). The agent omitted the specific study deposit tier amounts and CRIS-only study deposit (attribute 2), so that is not found. For RD1 (attribute 3) the agent provided the $4,000/MW amount and the 5-business-day decision period but did not state the CRIS-only exception, so the expected composite attribute is not fully met. For Decision Point 2 (attribute 4) the agent matched the greater-of-$4,000/MW-or-20% rule and the 10-business-day timing. For the iterative final security deposit (attribute 5) the agent matched the 100% of cost estimates from Phase 1 and Phase 2. Using these matches, 3 of 5 attributes were satisfied, giving an alignment score of 0.6.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 2.0,
+    "reasoning": "The agent's answer presents many detailed fee figures and procedural timings but fails to cite any primary authoritative sources (NYISO manuals, UG21, Manual 23, or the NYISO OATT Attachment HH and Transmission Owner protocols). The suggested authoritative sources for this question are NYISO process manuals (Manual 23) and the UG21 guide and the NYISO tariff/Attachment HH; none are explicitly referenced or quoted. That omission prevents verification of the specific dollar amounts and percentages provided. Several red flags and likely inaccuracies are present: e.g. the stated RD1 = $4,000/MW, RD2 rules, the $10,000/MW site-control deposit with given min/max, and the fixed application and fast-track fees are presented as if normative without citation to the tariff or NYISO guidance; NYISO fee structures historically vary by program and are specified in tariff attachments or manuals. The answer also conflates or incompletely describes charge types (study deposits vs. readiness/security deposits vs. withdrawal penalties) without pointing to the sections that define calculation methods, refund/true-up rules, or acceptable instruments (letter of credit vs. cash), which are normally specified in the manuals/tariff. Expected authoritative sources that would validate or correct these claims include: NYISO OATT (Attachment HH and any transition provisions), NYISO Interconnection Procedures Manual (Manual 23), the NYISO Implementing Guide UG21 (or similarly named interconnection guide), and TO interconnection procedures or cost allocation tables. Given the lack of citations and several plausibility concerns, the source validity rating is low (2). The agent should have cited the exact NYISO documents and tariff sections (with dates/versions) for each fee/decision point or clearly marked figures as illustrative estimates rather than definitive tariffed values.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 4,
+    "reasoning": "The agent framed the problem correctly — it sought official NYISO documentation on interconnection process fees and decision points rather than relying on tertiary summaries. The agent targeted appropriate primary sources (UG-21 TEI Guide, NYISO interconnection process report) and also searched for tariff references (OATT Attachment HH) and application/study deposit language, which are the right document types to extract fee schedules and deposit rules. Tool usage appears logical and consistent: web/document searches followed by retrievals of relevant PDFs. Minor gap: the trace does not show an explicit retrieval of \"Manual 23\" (the suggested specific source), so there is a small risk a definitive fee table in that manual could have been missed. Overall the approach is expert-like with only a minor omission."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 3,
+    "alignment_score": 0.6,
+    "attribute_details": [
+      {
+        "name": "Application fee amount and CRIS-only exception",
+        "expected": "$10,000 per project application; $5,000 for CRIS-only projects",
+        "found": true,
+        "agent_value": "$10,000 application fee; $5,000 for CRIS-only requests (agent also mentions a separate $500 fast-track fee)"
+      },
+      {
+        "name": "Study deposit tiers by project size and CRIS-only exception",
+        "expected": "$100,000 for projects <80 MW; $150,000 for projects >=80 MW and <200 MW; $250,000 for projects >=200 MW; $50,000 for CRIS-only projects",
+        "found": false,
+        "agent_value": null
+      },
+      {
+        "name": "Readiness deposit at Decision Point 1 and CRIS-only exception",
+        "expected": "Readiness deposit of $4,000 per MW due 5 business days after customer engagement window; does not apply to CRIS-only projects",
+        "found": false,
+        "agent_value": "RD1 = $4,000 per MW (agent states Decision Period 1 is 5 business days) — agent does not state CRIS-only exemption"
+      },
+      {
+        "name": "Decision Point 2 study deposit calculation",
+        "expected": "Study deposit required 10 business days after Phase 1 study equal to the maximum of $4,000 per MW and 20% of project cost estimates determined during Phase 1",
+        "found": true,
+        "agent_value": "RD2 = greater of $4,000/MW or 20% of Phase 1 cost estimate (agent indicates Decision Period 2 is 10 business days)"
+      },
+      {
+        "name": "Iterative final decision security deposit",
+        "expected": "Security deposit equal to 100% of cost estimates allocated to the project from Phase 1 and Phase 2 studies (due during iterative final decision period)",
+        "found": true,
+        "agent_value": "Security deposit = 100% of cost estimates for SUFs, SDUs, and CTOAFs from Phase 1 and Phase 2"
+      }
+    ],
+    "reasoning": "I compared each expected attribute to the agent's answer. The agent correctly reported the application fee and CRIS-only amount (attribute 1). The agent omitted the specific study deposit tier amounts and CRIS-only study deposit (attribute 2), so that is not found. For RD1 (attribute 3) the agent provided the $4,000/MW amount and the 5-business-day decision period but did not state the CRIS-only exception, so the expected composite attribute is not fully met. For Decision Point 2 (attribute 4) the agent matched the greater-of-$4,000/MW-or-20% rule and the 10-business-day timing. For the iterative final security deposit (attribute 5) the agent matched the 100% of cost estimates from Phase 1 and Phase 2. Using these matches, 3 of 5 attributes were satisfied, giving an alignment score of 0.6."
+  },
+  "raw_sources": {
+    "source_validity": 2,
+    "reasoning": "The agent's answer presents many detailed fee figures and procedural timings but fails to cite any primary authoritative sources (NYISO manuals, UG21, Manual 23, or the NYISO OATT Attachment HH and Transmission Owner protocols). The suggested authoritative sources for this question are NYISO process manuals (Manual 23) and the UG21 guide and the NYISO tariff/Attachment HH; none are explicitly referenced or quoted. That omission prevents verification of the specific dollar amounts and percentages provided. Several red flags and likely inaccuracies are present: e.g. the stated RD1 = $4,000/MW, RD2 rules, the $10,000/MW site-control deposit with given min/max, and the fixed application and fast-track fees are presented as if normative without citation to the tariff or NYISO guidance; NYISO fee structures historically vary by program and are specified in tariff attachments or manuals. The answer also conflates or incompletely describes charge types (study deposits vs. readiness/security deposits vs. withdrawal penalties) without pointing to the sections that define calculation methods, refund/true-up rules, or acceptable instruments (letter of credit vs. cash), which are normally specified in the manuals/tariff. Expected authoritative sources that would validate or correct these claims include: NYISO OATT (Attachment HH and any transition provisions), NYISO Interconnection Procedures Manual (Manual 23), the NYISO Implementing Guide UG21 (or similarly named interconnection guide), and TO interconnection procedures or cost allocation tables. Given the lack of citations and several plausibility concerns, the source validity rating is low (2). The agent should have cited the exact NYISO documents and tariff sections (with dates/versions) for each fee/decision point or clearly marked figures as illustrative estimates rather than definitive tariffed values."
+  },
+  "metrics": {
+    "tool_calls": 7,
+    "total_tokens": 247910,
+    "duration_seconds": 96.8433473110199,
+    "latency": {
+      "wall_clock_ms": 96824.38111305237,
+      "llm_thinking_ms": 88848.33121299744,
+      "tool_execution_ms": 7976.049900054932,
+      "per_tool_ms": {
+        "search_documents": 1407.0515632629395,
+        "search_web": 3083.2035541534424,
+        "get_page_contents": 3485.79478263855
+      }
+    },
+    "cost": {
+      "input_tokens": 246289,
+      "output_tokens": 1621,
+      "cached_tokens": 0,
+      "reasoning_tokens": 0,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

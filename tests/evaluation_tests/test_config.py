@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from energbench.evaluation.config import load_eval_config
+from energyevals.evaluation.config import load_eval_config
 
 
 def test_load_eval_config_defaults_to_gpt5_mini(tmp_path: Path) -> None:

@@ -1,0 +1,85 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 5.0,
+    "reasoning": "Expert-like. The agent framed the problem correctly (seeking ISO process manuals and specific study/deposit fees tied to decision points), targeted authoritative sources (nyiso.com and regulatory domains), and used focused web-search queries for both general process documentation and specific deposit amounts (RD1/RD2/WD/withdrawal penalties). Tool usage was appropriate (search_web with domain constraints and targeted keywords). The steps follow the suggested approach of locating NYISO manuals and extracting fee schedules; no significant gaps apparent from the trace.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 0.8,
+    "reasoning": "I compared each canonical attribute to the agent's answer. Attributes 1, 2, 4 and 5 match the agent's statements (values and formulas align within tolerance). Attribute 3 (RD1) is partially present: the agent gives the $4,000/MW RD1 amount but does not state the specific timing requirement (5 business days after customer engagement window) nor explicitly state the CRIS-only exemption; therefore it is marked as not found. Alignment score = matched/total = 4/5 = 0.8.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 3.0,
+    "reasoning": "The agent cites appropriate, authoritative NYISO materials (Order No. 2023 compliance materials and NYISO IITF/Operating Committee slide decks from Dec 2023–Mar 2024), which are plausible primary sources for proposed interconnection fees and decision-point mechanics. However, the answer fails to provide direct citations (document names, dates, slide numbers, presentation titles, or links) or reference the NYISO tariff/Attachment HH, the official governing text. The suggested steps specifically requested NYISO process manuals (e.g., Manual 23) and guide UG21; those were not explicitly identified or referenced, so alignment with the requested sources is incomplete. The numeric amounts appear consistent with what NYISO presented in compliance slide decks, making the claims plausible and appropriately targeted for the question, but without pinpointed citations the reader cannot readily verify exact wording, exception conditions, or final tariff adoption. To be fully authoritative the answer should (a) cite the exact NYISO documents (tariff redline/clean Attachment HH, Manual 23 / UG21 references if applicable) with dates and slide/page numbers or links, and (b) note whether amounts are from proposed compliance filings versus final tariff language. Missing those specifics reduces the evidentiary reliability despite correct overall sourcing direction.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 5,
+    "reasoning": "Expert-like. The agent framed the problem correctly (seeking ISO process manuals and specific study/deposit fees tied to decision points), targeted authoritative sources (nyiso.com and regulatory domains), and used focused web-search queries for both general process documentation and specific deposit amounts (RD1/RD2/WD/withdrawal penalties). Tool usage was appropriate (search_web with domain constraints and targeted keywords). The steps follow the suggested approach of locating NYISO manuals and extracting fee schedules; no significant gaps apparent from the trace."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 4,
+    "alignment_score": 0.8,
+    "attribute_details": [
+      {
+        "name": "Application fee amount and CRIS-only exception",
+        "expected": "$10,000 per project application; $5,000 for CRIS-only projects",
+        "found": true,
+        "agent_value": "$10,000 per Interconnection Request; $5,000 if CRIS-only project"
+      },
+      {
+        "name": "Study deposit tiers by project size and CRIS-only exception",
+        "expected": "$100,000 for projects <80 MW; $150,000 for projects >=80 MW and <200 MW; $250,000 for projects >=200 MW; $50,000 for CRIS-only projects",
+        "found": true,
+        "agent_value": "CRIS-only: $50,000; <80 MW: $100,000; ≥80 MW and <200 MW: $150,000; ≥200 MW: $250,000"
+      },
+      {
+        "name": "Readiness deposit at Decision Point 1 and CRIS-only exception",
+        "expected": "Readiness deposit of $4,000 per MW due 5 business days after customer engagement window; does not apply to CRIS-only projects",
+        "found": false,
+        "agent_value": "RD1 = $4,000 per MW (described as the Phase 1/readiness deposit). Timing (5 business days) and explicit CRIS-only exemption not stated in agent text."
+      },
+      {
+        "name": "Decision Point 2 study deposit calculation",
+        "expected": "Study deposit required 10 business days after Phase 1 study equal to the maximum of $4,000 per MW and 20% of project cost estimates determined during Phase 1",
+        "found": true,
+        "agent_value": "RD2 = greater of (i) RD1 ($4,000/MW) and (ii) 20% of the Phase 1 cost estimate for Local SUFs and CTOAFs"
+      },
+      {
+        "name": "Iterative final decision security deposit",
+        "expected": "Security deposit equal to 100% of cost estimates allocated to the project from Phase 1 and Phase 2 studies (due during iterative final decision period)",
+        "found": true,
+        "agent_value": "Security amount = 100% of the cost estimate of SUFs, SDUs and CTOAFs identified in Phase 1 and Phase 2"
+      }
+    ],
+    "reasoning": "I compared each canonical attribute to the agent's answer. Attributes 1, 2, 4 and 5 match the agent's statements (values and formulas align within tolerance). Attribute 3 (RD1) is partially present: the agent gives the $4,000/MW RD1 amount but does not state the specific timing requirement (5 business days after customer engagement window) nor explicitly state the CRIS-only exemption; therefore it is marked as not found. Alignment score = matched/total = 4/5 = 0.8."
+  },
+  "raw_sources": {
+    "source_validity": 3,
+    "reasoning": "The agent cites appropriate, authoritative NYISO materials (Order No. 2023 compliance materials and NYISO IITF/Operating Committee slide decks from Dec 2023–Mar 2024), which are plausible primary sources for proposed interconnection fees and decision-point mechanics. However, the answer fails to provide direct citations (document names, dates, slide numbers, presentation titles, or links) or reference the NYISO tariff/Attachment HH, the official governing text. The suggested steps specifically requested NYISO process manuals (e.g., Manual 23) and guide UG21; those were not explicitly identified or referenced, so alignment with the requested sources is incomplete. The numeric amounts appear consistent with what NYISO presented in compliance slide decks, making the claims plausible and appropriately targeted for the question, but without pinpointed citations the reader cannot readily verify exact wording, exception conditions, or final tariff adoption. To be fully authoritative the answer should (a) cite the exact NYISO documents (tariff redline/clean Attachment HH, Manual 23 / UG21 references if applicable) with dates and slide/page numbers or links, and (b) note whether amounts are from proposed compliance filings versus final tariff language. Missing those specifics reduces the evidentiary reliability despite correct overall sourcing direction."
+  },
+  "metrics": {
+    "tool_calls": 2,
+    "total_tokens": 61189,
+    "duration_seconds": 51.85892724990845,
+    "latency": {
+      "wall_clock_ms": 51841.76826477051,
+      "llm_thinking_ms": 40644.62327957153,
+      "tool_execution_ms": 11197.144985198975,
+      "per_tool_ms": {
+        "search_web": 11197.144985198975
+      }
+    },
+    "cost": {
+      "input_tokens": 58741,
+      "output_tokens": 2448,
+      "cached_tokens": 29184,
+      "reasoning_tokens": 384,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

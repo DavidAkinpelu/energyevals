@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, Mock
 import pytest
 import requests
 
-from energbench.tools.dockets import NewYorkDocketTool
+from energyevals.tools.dockets import NewYorkDocketTool
 
 
 class TestNewYorkDocketToolUnit:
@@ -70,7 +70,7 @@ class TestNewYorkDocketToolUnit:
         mock_session_instance.get.side_effect = [mock_search_resp, mock_data_resp]
 
         mocker.patch(
-            "energbench.tools.dockets.new_york_tool.requests.Session",
+            "energyevals.tools.dockets.new_york_tool.requests.Session",
             return_value=mock_session_instance,
         )
         mocker.patch.object(NewYorkDocketTool, "_save_csv", return_value=None)
@@ -103,7 +103,7 @@ class TestNewYorkDocketToolUnit:
         mock_session_instance.get.return_value = mock_search_resp
 
         mocker.patch(
-            "energbench.tools.dockets.new_york_tool.requests.Session",
+            "energyevals.tools.dockets.new_york_tool.requests.Session",
             return_value=mock_session_instance,
         )
 
@@ -124,7 +124,7 @@ class TestNewYorkDocketToolUnit:
         )
 
         mocker.patch(
-            "energbench.tools.dockets.new_york_tool.requests.Session",
+            "energyevals.tools.dockets.new_york_tool.requests.Session",
             return_value=mock_session_instance,
         )
 
@@ -157,7 +157,7 @@ class TestNewYorkDocketToolUnit:
         mock_session_instance.get.side_effect = Exception("SSL certificate error")
 
         mocker.patch(
-            "energbench.tools.dockets.new_york_tool.requests.Session",
+            "energyevals.tools.dockets.new_york_tool.requests.Session",
             return_value=mock_session_instance,
         )
 

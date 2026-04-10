@@ -2,7 +2,7 @@ from typing import Literal
 
 import pytest
 
-from energbench.tools.base_tool import BaseTool, ToolRegistry, ToolResult, tool_method
+from energyevals.tools.base_tool import BaseTool, ToolRegistry, ToolResult, tool_method
 
 
 class TestToolResult:
@@ -663,7 +663,7 @@ class TestAutoSchemaRegression:
     """
 
     def test_gridstatus_list_datasets_schema(self):
-        from energbench.tools.gridstatus_tool import GridStatusAPITool
+        from energyevals.tools.gridstatus_tool import GridStatusAPITool
 
         tool = GridStatusAPITool()
         td = next(t for t in tool.get_tools() if t.name == "list_gridstatus_datasets")
@@ -672,7 +672,7 @@ class TestAutoSchemaRegression:
         assert "datasets" in td.description.lower()
 
     def test_gridstatus_inspect_dataset_schema(self):
-        from energbench.tools.gridstatus_tool import GridStatusAPITool
+        from energyevals.tools.gridstatus_tool import GridStatusAPITool
 
         tool = GridStatusAPITool()
         td = next(t for t in tool.get_tools() if t.name == "inspect_gridstatus_dataset")
@@ -682,7 +682,7 @@ class TestAutoSchemaRegression:
         assert schema["properties"]["dataset_id"]["type"] == "string"
 
     def test_gridstatus_query_dataset_schema(self):
-        from energbench.tools.gridstatus_tool import GridStatusAPITool
+        from energyevals.tools.gridstatus_tool import GridStatusAPITool
 
         tool = GridStatusAPITool()
         td = next(t for t in tool.get_tools() if t.name == "query_gridstatus_dataset")
@@ -703,7 +703,7 @@ class TestAutoSchemaRegression:
 
 
     def test_battery_optimization_schema(self):
-        from energbench.tools.battery_tool import BatteryOptimizationTool
+        from energyevals.tools.battery_tool import BatteryOptimizationTool
 
         tool = BatteryOptimizationTool()
         td = tool.get_tools()[0]
@@ -724,7 +724,7 @@ class TestAutoSchemaRegression:
 
 
     def test_tariffs_schema(self):
-        from energbench.tools.tariffs_tool import TariffsTool
+        from energyevals.tools.tariffs_tool import TariffsTool
 
         tool = TariffsTool()
         td = tool.get_tools()[0]
@@ -750,7 +750,7 @@ class TestAutoSchemaRegression:
 
 
     def test_search_web_schema(self):
-        from energbench.tools.search_tool import SearchTool
+        from energyevals.tools.search_tool import SearchTool
 
         tool = SearchTool()
         td = next(t for t in tool.get_tools() if t.name == "search_web")
@@ -771,7 +771,7 @@ class TestAutoSchemaRegression:
         assert schema["properties"]["include_domains"]["type"] == "array"
 
     def test_get_page_contents_schema(self):
-        from energbench.tools.search_tool import SearchTool
+        from energyevals.tools.search_tool import SearchTool
 
         tool = SearchTool()
         td = next(t for t in tool.get_tools() if t.name == "get_page_contents")
@@ -787,7 +787,7 @@ class TestAutoSchemaRegression:
 
 
     def test_openweather_current_weather_schema(self):
-        from energbench.tools.openweather_tool import OpenWeatherTool
+        from energyevals.tools.openweather_tool import OpenWeatherTool
 
         tool = OpenWeatherTool()
         td = next(t for t in tool.get_tools() if t.name == "get_current_weather")
@@ -800,7 +800,7 @@ class TestAutoSchemaRegression:
 
 
     def test_ferc_docket_schema(self):
-        from energbench.tools.dockets.ferc_tool import FERCDocketTool
+        from energyevals.tools.dockets.ferc_tool import FERCDocketTool
 
         tool = FERCDocketTool()
         td = tool.get_tools()[0]
@@ -819,8 +819,8 @@ class TestAutoSchemaRegression:
 
 
     def test_system_tool_schemas(self):
-        from energbench.tools.constants import SYSTEM_COMMAND_TIMEOUT, SYSTEM_MAX_RESULTS
-        from energbench.tools.system_tool import SystemTool
+        from energyevals.tools.constants import SYSTEM_COMMAND_TIMEOUT, SYSTEM_MAX_RESULTS
+        from energyevals.tools.system_tool import SystemTool
 
         tool = SystemTool()
         tools_by_name = {t.name: t for t in tool.get_tools()}
@@ -842,7 +842,7 @@ class TestAutoSchemaRegression:
 
 
     def test_renewables_solar_schema(self):
-        from energbench.tools.renewables_tool import RenewablesTool
+        from energyevals.tools.renewables_tool import RenewablesTool
 
         tool = RenewablesTool()
         td = next(t for t in tool.get_tools() if t.name == "get_solar_profile")

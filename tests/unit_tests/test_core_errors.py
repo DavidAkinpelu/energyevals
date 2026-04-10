@@ -1,23 +1,23 @@
-from energbench.core.errors import (
+from energyevals.core.errors import (
     APIError,
     ConfigurationError,
-    EnergBenchError,
+    EnergyEvalsError,
     ProviderError,
     ToolError,
 )
 
 
-def test_energbench_error_basic():
-    """Test basic EnergBenchError creation."""
-    error = EnergBenchError("Test error")
+def test_energyevals_error_basic():
+    """Test basic EnergyEvalsError creation."""
+    error = EnergyEvalsError("Test error")
     assert str(error) == "Test error"
     assert error.message == "Test error"
     assert error.context == {}
 
 
-def test_energbench_error_with_context():
-    """Test EnergBenchError with context."""
-    error = EnergBenchError("Test error", context={"key": "value"})
+def test_energyevals_error_with_context():
+    """Test EnergyEvalsError with context."""
+    error = EnergyEvalsError("Test error", context={"key": "value"})
     assert "Test error" in str(error)
     assert "key=value" in str(error)
     assert error.context == {"key": "value"}
@@ -71,7 +71,7 @@ def test_configuration_error():
 
 def test_error_inheritance():
     """Test error inheritance hierarchy."""
-    assert issubclass(ToolError, EnergBenchError)
+    assert issubclass(ToolError, EnergyEvalsError)
     assert issubclass(APIError, ToolError)
-    assert issubclass(ProviderError, EnergBenchError)
-    assert issubclass(ConfigurationError, EnergBenchError)
+    assert issubclass(ProviderError, EnergyEvalsError)
+    assert issubclass(ConfigurationError, EnergyEvalsError)
