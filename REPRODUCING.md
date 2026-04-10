@@ -13,14 +13,16 @@ All raw outputs from our experiments are in `public_release/public_release/`. Th
 | `evals_dataset_full_30.csv` | 30 evaluation questions with ground-truth answers and approaches |
 | `evals_dataset_questions_only_212.csv` | Full question bank (212 questions, no answers) |
 
+The full benchmark uses 212 questions total: 23 questions requiring the GridStatus API (`evals_full_dataset_with_gridstatus.csv`) and 189 questions that do not (`evals_full_dataset_without_gridstatus.csv`). Of these, 30 were selected for evaluation with ground-truth answers.
+
 ### Traces
 
-Full agent execution traces capturing every ReAct step (thought, action, observation), tool inputs/outputs, token usage, and latency. One JSON file per question per model.
+Full agent execution traces capturing every ReAct step (thought, action, observation), tool inputs/outputs, token usage, and latency. One JSON file per question per model. The public release contains traces for the 30 evaluated questions, not all 212.
 
 | Directory | Description |
 |-----------|-------------|
-| `traces/with_tools_final/` | 30 questions x 7 models (210 traces) -- full tool suite |
-| `traces/without_tools_final/` | 7 questions x 7 models (49 traces) -- limited tools |
+| `traces/with_tools_final/` | 30 evaluated questions x 7 models (210 traces) -- full tool suite |
+| `traces/without_tools_final/` | 7 evaluated questions x 7 models (49 traces) -- limited tools |
 
 Each trace directory is organized by model (e.g., `anthropic_claude-sonnet-4-6/`, `openai_gpt-5.2/`).
 
@@ -90,9 +92,9 @@ cp .env.example .env
 
 There are three benchmark configurations and one evaluation configuration.
 
-### Experiment 1: With grid status (30 questions)
+### Experiment 1: With GridStatus (23 questions)
 
-Runs all 7 models against 30 energy-domain questions with the full tool suite (37 tools including GridStatus).
+Runs all 7 models against the 23 questions requiring the GridStatus API, with the full tool suite (37 tools including GridStatus).
 
 ```bash
 python scripts/run_benchmark.py --config configs/benchmark_config_with_gridstatus.yaml
