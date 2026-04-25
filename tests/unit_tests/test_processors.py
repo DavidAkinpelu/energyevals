@@ -2,7 +2,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from energbench.agent.processors import CSVProcessor, ImageProcessor, ResultProcessor
+from energyevals.agent.processors import CSVProcessor, ImageProcessor, ResultProcessor
 
 
 class TestCSVProcessor:

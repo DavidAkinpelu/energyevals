@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from energbench.agent.providers import Message
-from energbench.agent.providers.anthropic_provider import AnthropicProvider
+from energyevals.agent.providers import Message
+from energyevals.agent.providers.anthropic_provider import AnthropicProvider
 
 
 class TestAnthropicProviderUnit:
@@ -35,6 +35,56 @@ class TestAnthropicProviderUnit:
         assert result.content == "Hi"
         assert result.input_tokens == 10
         assert result.output_tokens == 5
+
+    @pytest.mark.asyncio
+    async def test_default_effort_sends_low(self, monkeypatch):
+        """complete() always sends output_config={"effort": "low"} by default."""
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+        provider = AnthropicProvider(model="claude-sonnet-4-20250514")
+
+        mock_block = MagicMock()
+        mock_block.type = "text"
+        mock_block.text = "ok"
+
+        mock_resp = MagicMock()
+        mock_resp.content = [mock_block]
+        mock_resp.usage = MagicMock(input_tokens=5, output_tokens=2)
+        mock_resp.usage.cache_read_input_tokens = 0
+        mock_resp.model = "claude-sonnet-4-20250514"
+        mock_resp.stop_reason = "end_turn"
+
+        provider.client = MagicMock()
+        provider.client.messages.create = AsyncMock(return_value=mock_resp)
+
+        await provider.complete([Message(role="user", content="hi")])
+
+        call_kwargs = provider.client.messages.create.call_args.kwargs
+        assert call_kwargs.get("output_config") == {"effort": "low"}
+
+    @pytest.mark.asyncio
+    async def test_custom_effort_passed_to_api(self, monkeypatch):
+        """complete() passes the specified effort value in output_config."""
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+        provider = AnthropicProvider(model="claude-opus-4-20250514", effort="high")
+
+        mock_block = MagicMock()
+        mock_block.type = "text"
+        mock_block.text = "ok"
+
+        mock_resp = MagicMock()
+        mock_resp.content = [mock_block]
+        mock_resp.usage = MagicMock(input_tokens=5, output_tokens=2)
+        mock_resp.usage.cache_read_input_tokens = 0
+        mock_resp.model = "claude-opus-4-20250514"
+        mock_resp.stop_reason = "end_turn"
+
+        provider.client = MagicMock()
+        provider.client.messages.create = AsyncMock(return_value=mock_resp)
+
+        await provider.complete([Message(role="user", content="hi")])
+
+        call_kwargs = provider.client.messages.create.call_args.kwargs
+        assert call_kwargs.get("output_config") == {"effort": "high"}
 
 
 @pytest.mark.integration

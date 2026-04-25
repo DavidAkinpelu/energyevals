@@ -1,0 +1,87 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 4.0,
+    "reasoning": "The agent framed the problem correctly—seeking fees tied to decision points in NYISO's interconnection process—and used relevant tools (document and web search). The chosen queries are appropriate and reference tariff material (OATT Attachment X) which is a sensible source. However, the agent did not explicitly target the two ground-truth primary sources named by the expert (Process Manual 23 and UG-21), nor did the trace show retrieval of those specific documents. To reach expert-level confidence the agent should have included direct searches for and extraction from NYISO Process Manual 23 and Guide UG-21 (and relevant tariff sections), and then enumerated fees tied to each decision point. Overall the approach is solid but misses a key, explicit step to fetch the authoritative manuals.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 0.2,
+    "reasoning": "I compared each expected attribute to the agent's answer. The agent correctly stated the $10,000 application fee but omitted the $5,000 CRIS-only exception, so the first attribute is not matched. The agent did not provide the explicit study-deposit tier amounts or the $50,000 CRIS-only study deposit, so the second attribute is not matched. For the Decision Point 1 readiness deposit, the agent gave the correct $4,000/MW amount and CRIS exception but omitted the required timing (due 5 business days after customer engagement window), so it is not fully matched. For Decision Point 2, the agent correctly described the calculation (greater of $4,000/MW or 20% of Phase 1 cost estimate) but failed to state the timing (10 business days after Phase 1), so it is not fully matched. The iterative final decision security deposit was accurately described as 100% of allocated cost estimates from Phase 1 and Phase 2 and payment/security requirements, so that attribute is matched. Alignment score is matched_attributes/total_attributes = 1/5 = 0.2.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 2.0,
+    "reasoning": "The agent references authoritative-sounding sources (NYISO OATT, FERC Order No. 2023, Attachment HH) which are the correct high-level authorities for NYISO interconnection fees, but it fails to explicitly cite the concrete source documents requested in the prompt (NYISO Process Manual 23 and UG-21) or provide direct citations/links to the specific OATT attachments, tariff sheets, or NYISO compliance filings that substantiate the numeric fee amounts. The answer mixes legacy and new-process terminology and gives precise fee figures (e.g., $4,000/MW, $10,000 application fee, 20% of Phase 1 cost estimate) without attribution to a specific NYISO tariff section, manual page, or compliance filing; that undermines verifiability. Some claimed details (such as the exact $4,000/MW readiness deposit, the $10,000 application fee, and the stated 100% payment timing) are plausibly derived from recent NYISO/Order 2023 changes but must be confirmed against Attachment HH text, NYISO compliance filings, and the specified Process Manuals (PM-23 and UG-21) — which the agent did not quote. The answer also omits mention of any NYISO filing dates, effective dates, or whether values are caps, minimums, or example estimates, and it does not indicate applicability distinctions (e.g., CRIS-only exceptions) with source references. In sum: the referenced authorities are appropriate but under-cited; the numeric claims require direct citation to NYISO Process Manual 23, UG-21, the NYISO OATT Attachment HH language, or the NYISO FERC compliance filing to be acceptable by expert standards.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 4,
+    "reasoning": "The agent framed the problem correctly—seeking fees tied to decision points in NYISO's interconnection process—and used relevant tools (document and web search). The chosen queries are appropriate and reference tariff material (OATT Attachment X) which is a sensible source. However, the agent did not explicitly target the two ground-truth primary sources named by the expert (Process Manual 23 and UG-21), nor did the trace show retrieval of those specific documents. To reach expert-level confidence the agent should have included direct searches for and extraction from NYISO Process Manual 23 and Guide UG-21 (and relevant tariff sections), and then enumerated fees tied to each decision point. Overall the approach is solid but misses a key, explicit step to fetch the authoritative manuals."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 1,
+    "alignment_score": 0.2,
+    "attribute_details": [
+      {
+        "name": "Application fee amount and CRIS-only exception",
+        "expected": "$10,000 per project application; $5,000 for CRIS-only projects",
+        "found": false,
+        "agent_value": "$10,000 (non-refundable); no CRIS-only $5,000 exception mentioned"
+      },
+      {
+        "name": "Study deposit tiers by project size and CRIS-only exception",
+        "expected": "$100,000 for projects <80 MW; $150,000 for projects >=80 MW and <200 MW; $250,000 for projects >=200 MW; $50,000 for CRIS-only projects",
+        "found": false,
+        "agent_value": "Referenced a required study deposit based on size (no tier amounts provided); legacy mention of $30,000 refundable for Feasibility for >20 MW"
+      },
+      {
+        "name": "Readiness deposit at Decision Point 1 and CRIS-only exception",
+        "expected": "Readiness deposit of $4,000 per MW due 5 business days after customer engagement window; does not apply to CRIS-only projects",
+        "found": false,
+        "agent_value": "$4,000 per MW; noted not applicable for CRIS-only projects (timing of due date not specified)"
+      },
+      {
+        "name": "Decision Point 2 study deposit calculation",
+        "expected": "Study deposit required 10 business days after Phase 1 study equal to the maximum of $4,000 per MW and 20% of project cost estimates determined during Phase 1",
+        "found": false,
+        "agent_value": "Deposit equals the greater of $4,000/MW or 20% of Phase 1 cost estimate (timing of 10 business days after Phase 1 not specified)"
+      },
+      {
+        "name": "Iterative final decision security deposit",
+        "expected": "Security deposit equal to 100% of cost estimates allocated to the project from Phase 1 and Phase 2 studies (due during iterative final decision period)",
+        "found": true,
+        "agent_value": "100% of the cost estimate for all identified SUFs, SDUs, and CTOAFs from Phase 1 and Phase 2; must be paid/post security to proceed to LGIA/SGIA"
+      }
+    ],
+    "reasoning": "I compared each expected attribute to the agent's answer. The agent correctly stated the $10,000 application fee but omitted the $5,000 CRIS-only exception, so the first attribute is not matched. The agent did not provide the explicit study-deposit tier amounts or the $50,000 CRIS-only study deposit, so the second attribute is not matched. For the Decision Point 1 readiness deposit, the agent gave the correct $4,000/MW amount and CRIS exception but omitted the required timing (due 5 business days after customer engagement window), so it is not fully matched. For Decision Point 2, the agent correctly described the calculation (greater of $4,000/MW or 20% of Phase 1 cost estimate) but failed to state the timing (10 business days after Phase 1), so it is not fully matched. The iterative final decision security deposit was accurately described as 100% of allocated cost estimates from Phase 1 and Phase 2 and payment/security requirements, so that attribute is matched. Alignment score is matched_attributes/total_attributes = 1/5 = 0.2."
+  },
+  "raw_sources": {
+    "source_validity": 2,
+    "reasoning": "The agent references authoritative-sounding sources (NYISO OATT, FERC Order No. 2023, Attachment HH) which are the correct high-level authorities for NYISO interconnection fees, but it fails to explicitly cite the concrete source documents requested in the prompt (NYISO Process Manual 23 and UG-21) or provide direct citations/links to the specific OATT attachments, tariff sheets, or NYISO compliance filings that substantiate the numeric fee amounts. The answer mixes legacy and new-process terminology and gives precise fee figures (e.g., $4,000/MW, $10,000 application fee, 20% of Phase 1 cost estimate) without attribution to a specific NYISO tariff section, manual page, or compliance filing; that undermines verifiability. Some claimed details (such as the exact $4,000/MW readiness deposit, the $10,000 application fee, and the stated 100% payment timing) are plausibly derived from recent NYISO/Order 2023 changes but must be confirmed against Attachment HH text, NYISO compliance filings, and the specified Process Manuals (PM-23 and UG-21) — which the agent did not quote. The answer also omits mention of any NYISO filing dates, effective dates, or whether values are caps, minimums, or example estimates, and it does not indicate applicability distinctions (e.g., CRIS-only exceptions) with source references. In sum: the referenced authorities are appropriate but under-cited; the numeric claims require direct citation to NYISO Process Manual 23, UG-21, the NYISO OATT Attachment HH language, or the NYISO FERC compliance filing to be acceptable by expert standards."
+  },
+  "metrics": {
+    "tool_calls": 2,
+    "iterations": 3,
+    "total_tokens": 58404,
+    "duration_seconds": 30.914016008377075,
+    "latency": {
+      "wall_clock_ms": 30888.53168487549,
+      "llm_thinking_ms": 18289.01505470276,
+      "tool_execution_ms": 12599.51663017273,
+      "per_tool_ms": {
+        "search_documents": 596.813440322876,
+        "search_web": 12002.703189849854
+      }
+    },
+    "cost": {
+      "input_tokens": 57706,
+      "output_tokens": 698,
+      "cached_tokens": 0,
+      "reasoning_tokens": 637,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

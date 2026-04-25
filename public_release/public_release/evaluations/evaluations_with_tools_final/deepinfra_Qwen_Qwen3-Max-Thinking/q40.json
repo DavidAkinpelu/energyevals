@@ -1,0 +1,87 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 5.0,
+    "reasoning": "Expert-like approach. The agent correctly framed the problem as a web search for CAISO participation requirements and targeted authoritative sources (CAISO ancillary services page and Appendix K PDF). The selected data types (ISO postings/documents) are appropriate for regulatory/market participation rules. The sequence of actions—search, then fetch key CAISO documents—is logical and uses the tools correctly. No notable gaps in approach.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 0.2,
+    "reasoning": "I compared each canonical attribute to the agent's answer. Attribute 1: agent mentions certification but omits explicit registration steps (NRI), Scheduling Coordinator, and contracting, so not matched. Attribute 2: agent includes telemetry to EMS and protocols but fails to state ISO-certified revenue-quality metering, so not matched. Attribute 3: agent references certification and testing forms but omits GRDT and documented control/protection settings, so not matched. Attribute 4: agent explicitly describes ability to follow EMS dispatch, response times, dispatch durations, and performance/accuracy—this matches the expected attribute. Attribute 5: agent gives some resource-type notes (capacity thresholds, aggregations) but misses key type-specific rules such as storage state-of-charge, Net Benefits Test, Sub-LAP mapping, and BPM resource ID/aggregation details, so not matched. Numeric/timing items were assessed with allowed tolerance; where details were absent or different in kind from expected, they were marked not found.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 2.0,
+    "reasoning": "The agent's answer contains many specific technical and numeric claims but provides no explicit citations to authoritative sources. For CAISO market and participation requirements, authoritative references would include CAISO tariff sections, the CAISO Business Practice Manuals (especially the Ancillary Services BPM and drafts on regulation), the Generator Control Protocol (GCP), the Participating Load Protocol (PLP), and CAISO market/ancillary services webpages. Internal CAISO contact details (e.g., ASNotifications@caiso.com) may be plausible but should be cited. Because no sources are provided, the answer cannot be verified; some elements (need for certification, telemetry, EMS response, use of aggregations, and that regulation controls frequency) are directionally correct and consistent with CAISO practice, but multiple specific numeric claims appear questionable or unsupported (e.g., minimum rated capacity statements, exact response-time and duration thresholds, the “25% accuracy” metric, and the stated 10-minute time-to-maximum). These numeric and procedural details vary across CAISO tariffs, BPM revisions, and resource types (storage, aggregated DERs, participating load), so authoritative citations are required to confirm them. Expected citations would be: CAISO Tariff (ancillary services provisions), CAISO Ancillary Services BPM (regulation requirements and testing/certification), CAISO GCP and PLP documents (telemetry/control specs), and relevant market notices or technical documents. Because the answer lacks these, the source validity score is low (2): the content is partially aligned with typical CAISO concepts but insufficiently substantiated and potentially inaccurate in key numeric requirements.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 5,
+    "reasoning": "Expert-like approach. The agent correctly framed the problem as a web search for CAISO participation requirements and targeted authoritative sources (CAISO ancillary services page and Appendix K PDF). The selected data types (ISO postings/documents) are appropriate for regulatory/market participation rules. The sequence of actions—search, then fetch key CAISO documents—is logical and uses the tools correctly. No notable gaps in approach."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 1,
+    "alignment_score": 0.2,
+    "attribute_details": [
+      {
+        "name": "Registration and contracting",
+        "expected": "Resource must be fully registered and contracted with CAISO: complete the New Resource Implementation (NRI) process, have an appointed Scheduling Coordinator (SC), and execute required agreements (e.g., Participating Generator Agreement).",
+        "found": false,
+        "agent_value": "States resources must be certified by CAISO to provide regulation service and certification is required for participating generators and loads; does not mention NRI, appointed Scheduling Coordinator, or execution of required agreements."
+      },
+      {
+        "name": "Metering and real-time telemetry",
+        "expected": "Install ISO-certified revenue-quality meters and provide direct real-time telemetry to CAISO's EMS to support fast response and accurate control.",
+        "found": false,
+        "agent_value": "Says resources must establish and maintain telemetry with CAISO EMS and comply with GCP and PLP specifications, but does not state requirement for ISO-certified revenue-quality meters."
+      },
+      {
+        "name": "Ancillary service (regulation) certification and data templates",
+        "expected": "Obtain regulation ancillary-service certification, supply documented control/protection settings and a completed Generator Resource Data Template (GRDT).",
+        "found": false,
+        "agent_value": "Mentions certification and an Ancillary Services Certification Test Request Form and contact for Ancillary Services Test Administrator, but does not mention providing control/protection settings or a completed GRDT."
+      },
+      {
+        "name": "Ability to follow dispatch and meet performance standards",
+        "expected": "Demonstrate capability to follow Dispatch Operating Points (DOP) and meet CAISO's regulation performance standards (response, accuracy, and any testing requirements).",
+        "found": true,
+        "agent_value": "States resources must respond to automatic control signals from CAISO EMS, must reach maximum offered regulation amount within 10 minutes, be dispatchable (DA 60 min / RT 30 min), and meet performance/accuracy standards (mentions a 25% accuracy threshold and testing)."
+      },
+      {
+        "name": "Resource-type specific requirements",
+        "expected": "Comply with type-specific rules: storage must maintain sufficient state-of-charge for awarded regulation (e.g., ~30 minutes at awarded level); demand response/DERs/PDRs must meet Net Benefits Test, be correctly mapped to Sub-LAPs, and use proper resource IDs/aggregation per BPM.",
+        "found": false,
+        "agent_value": "Provides size thresholds (500 kW typical, 100 kW exception for storage/DER aggregations) and notes aggregations can qualify, but does not state storage state-of-charge requirement (~30 minutes), Net Benefits Test, Sub-LAP mapping, or BPM resource ID/aggregation rules."
+      }
+    ],
+    "reasoning": "I compared each canonical attribute to the agent's answer. Attribute 1: agent mentions certification but omits explicit registration steps (NRI), Scheduling Coordinator, and contracting, so not matched. Attribute 2: agent includes telemetry to EMS and protocols but fails to state ISO-certified revenue-quality metering, so not matched. Attribute 3: agent references certification and testing forms but omits GRDT and documented control/protection settings, so not matched. Attribute 4: agent explicitly describes ability to follow EMS dispatch, response times, dispatch durations, and performance/accuracy—this matches the expected attribute. Attribute 5: agent gives some resource-type notes (capacity thresholds, aggregations) but misses key type-specific rules such as storage state-of-charge, Net Benefits Test, Sub-LAP mapping, and BPM resource ID/aggregation details, so not matched. Numeric/timing items were assessed with allowed tolerance; where details were absent or different in kind from expected, they were marked not found."
+  },
+  "raw_sources": {
+    "source_validity": 2,
+    "reasoning": "The agent's answer contains many specific technical and numeric claims but provides no explicit citations to authoritative sources. For CAISO market and participation requirements, authoritative references would include CAISO tariff sections, the CAISO Business Practice Manuals (especially the Ancillary Services BPM and drafts on regulation), the Generator Control Protocol (GCP), the Participating Load Protocol (PLP), and CAISO market/ancillary services webpages. Internal CAISO contact details (e.g., ASNotifications@caiso.com) may be plausible but should be cited. Because no sources are provided, the answer cannot be verified; some elements (need for certification, telemetry, EMS response, use of aggregations, and that regulation controls frequency) are directionally correct and consistent with CAISO practice, but multiple specific numeric claims appear questionable or unsupported (e.g., minimum rated capacity statements, exact response-time and duration thresholds, the “25% accuracy” metric, and the stated 10-minute time-to-maximum). These numeric and procedural details vary across CAISO tariffs, BPM revisions, and resource types (storage, aggregated DERs, participating load), so authoritative citations are required to confirm them. Expected citations would be: CAISO Tariff (ancillary services provisions), CAISO Ancillary Services BPM (regulation requirements and testing/certification), CAISO GCP and PLP documents (telemetry/control specs), and relevant market notices or technical documents. Because the answer lacks these, the source validity score is low (2): the content is partially aligned with typical CAISO concepts but insufficiently substantiated and potentially inaccurate in key numeric requirements."
+  },
+  "metrics": {
+    "tool_calls": 4,
+    "total_tokens": 106534,
+    "duration_seconds": 64.17538094520569,
+    "latency": {
+      "wall_clock_ms": 64167.553424835205,
+      "llm_thinking_ms": 58803.27224731445,
+      "tool_execution_ms": 5364.281177520752,
+      "per_tool_ms": {
+        "search_documents": 0.052928924560546875,
+        "search_web": 4745.454549789429,
+        "get_page_contents": 618.7736988067627
+      }
+    },
+    "cost": {
+      "input_tokens": 105797,
+      "output_tokens": 737,
+      "cached_tokens": 0,
+      "reasoning_tokens": 0,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

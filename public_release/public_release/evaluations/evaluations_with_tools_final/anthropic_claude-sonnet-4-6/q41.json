@@ -1,0 +1,86 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 5.0,
+    "reasoning": "The agent framed the problem correctly—identifying a factual item best answered by web/document search—and executed searches specifically targeting SPP asset/registration resource types. The chosen data sources (document search and web search for SPP guidance) are appropriate for this question (ISO/RTO postings, registration guides, or tariff/market manuals live on the web). The steps are logical and focused (multiple targeted queries, increasing specificity), and the tools were used correctly. Minor improvement could be to explicitly target SPP registration guides or tariff pages, but the overall approach is expert-like and aligns with the suggested web-search ground truth.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 1.0,
+    "reasoning": "The agent listed SPP registration types covering dispatchable generation (GEN/PLT/CC/JOU/MCR), dispatchable variable resources (DVER), non-dispatchable variable resources (NDVER), storage as MSR with explicit reference to ESRs, and storage/market distinctions. Each expected canonical attribute is present or represented by an explicit equivalent in the agent's answer.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 3.0,
+    "reasoning": "The agent names an authoritative and relevant source family (SPP official documentation, specifically a Participation Models & Mitigation document) which is appropriate for resource-registration rules in SPP — this indicates moderate source validity. However, the answer does not provide explicit citations, links, document titles/versions, or dates (e.g., specific SPP Business Practice, Market Protocol, Registration Guide, or Tariff section), so the claim cannot be verified directly from the agent's response. The listed resource types and codes are largely plausible and aligned with SPP market concepts (GEN, PLT, MSR, DVER/NDVER, DDR/BDR, EDR/PSEUDO) but without precise references there is risk of omissions, code mismatches, or outdated terminology. To reach high validity (4–5) the agent should cite the exact SPP document(s) and section numbers (or provide stable URLs) and note the document effective date or version. Internal databases would be acceptable if the agent specified which internal source/version was used. Missing: explicit primary citations (SPP registration guide, marketplace participation models, or tariff/market protocols) and evidence for specific constraints (e.g., MSR minimum capability, eligibility for Ramp Capability, regional limits on EDR).",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 5,
+    "reasoning": "The agent framed the problem correctly—identifying a factual item best answered by web/document search—and executed searches specifically targeting SPP asset/registration resource types. The chosen data sources (document search and web search for SPP guidance) are appropriate for this question (ISO/RTO postings, registration guides, or tariff/market manuals live on the web). The steps are logical and focused (multiple targeted queries, increasing specificity), and the tools were used correctly. Minor improvement could be to explicitly target SPP registration guides or tariff pages, but the overall approach is expert-like and aligns with the suggested web-search ground truth."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 5,
+    "alignment_score": 1.0,
+    "attribute_details": [
+      {
+        "name": "Dispatchable Resource",
+        "expected": "Fully dispatchable generation/injection asset (can be centrally dispatched by SPP)",
+        "found": true,
+        "agent_value": "GEN / PLT / CC / JOU / MCR (generation types described as capable of following/being centrally dispatched)"
+      },
+      {
+        "name": "Dispatchable Variable Energy Resource (DVER)",
+        "expected": "Variable generator that can be controlled/curtailed by SPP dispatch (variable but dispatchable)",
+        "found": true,
+        "agent_value": "DVER (Dispatchable Variable Energy Resource) described as incrementally dispatchable"
+      },
+      {
+        "name": "Electric Storage Resource (ESR)",
+        "expected": "Energy storage asset (battery, pumped hydro, etc.) registered as storage",
+        "found": true,
+        "agent_value": "Referenced via MSR description as modeling Electric Storage Resources (ESRs); agent notes ESR concept and registration options"
+      },
+      {
+        "name": "Market Storage Resource (MSR)",
+        "expected": "Storage variant with specific market/modeling rules distinct from ESR",
+        "found": true,
+        "agent_value": "MSR (Market Storage Resource) explicitly listed with market/modeling rules and eligibility"
+      },
+      {
+        "name": "Variable Energy Resource (VER)",
+        "expected": "Variable generation that is not centrally dispatchable (e.g., wind/solar without dispatch control)",
+        "found": true,
+        "agent_value": "NDVER (Non-Dispatchable Variable Energy Resource) listed as non-incrementally dispatchable variable generation"
+      }
+    ],
+    "reasoning": "The agent listed SPP registration types covering dispatchable generation (GEN/PLT/CC/JOU/MCR), dispatchable variable resources (DVER), non-dispatchable variable resources (NDVER), storage as MSR with explicit reference to ESRs, and storage/market distinctions. Each expected canonical attribute is present or represented by an explicit equivalent in the agent's answer."
+  },
+  "raw_sources": {
+    "source_validity": 3,
+    "reasoning": "The agent names an authoritative and relevant source family (SPP official documentation, specifically a Participation Models & Mitigation document) which is appropriate for resource-registration rules in SPP — this indicates moderate source validity. However, the answer does not provide explicit citations, links, document titles/versions, or dates (e.g., specific SPP Business Practice, Market Protocol, Registration Guide, or Tariff section), so the claim cannot be verified directly from the agent's response. The listed resource types and codes are largely plausible and aligned with SPP market concepts (GEN, PLT, MSR, DVER/NDVER, DDR/BDR, EDR/PSEUDO) but without precise references there is risk of omissions, code mismatches, or outdated terminology. To reach high validity (4–5) the agent should cite the exact SPP document(s) and section numbers (or provide stable URLs) and note the document effective date or version. Internal databases would be acceptable if the agent specified which internal source/version was used. Missing: explicit primary citations (SPP registration guide, marketplace participation models, or tariff/market protocols) and evidence for specific constraints (e.g., MSR minimum capability, eligibility for Ramp Capability, regional limits on EDR)."
+  },
+  "metrics": {
+    "tool_calls": 3,
+    "total_tokens": 71467,
+    "duration_seconds": 39.859206438064575,
+    "latency": {
+      "wall_clock_ms": 39825.70815086365,
+      "llm_thinking_ms": 27174.03531074524,
+      "tool_execution_ms": 12651.672840118408,
+      "per_tool_ms": {
+        "search_documents": 906.8968296051025,
+        "search_web": 11744.776010513306
+      }
+    },
+    "cost": {
+      "input_tokens": 70236,
+      "output_tokens": 1231,
+      "cached_tokens": 0,
+      "reasoning_tokens": 0,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

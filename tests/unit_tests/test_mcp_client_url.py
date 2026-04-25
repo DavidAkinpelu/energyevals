@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from energbench.mcp import MCPClient, MCPServerConfig, get_default_mcp_servers
+from energyevals.mcp import MCPClient, MCPServerConfig, get_default_mcp_servers
 
 
 class TestMCPServerConfig:
@@ -164,7 +164,7 @@ class TestCreateMCPClient:
     @pytest.mark.asyncio
     async def test_create_mcp_client_requires_remote_servers(self):
         """MCP client helper should fail fast when no remote server URLs are configured."""
-        from energbench.mcp.client import create_mcp_client
+        from energyevals.mcp.client import create_mcp_client
 
         with patch.dict(os.environ, {}, clear=True):
             with pytest.raises(RuntimeError, match="no remote MCP servers are configured"):

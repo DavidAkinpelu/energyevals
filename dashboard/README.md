@@ -1,6 +1,6 @@
-# energBench Trace Dashboard
+# EnergyEvals Trace Dashboard
 
-A Streamlit app for browsing and inspecting benchmark traces produced by the energBench runner.
+A Streamlit app for browsing and inspecting benchmark traces produced by the EnergyEvals runner.
 
 ## Setup
 

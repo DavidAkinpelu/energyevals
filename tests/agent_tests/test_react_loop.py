@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from energbench.agent.react_agent import ReActAgent
-from energbench.agent.schema import ToolCall, ToolDefinition
-from energbench.agent.schema.responses import ProviderResponse
+from energyevals.agent.react_agent import ReActAgent
+from energyevals.agent.schema import ToolCall, ToolDefinition
+from energyevals.agent.schema.responses import ProviderResponse
 
 
 def _make_tool_response(**kwargs) -> ProviderResponse:

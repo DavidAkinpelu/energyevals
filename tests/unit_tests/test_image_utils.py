@@ -3,8 +3,8 @@ import json
 
 import pytest
 
-from energbench.agent.schema import ImageContent
-from energbench.utils.image_utils import (
+from energyevals.agent.schema import ImageContent
+from energyevals.utils.image_utils import (
     decode_base64_to_bytes,
     encode_image_to_base64,
     extract_images_from_result,

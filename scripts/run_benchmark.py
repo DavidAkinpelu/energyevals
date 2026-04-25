@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from energbench.agent.schema import ModelSpec
-from energbench.benchmark import (
+from energyevals.agent.schema import ModelSpec
+from energyevals.benchmark import (
     BenchmarkConfig,
     list_questions,
     load_config,
@@ -18,14 +18,14 @@ from energbench.benchmark import (
     print_header,
     run_benchmark,
 )
-from energbench.benchmark import (
+from energyevals.benchmark import (
     list_tools as list_tools_func,
 )
-from energbench.benchmark.config import validate_api_keys
-from energbench.core.errors import ConfigurationError
-from energbench.core.types import ProviderName
-from energbench.mcp import create_mcp_client
-from energbench.tools import create_default_registry
+from energyevals.benchmark.config import validate_api_keys
+from energyevals.core.errors import ConfigurationError
+from energyevals.core.types import ProviderName
+from energyevals.mcp import create_mcp_client
+from energyevals.tools import create_default_registry
 
 PROVIDER_CHOICES = [str(provider) for provider in ProviderName]
 SEED_MODE_CHOICES = ["fixed", "rotate", "random_per_trial"]
@@ -278,7 +278,7 @@ async def main() -> int:
     # Apply CLI overrides
     apply_cli_overrides(config, args)
 
-    print_header("energBench Benchmark Runner")
+    print_header("EnergyEvals Benchmark Runner")
     print_config(config)
 
     # Handle --list-tools

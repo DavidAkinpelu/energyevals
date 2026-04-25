@@ -1,0 +1,85 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 5.0,
+    "reasoning": "Expert-like approach. The agent correctly framed the problem as a web-search task (consistent with the suggested approach) and issued multiple focused queries targeting CAISO regulation participation, technical/performance specifications, certification/testing, and minimum capacity/response requirements. These queries align with appropriate primary sources for this question (ISO postings, market rules/tariff, certification documents). The sequence shows logical refinement from general to specific requirements and proper use of the search_documents tool. No significant procedural gaps or incorrect tool usage are evident.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 0.2,
+    "reasoning": "I compared each canonical attribute to the agent's answer. The agent correctly covered the ability to follow dispatch and detailed performance standards (attribute 4), so that attribute is matched. Registration/contracting (attribute 1) is only partially covered (SC presence and some admin items) but lacks explicit NRI and agreement execution details, so not matched. Metering/telemetry (attribute 2) includes telemetry/control references but omits ISO-certified revenue-quality meter requirement, so not matched. Certification and data templates (attribute 3) mentions certification and testing but does not mention supplying control/protection settings or the GRDT, so not matched. Resource-type specific requirements (attribute 5) mentions storage SOC and aggregation generally but omits critical items (Net Benefits Test, Sub-LAP mapping, BPM resource ID/aggregation specifics), so not matched. Numeric tolerances were considered; where agent gave numeric values they were evaluated for relevance to the expected canonical specifics.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 2.0,
+    "reasoning": "The agent's answer asserts it used CAISO documents but provides no explicit citations (no CAISO tariff sections, Business Practice Manual (BPM) references, Market Operations or Market Services Tariff (MST) clauses, or specific CAISO “Regulation” BPM/requirements). That omission prevents verification and is a significant deficiency for energy-market compliance claims.\n\nAccuracy/relevance assessment:\n- Positive: High-level themes are appropriate and expected (need for CAISO certification, Scheduling Coordinator role, telemetry/SCADA, financial/credit requirements, performance monitoring and consequences). Those are consistent with CAISO practice and FERC/CAL market norms.\n- Problems: Multiple specific numerical or procedural claims lack sourcing and appear questionable or incomplete:\n  - Minimum capacity: The answer states 500 kW (0.5 MW) and an aggregation exception of 100 kW. CAISO minimum offer sizes and aggregation rules vary by product and have changed; specific thresholds must be cited to the current CAISO tariff/BPM or the DER/aggregation program documentation. Without citation this is unreliable.\n  - Response time and dispatchability: “Must reach maximum regulation within 10 minutes” and “dispatchable 60 minutes DA / 30 minutes RT” are specific operational metrics not matching standard CAISO phrasing (e.g., Regulation requires continuous following of AGC signals and may reference ramp/response characteristics and sustained capability; exact timing/energy duration requirements should be sourced).\n  - Performance thresholds: The stated “>25% accuracy” and 15-minute measurement windows and the specific warning/recertification procedure are presented with undue precision. CAISO uses performance scores and tolerance bands; the methodology and thresholds are defined in CAISO performance scoring docs/BPM and must be cited.\n  - Financial/credit numbers (net worth $1M, assets $10M) are presented without reference. CAISO credit/financial security rules are detailed in the tariff and settlement documents; the generic numbers may reflect other jurisdictions or be outdated.\n  - Storage-specific numeric examples (e.g., 10 MW regulation down requires maintaining state of charge no more than 5 MWh below maximum) are illustrative but unreferenced and likely incorrect without context (duration, energy requirements, REM rules in CAISO BPM).\n\nExpected authoritative sources that should have been cited:\n- CAISO Tariff, Market Services Tariff (MST) and related Attachments\n- CAISO Business Practice Manuals (BPM) for Ancillary Services, Resource Certification, and Metering/Telemetry\n- CAISO Market and Operations Planning documents (e.g., Regulation Product descriptions, Regulation Market BPM)\n- CAISO resource certification procedures and test/results pages\n- Relevant FERC orders (e.g., orders affecting ancillary services, e.g., Order 755 historically for pay-for-performance) and CPUC decisions if California-specific DER rules apply\n\nOverall: the answer is plausible at a conceptual level but contains many uncited, specific numeric claims that cannot be trusted without direct references to the current CAISO tariff/BPM pages or authoritative CAISO documentation. For a reliable evaluation it should cite exact CAISO tariff sections, BPMs, or CAISO web pages (with dates/versions).",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 5,
+    "reasoning": "Expert-like approach. The agent correctly framed the problem as a web-search task (consistent with the suggested approach) and issued multiple focused queries targeting CAISO regulation participation, technical/performance specifications, certification/testing, and minimum capacity/response requirements. These queries align with appropriate primary sources for this question (ISO postings, market rules/tariff, certification documents). The sequence shows logical refinement from general to specific requirements and proper use of the search_documents tool. No significant procedural gaps or incorrect tool usage are evident."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 1,
+    "alignment_score": 0.2,
+    "attribute_details": [
+      {
+        "name": "Registration and contracting",
+        "expected": "Resource must be fully registered and contracted with CAISO: complete the New Resource Implementation (NRI) process, have an appointed Scheduling Coordinator (SC), and execute required agreements (e.g., Participating Generator Agreement).",
+        "found": false,
+        "agent_value": "Mentions use of a certified Scheduling Coordinator (SC) to submit bids, requirement to use a Scheduling Coordinator, and an 'Annual Officer Certification Form' confirming compliance. Does not mention NRI process or Participating Generator Agreement or explicit contracting language."
+      },
+      {
+        "name": "Metering and real-time telemetry",
+        "expected": "Install ISO-certified revenue-quality meters and provide direct real-time telemetry to CAISO's EMS to support fast response and accurate control.",
+        "found": false,
+        "agent_value": "States 'Telemetry: Must provide real-time status to CAISO Control Center', 'Communication: Must maintain operational CAISO EMS control and SCADA equipment', and 'Control System: Must have direct, digital control signal from CAISO EMS'. Does not state ISO-certified revenue-quality meters."
+      },
+      {
+        "name": "Ancillary service (regulation) certification and data templates",
+        "expected": "Obtain regulation ancillary-service certification, supply documented control/protection settings and a completed Generator Resource Data Template (GRDT).",
+        "found": false,
+        "agent_value": "States 'Mandatory Certification: All resources must be certified by CAISO to provide regulation services', 'Testing: Resources undergo certification testing', and ongoing compliance/inspection rights. Does not mention supplying control/protection settings or the GRDT/data template explicitly."
+      },
+      {
+        "name": "Ability to follow dispatch and meet performance standards",
+        "expected": "Demonstrate capability to follow Dispatch Operating Points (DOP) and meet CAISO's regulation performance standards (response, accuracy, and any testing requirements).",
+        "found": true,
+        "agent_value": "Provides specific performance claims: 'Response Time: Must reach maximum regulation within 10 minutes', 'Accuracy: Response accuracy ... must exceed 25% minimum performance threshold', 'Dispatchability: Must be dispatchable continuously for 60 minutes (Day-Ahead) and 30 minutes (Real-Time)', and describes performance monitoring, evaluation, warnings, decertification and recertification procedures."
+      },
+      {
+        "name": "Resource-type specific requirements",
+        "expected": "Comply with type-specific rules: storage must maintain sufficient state-of-charge for awarded regulation (e.g., ~30 minutes at awarded level); demand response/DERs/PDRs must meet Net Benefits Test, be correctly mapped to Sub-LAPs, and use proper resource IDs/aggregation per BPM.",
+        "found": false,
+        "agent_value": "Includes storage-related items: 'State of Charge Management: Storage resources must maintain adequate state of charge' and an example about maintaining state of charge relative to an award; mentions aggregation exceptions and REM for non-generator resources. Does not mention Net Benefits Test, Sub-LAP mapping, or BPM/resource ID aggregation rules."
+      }
+    ],
+    "reasoning": "I compared each canonical attribute to the agent's answer. The agent correctly covered the ability to follow dispatch and detailed performance standards (attribute 4), so that attribute is matched. Registration/contracting (attribute 1) is only partially covered (SC presence and some admin items) but lacks explicit NRI and agreement execution details, so not matched. Metering/telemetry (attribute 2) includes telemetry/control references but omits ISO-certified revenue-quality meter requirement, so not matched. Certification and data templates (attribute 3) mentions certification and testing but does not mention supplying control/protection settings or the GRDT, so not matched. Resource-type specific requirements (attribute 5) mentions storage SOC and aggregation generally but omits critical items (Net Benefits Test, Sub-LAP mapping, BPM resource ID/aggregation specifics), so not matched. Numeric tolerances were considered; where agent gave numeric values they were evaluated for relevance to the expected canonical specifics."
+  },
+  "raw_sources": {
+    "source_validity": 2,
+    "reasoning": "The agent's answer asserts it used CAISO documents but provides no explicit citations (no CAISO tariff sections, Business Practice Manual (BPM) references, Market Operations or Market Services Tariff (MST) clauses, or specific CAISO “Regulation” BPM/requirements). That omission prevents verification and is a significant deficiency for energy-market compliance claims.\n\nAccuracy/relevance assessment:\n- Positive: High-level themes are appropriate and expected (need for CAISO certification, Scheduling Coordinator role, telemetry/SCADA, financial/credit requirements, performance monitoring and consequences). Those are consistent with CAISO practice and FERC/CAL market norms.\n- Problems: Multiple specific numerical or procedural claims lack sourcing and appear questionable or incomplete:\n  - Minimum capacity: The answer states 500 kW (0.5 MW) and an aggregation exception of 100 kW. CAISO minimum offer sizes and aggregation rules vary by product and have changed; specific thresholds must be cited to the current CAISO tariff/BPM or the DER/aggregation program documentation. Without citation this is unreliable.\n  - Response time and dispatchability: “Must reach maximum regulation within 10 minutes” and “dispatchable 60 minutes DA / 30 minutes RT” are specific operational metrics not matching standard CAISO phrasing (e.g., Regulation requires continuous following of AGC signals and may reference ramp/response characteristics and sustained capability; exact timing/energy duration requirements should be sourced).\n  - Performance thresholds: The stated “>25% accuracy” and 15-minute measurement windows and the specific warning/recertification procedure are presented with undue precision. CAISO uses performance scores and tolerance bands; the methodology and thresholds are defined in CAISO performance scoring docs/BPM and must be cited.\n  - Financial/credit numbers (net worth $1M, assets $10M) are presented without reference. CAISO credit/financial security rules are detailed in the tariff and settlement documents; the generic numbers may reflect other jurisdictions or be outdated.\n  - Storage-specific numeric examples (e.g., 10 MW regulation down requires maintaining state of charge no more than 5 MWh below maximum) are illustrative but unreferenced and likely incorrect without context (duration, energy requirements, REM rules in CAISO BPM).\n\nExpected authoritative sources that should have been cited:\n- CAISO Tariff, Market Services Tariff (MST) and related Attachments\n- CAISO Business Practice Manuals (BPM) for Ancillary Services, Resource Certification, and Metering/Telemetry\n- CAISO Market and Operations Planning documents (e.g., Regulation Product descriptions, Regulation Market BPM)\n- CAISO resource certification procedures and test/results pages\n- Relevant FERC orders (e.g., orders affecting ancillary services, e.g., Order 755 historically for pay-for-performance) and CPUC decisions if California-specific DER rules apply\n\nOverall: the answer is plausible at a conceptual level but contains many uncited, specific numeric claims that cannot be trusted without direct references to the current CAISO tariff/BPM pages or authoritative CAISO documentation. For a reliable evaluation it should cite exact CAISO tariff sections, BPMs, or CAISO web pages (with dates/versions)."
+  },
+  "metrics": {
+    "tool_calls": 5,
+    "total_tokens": 144032,
+    "duration_seconds": 110.33523774147034,
+    "latency": {
+      "wall_clock_ms": 110269.51336860657,
+      "llm_thinking_ms": 107546.7631816864,
+      "tool_execution_ms": 2722.750186920166,
+      "per_tool_ms": {
+        "search_documents": 2722.750186920166
+      }
+    },
+    "cost": {
+      "input_tokens": 142681,
+      "output_tokens": 1351,
+      "cached_tokens": 105664,
+      "reasoning_tokens": 0,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

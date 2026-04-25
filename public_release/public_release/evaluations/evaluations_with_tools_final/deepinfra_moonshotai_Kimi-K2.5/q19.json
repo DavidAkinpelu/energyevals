@@ -1,0 +1,79 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 4.0,
+    "reasoning": "The agent framed the problem correctly (locating CAISO Business Process Manual content on regulation service participation requirements) and used appropriate data sources by repeatedly querying document/search tools with targeted queries for the BPM, certification/testing, AGC/telemetry, and ancillary service requirements. The sequence of queries shows logical exploration of relevant facets (participation requirements, testing/certification, telemetry/ramp/AGC). The main shortcoming is that the trace only shows search calls — there is no evidence the agent retrieved, opened, or extracted the definitive CAISO BPM text or cited the authoritative source (BPM, tariff, or ISO posting) and no indication of validating the latest version/date. For an expert-grade approach the agent should have fetched the specific BPM section(s), verified the document version/date, and extracted the precise requirement language; those steps are not shown. Overall the approach is appropriate but missing the final retrieval/verification/extraction step(s).",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 0.25,
+    "reasoning": "I compared the agent's statements to each canonical expectation. The agent covered certification, testing, AGC, telemetry elements, performance monitoring, and some resource‑type dispatchability and aggregation notes. However, it omitted explicit items required by the canonical attributes: NRI and execution of specific commercial agreements (Registration/contracting); explicit ISO‑certified revenue‑quality metering (Metering/telemetry); GRDT and explicit documented control/protection settings (technical certification) — although certification and performance demonstration were described and judged sufficient for a match; and several specific resource‑type compliance items (Net Benefits Test, Sub‑LAP mapping, resource IDs, SOC sustainment phrased as requirement). Using strict alignment to the canonical list, only the ancillary‑service certification/performance attribute is sufficiently represented, yielding 1/4 matches (alignment score 0.25).",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 2.0,
+    "reasoning": "The agent references authoritative CAISO sources (Business Practice Manuals, CAISO Tariff/Appendix K, Master File) which are appropriate and relevant for regulation participation rules; however the answer fails to provide explicit citations (document titles, version dates, section numbers or links) for the specific claims. Several asserted specifics appear questionable or unsupported without citations (e.g., “minimum 500 kW” vs. CAISO aggregation exceptions, “Day-Ahead Market bids must be submitted at least 7 days” which does not match standard DAM timelines, and the stated accuracy/dispatch timing metrics). Because the claimed requirements rely on precise, time‑sensitive BPM/tariff language, the lack of direct citations prevents verification and undermines authority. Recommended authoritative references that should have been cited: CAISO BPM — Market Operations (latest edition and section on ancillary services/regulation), CAISO Tariff (Appendix K and relevant tariff sections), and CAISO Market Participation or Certification guides (including Master File procedures). With correct section references or links to the latest BPM and tariff provisions the source validity would be high; as presented it is only marginally acceptable.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 4,
+    "reasoning": "The agent framed the problem correctly (locating CAISO Business Process Manual content on regulation service participation requirements) and used appropriate data sources by repeatedly querying document/search tools with targeted queries for the BPM, certification/testing, AGC/telemetry, and ancillary service requirements. The sequence of queries shows logical exploration of relevant facets (participation requirements, testing/certification, telemetry/ramp/AGC). The main shortcoming is that the trace only shows search calls — there is no evidence the agent retrieved, opened, or extracted the definitive CAISO BPM text or cited the authoritative source (BPM, tariff, or ISO posting) and no indication of validating the latest version/date. For an expert-grade approach the agent should have fetched the specific BPM section(s), verified the document version/date, and extracted the precise requirement language; those steps are not shown. Overall the approach is appropriate but missing the final retrieval/verification/extraction step(s)."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 4,
+    "matched_attributes": 1,
+    "alignment_score": 0.25,
+    "attribute_details": [
+      {
+        "name": "Registration and contracting",
+        "expected": "Resource must be fully registered and contracted: complete the New Resource Implementation (NRI) process, have a Scheduling Coordinator (SC), and execute required agreements (e.g., Participating Generator Agreement).",
+        "found": false,
+        "agent_value": "Agent states resources must be certified by CAISO, requests certification in writing, and identify the Scheduling Coordinator; mentions certification/testing and Master File recording. Does not mention NRI process or execution of required commercial agreements such as Participating Generator Agreement."
+      },
+      {
+        "name": "Metering and telemetry standards",
+        "expected": "Install ISO‑certified revenue‑quality meters and provide direct real‑time telemetry to CAISO's EMS for fast response and accurate control.",
+        "found": false,
+        "agent_value": "Agent lists telemetry/communication requirements: real power (MW) monitoring, high/low/rate limits, in-service status, ramp rates, instantaneous and 15-min energy capability, approved voice comms, and direct digital control signal from CAISO EMS. Does not state ISO‑certified revenue‑quality meter requirement explicitly."
+      },
+      {
+        "name": "Ancillary‑service technical certification and performance",
+        "expected": "Obtain ancillary service (regulation) certification including documented control/protection settings and completed Generator Resource Data Template (GRDT); demonstrate ability to follow Dispatch Operating Point (DOP) and meet CAISO regulation performance standards.",
+        "found": true,
+        "agent_value": "Agent describes CAISO certification for AS, certification/testing recorded in Master File, AGC and control signal requirements, 10‑minute ramp limits, performance monitoring, potential decertification for poor performance, and CAISO performance accuracy reporting. While GRDT and explicit phrase 'control/protection settings' are not verbatim, agent covers certification, testing, control compliance and performance demonstration."
+      },
+      {
+        "name": "Resource‑type specific requirements",
+        "expected": "Comply with resource‑type rules: for storage maintain sufficient state of charge to sustain awarded regulation (e.g., 30 minutes at awarded level); for demand response/PDRs/DERs meet Net Benefits Test, Sub‑LAP mapping, proper resource IDs and aggregation structures as defined in the BPM.",
+        "found": false,
+        "agent_value": "Agent mentions capacity minima and allowed aggregations (100 kW+ for approved aggregations or storage/DER aggregations), shows dispatchability values (30 minutes real‑time), and notes some PDR restrictions (RDRR and PDR‑LSR prohibited). Does not mention state‑of‑charge sustainment requirement explicitly, nor Net Benefits Test, Sub‑LAP mapping, resource ID or detailed aggregation structure requirements."
+      }
+    ],
+    "reasoning": "I compared the agent's statements to each canonical expectation. The agent covered certification, testing, AGC, telemetry elements, performance monitoring, and some resource‑type dispatchability and aggregation notes. However, it omitted explicit items required by the canonical attributes: NRI and execution of specific commercial agreements (Registration/contracting); explicit ISO‑certified revenue‑quality metering (Metering/telemetry); GRDT and explicit documented control/protection settings (technical certification) — although certification and performance demonstration were described and judged sufficient for a match; and several specific resource‑type compliance items (Net Benefits Test, Sub‑LAP mapping, resource IDs, SOC sustainment phrased as requirement). Using strict alignment to the canonical list, only the ancillary‑service certification/performance attribute is sufficiently represented, yielding 1/4 matches (alignment score 0.25)."
+  },
+  "raw_sources": {
+    "source_validity": 2,
+    "reasoning": "The agent references authoritative CAISO sources (Business Practice Manuals, CAISO Tariff/Appendix K, Master File) which are appropriate and relevant for regulation participation rules; however the answer fails to provide explicit citations (document titles, version dates, section numbers or links) for the specific claims. Several asserted specifics appear questionable or unsupported without citations (e.g., “minimum 500 kW” vs. CAISO aggregation exceptions, “Day-Ahead Market bids must be submitted at least 7 days” which does not match standard DAM timelines, and the stated accuracy/dispatch timing metrics). Because the claimed requirements rely on precise, time‑sensitive BPM/tariff language, the lack of direct citations prevents verification and undermines authority. Recommended authoritative references that should have been cited: CAISO BPM — Market Operations (latest edition and section on ancillary services/regulation), CAISO Tariff (Appendix K and relevant tariff sections), and CAISO Market Participation or Certification guides (including Master File procedures). With correct section references or links to the latest BPM and tariff provisions the source validity would be high; as presented it is only marginally acceptable."
+  },
+  "metrics": {
+    "tool_calls": 5,
+    "total_tokens": 102403,
+    "duration_seconds": 54.06181192398071,
+    "latency": {
+      "wall_clock_ms": 54054.014921188354,
+      "llm_thinking_ms": 49558.974742889404,
+      "tool_execution_ms": 4495.04017829895,
+      "per_tool_ms": {
+        "search_documents": 4495.04017829895
+      }
+    },
+    "cost": {
+      "input_tokens": 101291,
+      "output_tokens": 1112,
+      "cached_tokens": 90560,
+      "reasoning_tokens": 0,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

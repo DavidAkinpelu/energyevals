@@ -1,10 +1,10 @@
 import pytest
 
-from energbench.agent.providers import get_provider
-from energbench.agent.providers.anthropic_provider import AnthropicProvider
-from energbench.agent.providers.deepinfra_provider import DeepInfraProvider
-from energbench.agent.providers.google_provider import GoogleProvider
-from energbench.agent.providers.openai_provider import OpenAIProvider
+from energyevals.agent.providers import get_provider
+from energyevals.agent.providers.anthropic_provider import AnthropicProvider
+from energyevals.agent.providers.deepinfra_provider import DeepInfraProvider
+from energyevals.agent.providers.google_provider import GoogleProvider
+from energyevals.agent.providers.openai_provider import OpenAIProvider
 
 
 class TestProviderFactory:

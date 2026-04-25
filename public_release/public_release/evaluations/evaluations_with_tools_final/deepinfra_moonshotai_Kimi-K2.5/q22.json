@@ -1,0 +1,87 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 4.0,
+    "reasoning": "The agent framed the problem correctly (locating NYISO manuals and tariff attachments to extract decision-point fees) and used appropriate sources: searches targeted NYISO documents, tariffs (Attachment HH), and NYISO manuals (including a TEI/M-23 manual and related Order No. 2023 materials). The sequence of searches and page retrievals demonstrates logical steps (iterative queries refining toward application/deposit/study fees and fetching relevant PDFs). Tool usage appears correct—search_documents/search_web followed by get_page_contents to obtain primary-source PDFs. Minor gap: the trace does not show an explicit fetch of the UG-21 guide (mentioned in the ground-truth approach), so there is a small risk that a source explicitly named UG-21 was missed. Overall the approach is thorough and expert-like aside from that minor omission.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 0.6,
+    "reasoning": "I compared each expected attribute to the agent's answer allowing the specified tolerances. 1) Application fee: agent explicitly states $10,000 and $5,000 for CRIS-only — match. 2) Study deposit tiers: agent provided the $100k minimum and $250k for larger projects and noted CRIS-only $50k, but omitted the explicit $150k tier for >=80 MW and <200 MW; therefore not a match. 3) Readiness deposit DP1: agent lists $4,000/MW and the 5-business-day timing but does not state the CRIS-only exception (that it does not apply), so this is a partial but non-matching result per the expected attribute. 4) DP2 deposit: agent correctly states RD2 is the greater of RD1 ($4,000/MW) or 20% of Phase 1 cost estimate and the 10-business-day timing — match. 5) Final security deposit: agent states 100% of estimated upgrade costs from Phase 1 and Phase 2 and requirement to post security — match. Based on these determinations, 3 of 5 attributes match, yielding an alignment score of 0.6.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 3.0,
+    "reasoning": "The agent cites authoritative and appropriate sources in principle—NYISO OATT Attachment HH (the definitive legal/procedural source) and NYISO compliance presentations—which are the correct place to obtain fee schedules and decision-point requirements. However, the answer lacks specific citations (section, paragraph, or page references) to Attachment HH or the NYISO manuals (e.g., Process Manuals 23 or UG-21 mentioned in the task), making verification difficult. Some referenced items are plausible reforms from Attachment HH (e.g., cluster study structure, readiness deposits, security posting), but several numeric details and terms appear uncertain or inconsistent (e.g., RD1 = $4,000/MW, RD2 = greater of RD1 or 20% of Phase 1 estimate, exact study deposit ranges, CRIS-only amounts). The inclusion of “Technical Bulletin 262” and a “NYISO FAQ (February 2025)” raises concerns: the bulletin may exist but should be directly referenced, and a 2025 FAQ post-dates typical available materials — both require explicit links or citations. The agent also omitted the explicit recommended step of retrieving Process Manuals 23 and UG-21, which could contain differing fee tables or implementation details. In sum: source choices are appropriate but the execution lacks precise citations and contains several unverified numeric assertions; confirm against Attachment HH (specific sections on fees/deposits), NYISO Process Manual 23/UG-21, and any official NYISO technical bulletins or FAQs for exact amounts and allocation rules.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 4,
+    "reasoning": "The agent framed the problem correctly (locating NYISO manuals and tariff attachments to extract decision-point fees) and used appropriate sources: searches targeted NYISO documents, tariffs (Attachment HH), and NYISO manuals (including a TEI/M-23 manual and related Order No. 2023 materials). The sequence of searches and page retrievals demonstrates logical steps (iterative queries refining toward application/deposit/study fees and fetching relevant PDFs). Tool usage appears correct—search_documents/search_web followed by get_page_contents to obtain primary-source PDFs. Minor gap: the trace does not show an explicit fetch of the UG-21 guide (mentioned in the ground-truth approach), so there is a small risk that a source explicitly named UG-21 was missed. Overall the approach is thorough and expert-like aside from that minor omission."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 3,
+    "alignment_score": 0.6,
+    "attribute_details": [
+      {
+        "name": "Application fee amount and CRIS-only exception",
+        "expected": "$10,000 per project application; $5,000 for CRIS-only projects",
+        "found": true,
+        "agent_value": "$10,000 (non-refundable); $5,000 for CRIS-only projects"
+      },
+      {
+        "name": "Study deposit tiers by project size and CRIS-only exception",
+        "expected": "$100,000 for projects <80 MW; $150,000 for projects >=80 MW and <200 MW; $250,000 for projects >=200 MW; $50,000 for CRIS-only projects",
+        "found": false,
+        "agent_value": "$100,000 - $250,000 (scales with project size); Minimum $100,000 for projects under 80 MW; $250,000 for larger projects; CRIS-only: $50,000"
+      },
+      {
+        "name": "Readiness deposit at Decision Point 1 and CRIS-only exception",
+        "expected": "Readiness deposit of $4,000 per MW due 5 business days after customer engagement window; does not apply to CRIS-only projects",
+        "found": false,
+        "agent_value": "Readiness Deposit 1 (RD1) = $4,000/MW; due to proceed to Phase 1 Study; 5 Business Day decision period"
+      },
+      {
+        "name": "Decision Point 2 study deposit calculation",
+        "expected": "Study deposit required 10 business days after Phase 1 study equal to the maximum of $4,000 per MW and 20% of project cost estimates determined during Phase 1",
+        "found": true,
+        "agent_value": "Readiness Deposit 2 (RD2) = greater of RD1 amount or 20% of Phase 1 cost estimate; 10 Business Day decision period"
+      },
+      {
+        "name": "Iterative final decision security deposit",
+        "expected": "Security deposit equal to 100% of cost estimates allocated to the project from Phase 1 and Phase 2 studies (due during iterative final decision period)",
+        "found": true,
+        "agent_value": "Security Deposit = 100% of estimated upgrade costs for SUFs, SDUs, and CTOAFs identified in Phase 1 and Phase 2; required to accept Project Cost Allocation"
+      }
+    ],
+    "reasoning": "I compared each expected attribute to the agent's answer allowing the specified tolerances. 1) Application fee: agent explicitly states $10,000 and $5,000 for CRIS-only — match. 2) Study deposit tiers: agent provided the $100k minimum and $250k for larger projects and noted CRIS-only $50k, but omitted the explicit $150k tier for >=80 MW and <200 MW; therefore not a match. 3) Readiness deposit DP1: agent lists $4,000/MW and the 5-business-day timing but does not state the CRIS-only exception (that it does not apply), so this is a partial but non-matching result per the expected attribute. 4) DP2 deposit: agent correctly states RD2 is the greater of RD1 ($4,000/MW) or 20% of Phase 1 cost estimate and the 10-business-day timing — match. 5) Final security deposit: agent states 100% of estimated upgrade costs from Phase 1 and Phase 2 and requirement to post security — match. Based on these determinations, 3 of 5 attributes match, yielding an alignment score of 0.6."
+  },
+  "raw_sources": {
+    "source_validity": 3,
+    "reasoning": "The agent cites authoritative and appropriate sources in principle—NYISO OATT Attachment HH (the definitive legal/procedural source) and NYISO compliance presentations—which are the correct place to obtain fee schedules and decision-point requirements. However, the answer lacks specific citations (section, paragraph, or page references) to Attachment HH or the NYISO manuals (e.g., Process Manuals 23 or UG-21 mentioned in the task), making verification difficult. Some referenced items are plausible reforms from Attachment HH (e.g., cluster study structure, readiness deposits, security posting), but several numeric details and terms appear uncertain or inconsistent (e.g., RD1 = $4,000/MW, RD2 = greater of RD1 or 20% of Phase 1 estimate, exact study deposit ranges, CRIS-only amounts). The inclusion of “Technical Bulletin 262” and a “NYISO FAQ (February 2025)” raises concerns: the bulletin may exist but should be directly referenced, and a 2025 FAQ post-dates typical available materials — both require explicit links or citations. The agent also omitted the explicit recommended step of retrieving Process Manuals 23 and UG-21, which could contain differing fee tables or implementation details. In sum: source choices are appropriate but the execution lacks precise citations and contains several unverified numeric assertions; confirm against Attachment HH (specific sections on fees/deposits), NYISO Process Manual 23/UG-21, and any official NYISO technical bulletins or FAQs for exact amounts and allocation rules."
+  },
+  "metrics": {
+    "tool_calls": 11,
+    "total_tokens": 385392,
+    "duration_seconds": 196.64229559898376,
+    "latency": {
+      "wall_clock_ms": 196612.9891872406,
+      "llm_thinking_ms": 158534.5163345337,
+      "tool_execution_ms": 38078.47285270691,
+      "per_tool_ms": {
+        "search_documents": 3509.5014572143555,
+        "search_web": 13901.780128479004,
+        "get_page_contents": 20667.19126701355
+      }
+    },
+    "cost": {
+      "input_tokens": 382670,
+      "output_tokens": 2722,
+      "cached_tokens": 302016,
+      "reasoning_tokens": 0,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

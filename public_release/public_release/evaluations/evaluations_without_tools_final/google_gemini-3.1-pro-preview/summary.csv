@@ -1,0 +1,8 @@
+question_id,category,difficulty,strategy,approach_mean,approach_ci,accuracy_mean,accuracy_ci,sources_mean,sources_ci,Failed,iterations,tool_calls,tokens,duration_s,total_input_tokens,total_output_tokens,total_cached_tokens,input_tokens,output_tokens,cached_tokens,reasoning_tokens
+172,Markets data retrieval and analysis,Medium,accuracy,4.0,"[4.000, 4.000]",1.0,"[1.000, 1.000]",3.0,"[3.000, 3.000]",False,14,13,484535,124.0,482637,1898,0,482637,1898,0,2008
+213,Knowledge retrieval and interpretation,Medium,attributes,3.0,"[3.000, 3.000]",0.25,"[0.250, 0.250]",2.0,"[2.000, 2.000]",False,2,1,21650,26.6,21001,649,0,21001,649,0,715
+221,Knowledge retrieval and interpretation,Medium,attributes,4.0,"[4.000, 4.000]",0.8,"[0.800, 0.800]",1.0,"[1.000, 1.000]",False,5,4,94319,62.1,93609,710,0,93609,710,0,1480
+229,Knowledge retrieval and interpretation,Medium,attributes,3.0,"[3.000, 3.000]",0.0,"[0.000, 0.000]",2.0,"[2.000, 2.000]",False,8,7,245471,88.7,245069,402,0,245069,402,0,880
+232,Advanced quantitative modeling and decision analytics,Hard,accuracy,3.0,"[3.000, 3.000]",0.0,"[0.000, 0.000]",1.0,"[1.000, 1.000]",False,14,20,257932,312.8,252883,5049,0,252883,5049,0,4133
+234,Advanced quantitative modeling and decision analytics,Hard,accuracy,4.0,"[4.000, 4.000]",0.0,"[0.000, 0.000]",2.0,"[2.000, 2.000]",False,8,12,123689,285.0,118513,5176,0,118513,5176,0,1921
+245,Advanced quantitative modeling and decision analytics,Hard,accuracy,4.0,"[4.000, 4.000]",1.0,"[1.000, 1.000]",2.0,"[2.000, 2.000]",False,16,15,244928,764.4,240909,4019,0,240909,4019,0,3213

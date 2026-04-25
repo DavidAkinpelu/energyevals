@@ -1,0 +1,87 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 4.0,
+    "reasoning": "The agent framed the problem correctly—identifying the need to locate NYISO procedural manuals and guides that list fees tied to decision points—and used document- and web-search tools to acquire source material. The agent explicitly retrieved the UG-21 TEI Guide PDF (an appropriate primary source) and issued targeted queries for application fees, study deposits, withdrawal penalties, and readiness/security charges, which align with the suggested approach of extracting fees from NYISO process manuals. Tool usage appears appropriate (search_documents/search_web and get_page_contents to fetch PDFs and web summaries). A notable gap is that Manual 23 (specifically referenced in the ground truth) was not explicitly retrieved in the provided trace, and reliance on a third-party summary (zeroemissiongrid) without clear citation of the NYISO tariff/manual beyond UG-21 could leave some decision-point fees unverified. Overall the approach is solid and systematic but missing an explicit fetch of all named primary manuals (e.g., Manual 23) and complete verification against tariffs/official NYISO postings.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 1.0,
+    "reasoning": "All five expected attributes are explicitly and accurately represented in the agent's answer. Numeric values and timing windows match the expected canonical values within allowed tolerances (exact matches). The agent correctly notes CRIS-only exceptions, deposit tier amounts, RD1 and RD2 calculations and timing, and the 100% final security requirement.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 2.0,
+    "reasoning": "The answer contains many concrete fee figures and process-stage labels that plausibly map to NYISO interconnection practice, but it fails to explicitly cite the primary authoritative sources requested (NYISO Process Manuals 23, Guide UG21, NYISO OATT Attachment HH, or the NYISO interconnection manuals/cluster study documents). Strengths: the structure (application fee, study deposits, readiness deposits, security for upgrades, monthly study cost invoicing, and withdrawal forfeitures) aligns with how NYISO and other ISOs structure interconnection financial gates; the $10,000 non‑refundable application fee is a commonly seen NYISO figure and references to study deposits and readiness/security deposits are conceptually correct. Weaknesses/concerns: many specific numeric values (e.g., $4,000/MW RD1, exact study deposit bands, RD2 = greater of RD1 or 20% of Phase 1 estimate, 100% security timing, the ranges and averages cited for $/kW and total $2.8B) are presented without citations and may not match the current NYISO manuals or recent cluster study tariffs; some procedural claims (timing windows, CRIS-only amounts, permissibility of payment instruments, and stated penalty mechanics tied to a May 2025 IPFSWG meeting) require direct citations to manuals, tariff language, or NYISO filings to verify. Appropriateness: given the user’s suggested steps (fetch Manuals 23 and UG21 and extract fees), the agent should have included exact citations or links to the relevant sections/paragraphs and noted any differences between Attachment HH, the SIP/Cluster procedures, and UG21. Conclusion: the answer is partially plausible but insufficiently sourced for authoritative use; authoritative validation against NYISO manuals/tariff language is required. Score reflects plausible structure but inadequate explicit sourcing and unverifiable specific figures.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 4,
+    "reasoning": "The agent framed the problem correctly—identifying the need to locate NYISO procedural manuals and guides that list fees tied to decision points—and used document- and web-search tools to acquire source material. The agent explicitly retrieved the UG-21 TEI Guide PDF (an appropriate primary source) and issued targeted queries for application fees, study deposits, withdrawal penalties, and readiness/security charges, which align with the suggested approach of extracting fees from NYISO process manuals. Tool usage appears appropriate (search_documents/search_web and get_page_contents to fetch PDFs and web summaries). A notable gap is that Manual 23 (specifically referenced in the ground truth) was not explicitly retrieved in the provided trace, and reliance on a third-party summary (zeroemissiongrid) without clear citation of the NYISO tariff/manual beyond UG-21 could leave some decision-point fees unverified. Overall the approach is solid and systematic but missing an explicit fetch of all named primary manuals (e.g., Manual 23) and complete verification against tariffs/official NYISO postings."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 5,
+    "alignment_score": 1.0,
+    "attribute_details": [
+      {
+        "name": "Application fee amount and CRIS-only exception",
+        "expected": "$10,000 per project application; $5,000 for CRIS-only projects",
+        "found": true,
+        "agent_value": "$10,000 (cash only) paid with submission; $5,000 for CRIS-Only projects"
+      },
+      {
+        "name": "Study deposit tiers by project size and CRIS-only exception",
+        "expected": "$100,000 for projects <80 MW; $150,000 for projects >=80 MW and <200 MW; $250,000 for projects >=200 MW; $50,000 for CRIS-only projects",
+        "found": true,
+        "agent_value": "Study Deposit submitted with application: $100,000 for projects <80 MW; $150,000 for projects 80–200 MW; $250,000 for projects ≥200 MW; $50,000 for CRIS-Only requests"
+      },
+      {
+        "name": "Readiness deposit at Decision Point 1 and CRIS-only exception",
+        "expected": "Readiness deposit of $4,000 per MW due 5 business days after customer engagement window; does not apply to CRIS-only projects",
+        "found": true,
+        "agent_value": "Readiness Deposit 1 (RD1) = $4,000/MW due during Decision Period 1 (5 business day window to decide to advance to Phase 2); not applicable for CRIS-Only projects"
+      },
+      {
+        "name": "Decision Point 2 study deposit calculation",
+        "expected": "Study deposit required 10 business days after Phase 1 study equal to the maximum of $4,000 per MW and 20% of project cost estimates determined during Phase 1",
+        "found": true,
+        "agent_value": "Readiness Deposit 2 (RD2) = greater of RD1 ($4,000/MW) or 20% of Phase 1 cost estimate; due at Phase 2 entry Decision Period (10 business days)"
+      },
+      {
+        "name": "Iterative final decision security deposit",
+        "expected": "Security deposit equal to 100% of cost estimates allocated to the project from Phase 1 and Phase 2 studies (due during iterative final decision period)",
+        "found": true,
+        "agent_value": "Full Security Commitment = 100% of estimated costs of all SUFs, SDUs, and CTOAFs identified in Phase 1 and Phase 2 (payable as cash or acceptable security at final decision)"
+      }
+    ],
+    "reasoning": "All five expected attributes are explicitly and accurately represented in the agent's answer. Numeric values and timing windows match the expected canonical values within allowed tolerances (exact matches). The agent correctly notes CRIS-only exceptions, deposit tier amounts, RD1 and RD2 calculations and timing, and the 100% final security requirement."
+  },
+  "raw_sources": {
+    "source_validity": 2,
+    "reasoning": "The answer contains many concrete fee figures and process-stage labels that plausibly map to NYISO interconnection practice, but it fails to explicitly cite the primary authoritative sources requested (NYISO Process Manuals 23, Guide UG21, NYISO OATT Attachment HH, or the NYISO interconnection manuals/cluster study documents). Strengths: the structure (application fee, study deposits, readiness deposits, security for upgrades, monthly study cost invoicing, and withdrawal forfeitures) aligns with how NYISO and other ISOs structure interconnection financial gates; the $10,000 non‑refundable application fee is a commonly seen NYISO figure and references to study deposits and readiness/security deposits are conceptually correct. Weaknesses/concerns: many specific numeric values (e.g., $4,000/MW RD1, exact study deposit bands, RD2 = greater of RD1 or 20% of Phase 1 estimate, 100% security timing, the ranges and averages cited for $/kW and total $2.8B) are presented without citations and may not match the current NYISO manuals or recent cluster study tariffs; some procedural claims (timing windows, CRIS-only amounts, permissibility of payment instruments, and stated penalty mechanics tied to a May 2025 IPFSWG meeting) require direct citations to manuals, tariff language, or NYISO filings to verify. Appropriateness: given the user’s suggested steps (fetch Manuals 23 and UG21 and extract fees), the agent should have included exact citations or links to the relevant sections/paragraphs and noted any differences between Attachment HH, the SIP/Cluster procedures, and UG21. Conclusion: the answer is partially plausible but insufficiently sourced for authoritative use; authoritative validation against NYISO manuals/tariff language is required. Score reflects plausible structure but inadequate explicit sourcing and unverifiable specific figures."
+  },
+  "metrics": {
+    "tool_calls": 6,
+    "total_tokens": 148410,
+    "duration_seconds": 96.07167029380798,
+    "latency": {
+      "wall_clock_ms": 96036.367893219,
+      "llm_thinking_ms": 77705.52277565002,
+      "tool_execution_ms": 18330.84511756897,
+      "per_tool_ms": {
+        "search_documents": 4975.713014602661,
+        "search_web": 11305.048704147339,
+        "get_page_contents": 2050.0833988189697
+      }
+    },
+    "cost": {
+      "input_tokens": 145445,
+      "output_tokens": 2965,
+      "cached_tokens": 0,
+      "reasoning_tokens": 0,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

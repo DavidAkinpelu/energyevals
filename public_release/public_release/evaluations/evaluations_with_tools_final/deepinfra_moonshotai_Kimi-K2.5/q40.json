@@ -1,0 +1,87 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 5.0,
+    "reasoning": "The agent correctly framed the task as a targeted web search for CAISO rules/tariff/protocol documents. It used appropriate authoritative sources (searching ISO postings, filings, and retrieving the Appendix K ancillary service requirements PDF), included relevant time bounds (post-2020) and refined queries to find tariff/market rule material. Tool use was logical and effective (search_documents, search_web, get_page_contents) and retrieved a current protocol appendix (Aug 2024) that directly addresses regulation participation/certification. No major gaps in approach; this matches expert-recommended method.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 0.2,
+    "reasoning": "I compared each expected attribute to the agent answer. The agent clearly covered certification/testing/operational response and telemetry details generally, so the requirement to follow dispatch and performance standards is present (1 match). However, it omitted or failed to fully state several canonical items: explicit registration/NRI and contracting clauses, ISO-certified revenue meters, GRDT and documented control/protection settings, and specific resource-type obligations like the ~30-minute state-of-charge and Net Benefits Test/Sub-LAP mapping. Partial or related information was present for some attributes but did not meet the full expected content, so those are marked not found.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 4.0,
+    "reasoning": "The agent cited authoritative and appropriate sources (CAISO Tariff, specifically Appendix K / Ancillary Service Requirements Protocol) and the CAISO website, which are the correct primary sources for regulation service participation requirements. That gives the answer high source validity. However, the agent did not provide direct citations to the exact clause/paragraphs or a date/version of the tariff/protocol, and several specific numeric requirements (e.g., 500 kW minimum, 100 kW for storage/DER aggregations, 10-minute response, continuous dispatch durations) are stated without pinpointed references or versioning; CAISO rules have evolved and some thresholds or testing/dispatch windows can change between protocol versions. The answer also omits citation of complementary authoritative materials that often clarify implementation (e.g., CAISO Business Practice Manuals, Participating Intermittent Resource treatment, or specific ISO bulletins) and does not indicate whether stated values apply to Day-Ahead vs Real-Time or to specific resource types. Overall: sources are authoritative and relevant, but the response would be stronger with exact tariff/protocol section citations, version/date, and references to any applicable BPMs or ISO notices for the specific numeric requirements claimed.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 5,
+    "reasoning": "The agent correctly framed the task as a targeted web search for CAISO rules/tariff/protocol documents. It used appropriate authoritative sources (searching ISO postings, filings, and retrieving the Appendix K ancillary service requirements PDF), included relevant time bounds (post-2020) and refined queries to find tariff/market rule material. Tool use was logical and effective (search_documents, search_web, get_page_contents) and retrieved a current protocol appendix (Aug 2024) that directly addresses regulation participation/certification. No major gaps in approach; this matches expert-recommended method."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 1,
+    "alignment_score": 0.2,
+    "attribute_details": [
+      {
+        "name": "Registration and contracting",
+        "expected": "Resource must be fully registered and contracted with CAISO: complete the New Resource Implementation (NRI) process, have an appointed Scheduling Coordinator (SC), and execute required agreements (e.g., Participating Generator Agreement).",
+        "found": false,
+        "agent_value": "Mentions certification and that a Scheduling Coordinator may submit bids and that resources must be certified; does not mention NRI process or execution of required agreements (e.g., Participating Generator Agreement)."
+      },
+      {
+        "name": "Metering and real-time telemetry",
+        "expected": "Install ISO-certified revenue-quality meters and provide direct real-time telemetry to CAISO's EMS to support fast response and accurate control.",
+        "found": false,
+        "agent_value": "States resources must provide real-time data (actual MW, limits, status) and direct digital control signal/communications to CAISO EMS; does not specify ISO-certified revenue-quality meters."
+      },
+      {
+        "name": "Ancillary service (regulation) certification and data templates",
+        "expected": "Obtain regulation ancillary-service certification, supply documented control/protection settings and a completed Generator Resource Data Template (GRDT).",
+        "found": false,
+        "agent_value": "Describes a certification process (written request, testing, certification listing) and testing requirements, but does not mention supplying documented control/protection settings or completing a GRDT."
+      },
+      {
+        "name": "Ability to follow dispatch and meet performance standards",
+        "expected": "Demonstrate capability to follow Dispatch Operating Points (DOP) and meet CAISO's regulation performance standards (response, accuracy, and any testing requirements).",
+        "found": true,
+        "agent_value": "Specifies ability to follow EMS signals, response time (reach max in ~10 minutes), immediate increase/decrease in real power, continuous dispatch durations, and performance accuracy/testing requirements."
+      },
+      {
+        "name": "Resource-type specific requirements",
+        "expected": "Comply with type-specific rules: storage must maintain sufficient state-of-charge for awarded regulation (e.g., ~30 minutes at awarded level); demand response/DERs/PDRs must meet Net Benefits Test, be correctly mapped to Sub-LAPs, and use proper resource IDs/aggregation per BPM.",
+        "found": false,
+        "agent_value": "Includes capacity thresholds (500 kW general, 100 kW for storage/DER aggregations), mentions aggregation may have modified requirements and temporary exemptions, but does not state state-of-charge/30-minute SOC requirement nor Net Benefits Test, Sub-LAP mapping, or BPM resource ID specifics."
+      }
+    ],
+    "reasoning": "I compared each expected attribute to the agent answer. The agent clearly covered certification/testing/operational response and telemetry details generally, so the requirement to follow dispatch and performance standards is present (1 match). However, it omitted or failed to fully state several canonical items: explicit registration/NRI and contracting clauses, ISO-certified revenue meters, GRDT and documented control/protection settings, and specific resource-type obligations like the ~30-minute state-of-charge and Net Benefits Test/Sub-LAP mapping. Partial or related information was present for some attributes but did not meet the full expected content, so those are marked not found."
+  },
+  "raw_sources": {
+    "source_validity": 4,
+    "reasoning": "The agent cited authoritative and appropriate sources (CAISO Tariff, specifically Appendix K / Ancillary Service Requirements Protocol) and the CAISO website, which are the correct primary sources for regulation service participation requirements. That gives the answer high source validity. However, the agent did not provide direct citations to the exact clause/paragraphs or a date/version of the tariff/protocol, and several specific numeric requirements (e.g., 500 kW minimum, 100 kW for storage/DER aggregations, 10-minute response, continuous dispatch durations) are stated without pinpointed references or versioning; CAISO rules have evolved and some thresholds or testing/dispatch windows can change between protocol versions. The answer also omits citation of complementary authoritative materials that often clarify implementation (e.g., CAISO Business Practice Manuals, Participating Intermittent Resource treatment, or specific ISO bulletins) and does not indicate whether stated values apply to Day-Ahead vs Real-Time or to specific resource types. Overall: sources are authoritative and relevant, but the response would be stronger with exact tariff/protocol section citations, version/date, and references to any applicable BPMs or ISO notices for the specific numeric requirements claimed."
+  },
+  "metrics": {
+    "tool_calls": 6,
+    "total_tokens": 154138,
+    "duration_seconds": 93.15256762504578,
+    "latency": {
+      "wall_clock_ms": 93125.5874633789,
+      "llm_thinking_ms": 73931.54191970825,
+      "tool_execution_ms": 19194.045543670654,
+      "per_tool_ms": {
+        "search_documents": 1399.122953414917,
+        "search_web": 11879.302740097046,
+        "get_page_contents": 5915.619850158691
+      }
+    },
+    "cost": {
+      "input_tokens": 152420,
+      "output_tokens": 1718,
+      "cached_tokens": 122496,
+      "reasoning_tokens": 0,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

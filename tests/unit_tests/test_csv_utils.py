@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from energbench.utils.csv_utils import (
+from energyevals.utils.csv_utils import (
     csv_string_to_dataframe,
     dataframe_to_csv_string,
     generate_timestamp,

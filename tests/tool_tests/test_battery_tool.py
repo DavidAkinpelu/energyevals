@@ -4,7 +4,7 @@ import json
 import pandas as pd
 import pytest
 
-from energbench.tools.battery_tool import BatteryOptimizationTool
+from energyevals.tools.battery_tool import BatteryOptimizationTool
 
 
 @pytest.fixture

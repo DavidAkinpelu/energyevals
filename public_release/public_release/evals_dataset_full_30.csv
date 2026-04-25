@@ -1,0 +1,465 @@
+S/N,Category,Question type,Difficulty level,Question,Answer,Approach
+1,Knowledge retrieval and interpretation,Data retrieval with sources,Easy,What detailed fees are associated with each decision point in the NYISO generation interconnection process based on the NYISO process manuals 23 and guide UG21?,"The new NYISO cluster study process includes the following windows and decision points.
+1.	Pre-study phase (optional)
+2.	Application window ideally 45 days but currently 105 days for the NYISO interconnection process transition period. During this window, a $10,000 application is paid for each project (or a $5,000 fee for CRIS-only projects). Study deposits are also required during this phase - $100,000 for projects < 80 MW, $150,000 for projects >= 80 but < 200 MW, $250,000 for projects >= 200 MW. For CRIS-only projects, study deposit is $50,000
+3.	Customer engagement window ideally 70 days but currently 90 days for the NYISO interconnection process transition period. 
+4.	Decision point 1 5 business days after the customer engagement window. Requires a readiness deposit of $4,000/MW which does not apply to CRIS-only projects
+5.	Phase 1 study 190 days after the decision point 1
+6.	Decision point 2 10 business days after phase 1 study window and requires a study deposit equal to the maximum of $4,000/MW and 20% of project cost estimates during phase 1 study period
+7.	Phase 2 study 270 days after decision point 2
+8.	Iterative final decision period requires a security deposit of 100% of costs estimates allocated to the project from Phase 1 and Phase 2 studies
+9.	Post Phase 2 study negotiation of IAs and other relevant studies as required",Do a web search to get the NYISO process manuals 23 and guide UG21. Then extract the fees for each decision point specified in those sources
+3,Knowledge retrieval and interpretation,Data retrieval with sources,Easy,What are the fees associated with each milestone in the ERCOT generation interconnection process based on ERCOT fee schedule and resource interconnection handbook?,"ERCOT s interconnection-related fees include upfront registration and study charges plus ongoing cost responsibilities.?
+
+1. Generator registration fees
+ - New or modified generator ? 10 MW: $14,000 registration fee.?
+
+ - New or modified generator < 10 MW (excluding SODGs): $8,000 registration fee.?
+
+2. Settlement Only Distribution Generators (SODGs): $2,300 registration fee.?
+
+3. Full Interconnection Study (FIS) application fees
+ - New generator FIS application: $3,000.?
+
+4. Modification to an existing generator FIS application: $2,700.?",Do a web search to get ERCOT's fee schedule and the resource interconnection handbook. Then extract the fees for the milestones specified in those sources
+19,Knowledge retrieval and interpretation,Data retrieval with sources,Easy,What are the participation requirements for regulation service in CAISO based on the latest business process manual for market operations?,"To provide Regulation Service in CAISO, a resource must:
+
+1. Be fully registered and contracted
+
+ - Complete the New Resource Implementation (NRI) process.
+
+ - Have a Scheduling Coordinator (SC) and execute the required agreements (e.g., Participating Generator Agreement).
+
+2. Meet metering and telemetry standards
+
+ - Install ISO?certified, revenue?quality meters.
+
+ - Provide direct real?time telemetry to CAISO s EMS for fast response and accurate control.
+
+3. Satisfy ancillary?service?specific technical requirements
+
+ - Obtain ancillary service (regulation) certification, including documented control/protection settings and a completed Generator Resource Data Template (GRDT).
+
+ - Demonstrate the ability to follow the Dispatch Operating Point (DOP) and meet CAISO performance standards for regulation.
+
+4. Comply with resource?type rules
+
+ - Storage: Maintain sufficient state of charge to sustain awarded regulation (e.g., 30 minutes at the awarded level).
+
+ - Demand response / PDRs / DERs: Meet Net Benefits Test criteria, Sub?LAP mapping, and use proper resource IDs and aggregation structures as defined in the BPM.",Do a web search to find the relevant CAISO data source and pull the needed data from that source
+20,Knowledge retrieval and interpretation,Data retrieval with sources,Easy,What are the different valid resource types for asset registration in SPP based on the latest version of the integrated market protocols?,"Valid resource types for asset registration in SPP s Integrated Marketplace include:
+
+Resource Type	Description
+Dispatchable Resource	Fully dispatchable generation/injection asset
+Dispatchable Variable Energy Resource (DVER)	Variable generator controlled by SPP dispatch
+Electric Storage Resource (ESR)	Storage asset (battery, pumped hydro, etc.)
+Market Storage Resource (MSR)	Storage variant with specific modeling rules
+Dispatchable Demand Response Resource	Demand response participant that can be dispatched
+Plant / Jointly Owned Unit	Aggregated or collectively owned generation
+Variable Energy Resource (VER)	Variable generation not dispatchable
+Block Demand Response	DR with block-based participation
+Interchange Transaction Types	Registered energy import/export physical transactions",Do a web search to find the relevant SPP data source and pull the needed data from that source
+22,Knowledge retrieval and interpretation,Data retrieval without sources,Medium,What detailed fees are associated with each decision point in the NYISO generation interconnection process?,"The new NYISO cluster study process includes the following windows and decision points.
+1.	Pre-study phase (optional)
+2.	Application window ideally 45 days but currently 105 days for the NYISO interconnection process transition period. During this window, a $10,000 application is paid for each project (or a $5,000 fee for CRIS-only projects). Study deposits are also required during this phase - $100,000 for projects < 80 MW, $150,000 for projects >= 80 but < 200 MW, $250,000 for projects >= 200 MW. For CRIS-only projects, study deposit is $50,000
+3.	Customer engagement window ideally 70 days but currently 90 days for the NYISO interconnection process transition period. 
+4.	Decision point 1 5 business days after the customer engagement window. Requires a readiness deposit of $4,000/MW which does not apply to CRIS-only projects
+5.	Phase 1 study 190 days after the decision point 1
+6.	Decision point 2 10 business days after phase 1 study window and requires a study deposit equal to the maximum of $4,000/MW and 20% of project cost estimates during phase 1 study period
+7.	Phase 2 study 270 days after decision point 2
+8.	Iterative final decision period requires a security deposit of 100% of costs estimates allocated to the project from Phase 1 and Phase 2 studies
+9.	Post Phase 2 study negotiation of IAs and other relevant studies as required",Do a web search to get the NYISO process manuals 23 and guide UG21. Then extract the fees for each decision point specified in those sources
+24,Knowledge retrieval and interpretation,Data retrieval without sources,Medium,What are the fees associated with each milestone in the ERCOT generation interconnection process?,"ERCOT s interconnection-related fees include upfront registration and study charges plus ongoing cost responsibilities.?
+
+1. Generator registration fees
+ - New or modified generator ? 10 MW: $14,000 registration fee.?
+
+ - New or modified generator < 10 MW (excluding SODGs): $8,000 registration fee.?
+
+2. Settlement Only Distribution Generators (SODGs): $2,300 registration fee.?
+
+3. Full Interconnection Study (FIS) application fees
+ - New generator FIS application: $3,000.?
+
+4. Modification to an existing generator FIS application: $2,700.?",Do a web search to get ERCOT's fee schedule and the resource interconnection handbook. Then extract the fees for the milestones specified in those sources
+40,Knowledge retrieval and interpretation,Data retrieval without sources,Medium,What are the participation requirements for regulation service in CAISO?,"To provide Regulation Service in CAISO, a resource must:
+
+1. Be fully registered and contracted
+
+ - Complete the New Resource Implementation (NRI) process.
+
+ - Have a Scheduling Coordinator (SC) and execute the required agreements (e.g., Participating Generator Agreement).
+
+2. Meet metering and telemetry standards
+
+ - Install ISO?certified, revenue?quality meters.
+
+ - Provide direct real?time telemetry to CAISO s EMS for fast response and accurate control.
+
+3. Satisfy ancillary?service?specific technical requirements
+
+ - Obtain ancillary service (regulation) certification, including documented control/protection settings and a completed Generator Resource Data Template (GRDT).
+
+ - Demonstrate the ability to follow the Dispatch Operating Point (DOP) and meet CAISO performance standards for regulation.
+
+4. Comply with resource?type rules
+
+ - Storage: Maintain sufficient state of charge to sustain awarded regulation (e.g., 30 minutes at the awarded level).
+
+ - Demand response / PDRs / DERs: Meet Net Benefits Test criteria, Sub?LAP mapping, and use proper resource IDs and aggregation structures as defined in the BPM.",Answer this with a web search
+41,Knowledge retrieval and interpretation,Data retrieval without sources,Medium,What are the different valid resource types for asset registration in SPP?,"Valid resource types for asset registration in SPP s Integrated Marketplace include:
+
+Resource Type	Description
+Dispatchable Resource	Fully dispatchable generation/injection asset
+Dispatchable Variable Energy Resource (DVER)	Variable generator controlled by SPP dispatch
+Electric Storage Resource (ESR)	Storage asset (battery, pumped hydro, etc.)
+Market Storage Resource (MSR)	Storage variant with specific modeling rules
+Dispatchable Demand Response Resource	Demand response participant that can be dispatched
+Plant / Jointly Owned Unit	Aggregated or collectively owned generation
+Variable Energy Resource (VER)	Variable generation not dispatchable
+Block Demand Response	DR with block-based participation
+Interchange Transaction Types	Registered energy import/export physical transactions",Answer this with a web search
+43,Markets data retrieval only,Data retrieval without sources,Medium,"Pull the day-ahead energy prices in ERCOT West hub in July 1-4, 2024","Here's the requested dataset. The prices are in $/MWh
+utc_timestamp timestamp zone_name zone_type lmp timezone
+7/1/2024 5:00 7/1/2024 0:00 west hub 19.94 cst
+7/1/2024 6:00 7/1/2024 1:00 west hub 18.37 cst
+7/1/2024 7:00 7/1/2024 2:00 west hub 17.79 cst
+7/1/2024 8:00 7/1/2024 3:00 west hub 17.63 cst
+7/1/2024 9:00 7/1/2024 4:00 west hub 17.88 cst
+7/1/2024 10:00 7/1/2024 5:00 west hub 18.37 cst
+7/1/2024 11:00 7/1/2024 6:00 west hub 19.43 cst
+7/1/2024 12:00 7/1/2024 7:00 west hub 17.66 cst
+7/1/2024 13:00 7/1/2024 8:00 west hub 12.71 cst
+7/1/2024 14:00 7/1/2024 9:00 west hub 8.67 cst
+7/1/2024 15:00 7/1/2024 10:00 west hub 8.45 cst
+7/1/2024 16:00 7/1/2024 11:00 west hub 9.42 cst
+7/1/2024 17:00 7/1/2024 12:00 west hub 7.33 cst
+7/1/2024 18:00 7/1/2024 13:00 west hub 7.67 cst
+7/1/2024 19:00 7/1/2024 14:00 west hub 7.07 cst
+7/1/2024 20:00 7/1/2024 15:00 west hub 8.14 cst
+7/1/2024 21:00 7/1/2024 16:00 west hub 6.28 cst
+7/1/2024 22:00 7/1/2024 17:00 west hub 5.75 cst
+7/1/2024 23:00 7/1/2024 18:00 west hub 5.09 cst
+7/2/2024 0:00 7/1/2024 19:00 west hub 21.07 cst
+7/2/2024 1:00 7/1/2024 20:00 west hub 36.51 cst
+7/2/2024 2:00 7/1/2024 21:00 west hub 27.86 cst
+7/2/2024 3:00 7/1/2024 22:00 west hub 21.37 cst
+7/2/2024 4:00 7/1/2024 23:00 west hub 13.86 cst
+7/2/2024 5:00 7/2/2024 0:00 west hub 7.91 cst
+7/2/2024 6:00 7/2/2024 1:00 west hub 5.91 cst
+7/2/2024 7:00 7/2/2024 2:00 west hub 6.62 cst
+7/2/2024 8:00 7/2/2024 3:00 west hub 6.04 cst
+7/2/2024 9:00 7/2/2024 4:00 west hub 8.46 cst
+7/2/2024 10:00 7/2/2024 5:00 west hub 13.87 cst
+7/2/2024 11:00 7/2/2024 6:00 west hub 13.91 cst
+7/2/2024 12:00 7/2/2024 7:00 west hub 7.77 cst
+7/2/2024 13:00 7/2/2024 8:00 west hub -2.03 cst
+7/2/2024 14:00 7/2/2024 9:00 west hub -3.86 cst
+7/2/2024 15:00 7/2/2024 10:00 west hub -1.76 cst
+7/2/2024 16:00 7/2/2024 11:00 west hub -1.33 cst
+7/2/2024 17:00 7/2/2024 12:00 west hub 1.43 cst
+7/2/2024 18:00 7/2/2024 13:00 west hub 4.59 cst
+7/2/2024 19:00 7/2/2024 14:00 west hub 8.53 cst
+7/2/2024 20:00 7/2/2024 15:00 west hub 13.96 cst
+7/2/2024 21:00 7/2/2024 16:00 west hub 12.83 cst
+7/2/2024 22:00 7/2/2024 17:00 west hub 11.82 cst
+7/2/2024 23:00 7/2/2024 18:00 west hub 12.4 cst
+7/3/2024 0:00 7/2/2024 19:00 west hub 33.86 cst
+7/3/2024 1:00 7/2/2024 20:00 west hub 46.44 cst
+7/3/2024 2:00 7/2/2024 21:00 west hub 29.7 cst
+7/3/2024 3:00 7/2/2024 22:00 west hub 22.04 cst
+7/3/2024 4:00 7/2/2024 23:00 west hub 17.7 cst
+7/3/2024 5:00 7/3/2024 0:00 west hub 13.85 cst
+7/3/2024 6:00 7/3/2024 1:00 west hub 12.72 cst
+7/3/2024 7:00 7/3/2024 2:00 west hub 12.74 cst
+7/3/2024 8:00 7/3/2024 3:00 west hub 14.05 cst
+7/3/2024 9:00 7/3/2024 4:00 west hub 14.79 cst
+7/3/2024 10:00 7/3/2024 5:00 west hub 15.83 cst
+7/3/2024 11:00 7/3/2024 6:00 west hub 16.27 cst
+7/3/2024 12:00 7/3/2024 7:00 west hub 13.58 cst
+7/3/2024 13:00 7/3/2024 8:00 west hub 9.62 cst
+7/3/2024 14:00 7/3/2024 9:00 west hub 7.07 cst
+7/3/2024 15:00 7/3/2024 10:00 west hub 9.07 cst
+7/3/2024 16:00 7/3/2024 11:00 west hub 14.63 cst
+7/3/2024 17:00 7/3/2024 12:00 west hub 17.76 cst
+7/3/2024 18:00 7/3/2024 13:00 west hub 24.05 cst
+7/3/2024 19:00 7/3/2024 14:00 west hub 23.31 cst
+7/3/2024 20:00 7/3/2024 15:00 west hub 24.18 cst
+7/3/2024 21:00 7/3/2024 16:00 west hub 21.51 cst
+7/3/2024 22:00 7/3/2024 17:00 west hub 18.02 cst
+7/3/2024 23:00 7/3/2024 18:00 west hub 18.41 cst
+7/4/2024 0:00 7/3/2024 19:00 west hub 40.64 cst
+7/4/2024 1:00 7/3/2024 20:00 west hub 46.72 cst
+7/4/2024 2:00 7/3/2024 21:00 west hub 28.15 cst
+7/4/2024 3:00 7/3/2024 22:00 west hub 25.87 cst
+7/4/2024 4:00 7/3/2024 23:00 west hub 20.52 cst
+7/4/2024 5:00 7/4/2024 0:00 west hub 18.2 cst
+7/4/2024 6:00 7/4/2024 1:00 west hub 15.09 cst
+7/4/2024 7:00 7/4/2024 2:00 west hub 13.31 cst
+7/4/2024 8:00 7/4/2024 3:00 west hub 12.49 cst
+7/4/2024 9:00 7/4/2024 4:00 west hub 12.7 cst
+7/4/2024 10:00 7/4/2024 5:00 west hub 13.55 cst
+7/4/2024 11:00 7/4/2024 6:00 west hub 12.97 cst
+7/4/2024 12:00 7/4/2024 7:00 west hub 11.48 cst
+7/4/2024 13:00 7/4/2024 8:00 west hub 8.34 cst
+7/4/2024 14:00 7/4/2024 9:00 west hub 5.52 cst
+7/4/2024 15:00 7/4/2024 10:00 west hub 10.81 cst
+7/4/2024 16:00 7/4/2024 11:00 west hub 17 cst
+7/4/2024 17:00 7/4/2024 12:00 west hub 20.39 cst
+7/4/2024 18:00 7/4/2024 13:00 west hub 26.82 cst
+7/4/2024 19:00 7/4/2024 14:00 west hub 28.38 cst
+7/4/2024 20:00 7/4/2024 15:00 west hub 30.89 cst
+7/4/2024 21:00 7/4/2024 16:00 west hub 36.94 cst
+7/4/2024 22:00 7/4/2024 17:00 west hub 40.17 cst
+7/4/2024 23:00 7/4/2024 18:00 west hub 43.69 cst
+7/5/2024 0:00 7/4/2024 19:00 west hub 88.75 cst
+7/5/2024 1:00 7/4/2024 20:00 west hub 87.11 cst
+7/5/2024 2:00 7/4/2024 21:00 west hub 44.66 cst
+7/5/2024 3:00 7/4/2024 22:00 west hub 32.33 cst
+7/5/2024 4:00 7/4/2024 23:00 west hub 24.99 cst","Check your database tools and look for an ERCOT database. Then query the database to see a data sample and proceed to get the data requested. Alternatively, you can also check the Grid Status API. To use this you would need to find the appropraite dataset name, understand the structure of the data before writing queries to pull the requested data. Note that the answer must be hub prices and not zonal prices. Also, if the dataset contains both local timestamps and utc timestamps, local timestamps should be prioritzed"
+65,Markets data retrieval only,Data retrieval with sources,Easy,"Pull the day-ahead energy prices in ERCOT West hub in July 1 - 4, 2024 based on data from your ERCOT database","Here's the requested dataset. The prices are in $/MWh
+utc_timestamp timestamp zone_name zone_type lmp timezone
+7/1/2024 5:00 7/1/2024 0:00 west hub 19.94 cst
+7/1/2024 6:00 7/1/2024 1:00 west hub 18.37 cst
+7/1/2024 7:00 7/1/2024 2:00 west hub 17.79 cst
+7/1/2024 8:00 7/1/2024 3:00 west hub 17.63 cst
+7/1/2024 9:00 7/1/2024 4:00 west hub 17.88 cst
+7/1/2024 10:00 7/1/2024 5:00 west hub 18.37 cst
+7/1/2024 11:00 7/1/2024 6:00 west hub 19.43 cst
+7/1/2024 12:00 7/1/2024 7:00 west hub 17.66 cst
+7/1/2024 13:00 7/1/2024 8:00 west hub 12.71 cst
+7/1/2024 14:00 7/1/2024 9:00 west hub 8.67 cst
+7/1/2024 15:00 7/1/2024 10:00 west hub 8.45 cst
+7/1/2024 16:00 7/1/2024 11:00 west hub 9.42 cst
+7/1/2024 17:00 7/1/2024 12:00 west hub 7.33 cst
+7/1/2024 18:00 7/1/2024 13:00 west hub 7.67 cst
+7/1/2024 19:00 7/1/2024 14:00 west hub 7.07 cst
+7/1/2024 20:00 7/1/2024 15:00 west hub 8.14 cst
+7/1/2024 21:00 7/1/2024 16:00 west hub 6.28 cst
+7/1/2024 22:00 7/1/2024 17:00 west hub 5.75 cst
+7/1/2024 23:00 7/1/2024 18:00 west hub 5.09 cst
+7/2/2024 0:00 7/1/2024 19:00 west hub 21.07 cst
+7/2/2024 1:00 7/1/2024 20:00 west hub 36.51 cst
+7/2/2024 2:00 7/1/2024 21:00 west hub 27.86 cst
+7/2/2024 3:00 7/1/2024 22:00 west hub 21.37 cst
+7/2/2024 4:00 7/1/2024 23:00 west hub 13.86 cst
+7/2/2024 5:00 7/2/2024 0:00 west hub 7.91 cst
+7/2/2024 6:00 7/2/2024 1:00 west hub 5.91 cst
+7/2/2024 7:00 7/2/2024 2:00 west hub 6.62 cst
+7/2/2024 8:00 7/2/2024 3:00 west hub 6.04 cst
+7/2/2024 9:00 7/2/2024 4:00 west hub 8.46 cst
+7/2/2024 10:00 7/2/2024 5:00 west hub 13.87 cst
+7/2/2024 11:00 7/2/2024 6:00 west hub 13.91 cst
+7/2/2024 12:00 7/2/2024 7:00 west hub 7.77 cst
+7/2/2024 13:00 7/2/2024 8:00 west hub -2.03 cst
+7/2/2024 14:00 7/2/2024 9:00 west hub -3.86 cst
+7/2/2024 15:00 7/2/2024 10:00 west hub -1.76 cst
+7/2/2024 16:00 7/2/2024 11:00 west hub -1.33 cst
+7/2/2024 17:00 7/2/2024 12:00 west hub 1.43 cst
+7/2/2024 18:00 7/2/2024 13:00 west hub 4.59 cst
+7/2/2024 19:00 7/2/2024 14:00 west hub 8.53 cst
+7/2/2024 20:00 7/2/2024 15:00 west hub 13.96 cst
+7/2/2024 21:00 7/2/2024 16:00 west hub 12.83 cst
+7/2/2024 22:00 7/2/2024 17:00 west hub 11.82 cst
+7/2/2024 23:00 7/2/2024 18:00 west hub 12.4 cst
+7/3/2024 0:00 7/2/2024 19:00 west hub 33.86 cst
+7/3/2024 1:00 7/2/2024 20:00 west hub 46.44 cst
+7/3/2024 2:00 7/2/2024 21:00 west hub 29.7 cst
+7/3/2024 3:00 7/2/2024 22:00 west hub 22.04 cst
+7/3/2024 4:00 7/2/2024 23:00 west hub 17.7 cst
+7/3/2024 5:00 7/3/2024 0:00 west hub 13.85 cst
+7/3/2024 6:00 7/3/2024 1:00 west hub 12.72 cst
+7/3/2024 7:00 7/3/2024 2:00 west hub 12.74 cst
+7/3/2024 8:00 7/3/2024 3:00 west hub 14.05 cst
+7/3/2024 9:00 7/3/2024 4:00 west hub 14.79 cst
+7/3/2024 10:00 7/3/2024 5:00 west hub 15.83 cst
+7/3/2024 11:00 7/3/2024 6:00 west hub 16.27 cst
+7/3/2024 12:00 7/3/2024 7:00 west hub 13.58 cst
+7/3/2024 13:00 7/3/2024 8:00 west hub 9.62 cst
+7/3/2024 14:00 7/3/2024 9:00 west hub 7.07 cst
+7/3/2024 15:00 7/3/2024 10:00 west hub 9.07 cst
+7/3/2024 16:00 7/3/2024 11:00 west hub 14.63 cst
+7/3/2024 17:00 7/3/2024 12:00 west hub 17.76 cst
+7/3/2024 18:00 7/3/2024 13:00 west hub 24.05 cst
+7/3/2024 19:00 7/3/2024 14:00 west hub 23.31 cst
+7/3/2024 20:00 7/3/2024 15:00 west hub 24.18 cst
+7/3/2024 21:00 7/3/2024 16:00 west hub 21.51 cst
+7/3/2024 22:00 7/3/2024 17:00 west hub 18.02 cst
+7/3/2024 23:00 7/3/2024 18:00 west hub 18.41 cst
+7/4/2024 0:00 7/3/2024 19:00 west hub 40.64 cst
+7/4/2024 1:00 7/3/2024 20:00 west hub 46.72 cst
+7/4/2024 2:00 7/3/2024 21:00 west hub 28.15 cst
+7/4/2024 3:00 7/3/2024 22:00 west hub 25.87 cst
+7/4/2024 4:00 7/3/2024 23:00 west hub 20.52 cst
+7/4/2024 5:00 7/4/2024 0:00 west hub 18.2 cst
+7/4/2024 6:00 7/4/2024 1:00 west hub 15.09 cst
+7/4/2024 7:00 7/4/2024 2:00 west hub 13.31 cst
+7/4/2024 8:00 7/4/2024 3:00 west hub 12.49 cst
+7/4/2024 9:00 7/4/2024 4:00 west hub 12.7 cst
+7/4/2024 10:00 7/4/2024 5:00 west hub 13.55 cst
+7/4/2024 11:00 7/4/2024 6:00 west hub 12.97 cst
+7/4/2024 12:00 7/4/2024 7:00 west hub 11.48 cst
+7/4/2024 13:00 7/4/2024 8:00 west hub 8.34 cst
+7/4/2024 14:00 7/4/2024 9:00 west hub 5.52 cst
+7/4/2024 15:00 7/4/2024 10:00 west hub 10.81 cst
+7/4/2024 16:00 7/4/2024 11:00 west hub 17 cst
+7/4/2024 17:00 7/4/2024 12:00 west hub 20.39 cst
+7/4/2024 18:00 7/4/2024 13:00 west hub 26.82 cst
+7/4/2024 19:00 7/4/2024 14:00 west hub 28.38 cst
+7/4/2024 20:00 7/4/2024 15:00 west hub 30.89 cst
+7/4/2024 21:00 7/4/2024 16:00 west hub 36.94 cst
+7/4/2024 22:00 7/4/2024 17:00 west hub 40.17 cst
+7/4/2024 23:00 7/4/2024 18:00 west hub 43.69 cst
+7/5/2024 0:00 7/4/2024 19:00 west hub 88.75 cst
+7/5/2024 1:00 7/4/2024 20:00 west hub 87.11 cst
+7/5/2024 2:00 7/4/2024 21:00 west hub 44.66 cst
+7/5/2024 3:00 7/4/2024 22:00 west hub 32.33 cst
+7/5/2024 4:00 7/4/2024 23:00 west hub 24.99 cst","Check your database tools and look for an ERCOT database. Then query the database to see a data sample and proceed to get the data requested. Note that the answer must be hub prices and not zonal prices. Also, if the dataset contains both local timestamps and utc timestamps, local timestamps should be prioritzed"
+124,Markets data retrieval and analysis,Data retrieval and analysis with sources,Medium,Show me monthly average of day-ahead prices for ERCOT Houston hub in 2023 based on your ERCOT database,"ERCOT Houston Hub Monthly Average Day-Ahead Prices (2023)
+-----------------------------------------------------------
+Jan: $24.64/MWh
+Feb: $22.55/MWh
+Mar: $26.36/MWh
+Apr: $25.44/MWh
+May: $30.94/MWh
+Jun: $74.43/MWh
+Jul: $56.26/MWh
+Aug: $266.14/MWh
+Sep: $70.83/MWh
+Oct: $34.18/MWh
+Nov: $31.37/MWh
+Dec: $20.52/MWh",Pull data specifically from the local ERCOT database and then compute monthly avergae prices
+127,Markets data retrieval and analysis,Data retrieval and analysis with sources,Medium,Which PJM price hub had the highest day-ahead average price in January 2024 based on your PJM database?,"The DOMINION HUB had the highest day-ahead price at $51/MWh. The prices for all the hubs are as follows.
+
+EASTERN HUB 46.65595652149792
+WEST INT HUB 45.41810156865465
+WESTERN HUB 49.238374647711524
+NEW JERSEY HUB 44.99136677392511
+CHICAGO GEN HUB 40.402360273231615
+CHICAGO HUB 41.64138810818308
+N ILLINOIS HUB 40.63379139805825
+AEP GEN HUB 41.76763850762829
+AEP-DAYTON HUB 43.410480528432736
+OHIO HUB 43.48597740776699
+DOMINION HUB 51.04894748821082
+ATSI GEN HUB 43.75922142024965",Pull the needed data from your local PJM database and compute the averages for each hub. Not that the prices must be for hubs and not lod zones
+144,Markets data retrieval and analysis,Data retrieval and analysis with sources,Medium,Which MISO price hub had the highest day-ahead average price in January 2024 based on data from your GridStatus API acess ,The Indiana hub had the highest average day-ahead price of aboout $50/MWh,"Get data from your GridStatus API and then compute the needed numbers. For GridStatus API, you first need to find the appropriate datasets, check the format of the data in the dataset before you start writing queuries"
+153,Markets data retrieval and analysis,Data retrieval and analysis without sources,Medium,Show me monthly average of day-ahead prices for ERCOT Houston hub in 2023,"ERCOT Houston Hub Monthly Average Day-Ahead Prices (2023)
+-----------------------------------------------------------
+Jan: $24.64/MWh
+Feb: $22.55/MWh
+Mar: $26.36/MWh
+Apr: $25.44/MWh
+May: $30.94/MWh
+Jun: $74.43/MWh
+Jul: $56.26/MWh
+Aug: $266.14/MWh
+Sep: $70.83/MWh
+Oct: $34.18/MWh
+Nov: $31.37/MWh
+Dec: $20.52/MWh",Get day-ahead prices for the Houston hub from your ERCOT database or GridStatus API. Then compute the monthly average prices
+156,Markets data retrieval and analysis,Data retrieval and analysis without sources,Medium,Which PJM price hub had the highest day-ahead average price in January 2024?,"The DOMINION HUB had the highest day-ahead price at $51/MWh. The prices for all the hubs are as follows.
+
+EASTERN HUB 46.65595652149792
+WEST INT HUB 45.41810156865465
+WESTERN HUB 49.238374647711524
+NEW JERSEY HUB 44.99136677392511
+CHICAGO GEN HUB 40.402360273231615
+CHICAGO HUB 41.64138810818308
+N ILLINOIS HUB 40.63379139805825
+AEP GEN HUB 41.76763850762829
+AEP-DAYTON HUB 43.410480528432736
+OHIO HUB 43.48597740776699
+DOMINION HUB 51.04894748821082
+ATSI GEN HUB 43.75922142024965",Pull the needed data from your local PJM database and compute the averages for each hub. Not that the prices must be for hubs and not lod zones. GridStatus API can also be used for this and in thast case you will need to find and inspect the relevant datasets before making queries
+172,Markets data retrieval and analysis,Data retrieval and analysis without sources,Medium,Which MISO price hub had the highest day-ahead average price in January 2024 ,The Indiana hub had the highest average day-ahead price of aboout $50/MWh,Get data from your GridStatus API and then compute the needed numbers
+188,Knowledge retrieval and interpretation,Data retrieval with sources,Easy,What demand charges apply to commercial customers with demand >500 kW in Virginia based on the OpenEI tariffs data?,"The demand charges include:
+- GS?3 (Large General Service Secondary voltage; applies when peak ?500 kW): demand charge components shown in the tariff: $2.498 /kW-month (plus adjustments) and $13.235 /kW-month (plus adjustments)
+- GS?4 (Large General Service Primary/Transmission voltage; applies when peak ?500 kW): demand rates in tariff: $2.318 /kW-month (plus adjustments) and $12.943 /kW-month (plus adjustments).
+- Schedule 10 / Large General Service (alternative naming seen in Dominion documents): shows a flat demand component of $2.507 /kW-month (plus adjustments) for secondary-voltage Large General Service
+A perfect response should at the very least contain these service classes","Use your tariffs tool to find the tariffs applicable to commercial customers in Virginia. Then filter for those applying to customers with demand >500 kW. Alternatively, you could do a web search too but it has to reference and be based on data from the OpenEI tariffs database."
+196,Knowledge retrieval and interpretation,Data retrieval with sources,Easy,What Dominion Energy commercial customer service class pays the highest demand charge in Virginia based on OpenEI tariffs data?,GS-4 service class has the highest demand charge and applies to customers with peak demand >= 500 kW. GS-3 is very close to GS-4 and is alos an acceptable response,Use your tariffs tool to find all relevant service classes and then choose the one with the highest demand charge
+204,Knowledge retrieval and interpretation,Data retrieval with sources,Easy,What are the docket numbers for the filings Google submitted to FERC between June and December 2024? Use your FERC docket tool,"Five dockets were filed by Google with FERC between June and December 2024. The docket details are as follows.
+1. Date Filed: December 10, 2024
+Docket Number: AD24-11-000
+Description: Post-Technical Conference of Google LLC under AD24-11
+2. Date Filed: December 27, 2024
+Docket Number: ER10-2835-012
+Description: Triennial Market Power Analysis for Southwest Power Pool Inc. Region of Google Energy LLC under ER10-2835.
+3. Date Filed: September 19, 2024
+Docket Number: ER24-2891-000, ER24-2888-000, ER24-2890-000, ER24-2893-000, ER24-2894-000, ER24-2889-000
+Description: Motion to Intervene of Google LLC under ER24-2891 et al.
+4. Date Filed: November 5, 2024
+Docket Number: ER10-2835-011
+Description: Supplement to 01/31/2024, Notice of Change in Status of Google Energy LLC under ER10-2835.
+5. Date Filed: June 28, 2024
+Docket Number: ER10-468-005
+Description: Triennial Market Power Analysis for Central Region of Google Energy LLC under ER10-468.
+",Use the FERC docket tool to find the relevant docket with the specified date range and affiliation inputs. Affiliation inputs are better in this case because we know the docket filing organization. Then provide the docket numbers based on the FERC docket tool results
+208,Knowledge retrieval and interpretation,Data retrieval and analysis with sources,Hard,How do the capacity charges vary for commercial customers with demand >500 kW across each state served by Xcel Energy based on data from Open EI tariffs data?,"Xcel Energy has subsidiaries that serves customers across multiple states inlcuding Texas, Wisconsin, Michigan, Colorado, Minnesota, North and South Dakota. Across these different regions, the following represents the service classes with the highest peak demand changes that could be applicable to customers with demand >500 kW
+
+1. Texas: Secondary General Service - applies to all commercial and industrial electric service supplied at secondary voltage and at one point of delivery, and measured through one meter with a demand greater than 25 kW and served where facilities of adequate capacity and suitable voltage are adjacent to the premises to be served.\r\n\r\nNot applicable to resale or shared service, or service to oil and natural gas production Customers.\r\n\r\nThe following adjustments are applicable to this rate: Power Factor Adjustment and Fuel Cost Adjustment. Demand charge could be as high as approx $23/kW
+
+2. Wisconsin/Michigan: Cg-9.1 Large General Time-of-Day Secondary Mandatory Customers - This rate schedule is mandatory for any retail customer having a 15-minute\r\nmeasured demand equal to or greater than 200 kW for at least 4 of 12 months. Customer remains on\r\nthis rate schedule on a mandatory basis unless demand remains below 200 kW for 12 consecutive\r\nmonths. Demand charge could be as high as approx. $17/kW
+
+3. Colorado: SECONDARY STANDBY SERVICE - SCHEDULE SST - Demand charge could be as high as approx $20/kW
+
+4. Minnesota/North Dakita/South Dakota - Multiple General Service classes with different riders. Demand charge could be as high as approx $17/kW. Across all the regions, it is interesting to note that Texas has the highest demand charge","First do a web search to ger eia ids for the different Xcel energy subsidiaries. Then use the tarrifs tool to find applicable commercial service classes with demand > 500 kW for each of these companies. After that, the service classes with the maximum demand charges across the filtered service classes and then compare across board.
+
+An alternative approach could also be to use addresses that reflect regions served by these different subsidiaries and then use those as inputs into the tariffs tool to find the corresponding service classes"
+213,Knowledge retrieval and interpretation,Data retrieval without sources,Medium,What demand charges apply to commercial customers with demand >500 kW in Virginia?,"The demand charges include:
+- GS?3 (Large General Service Secondary voltage; applies when peak ?500 kW): demand charge components shown in the tariff: $2.498 /kW-month (plus adjustments) and $13.235 /kW-month (plus adjustments)
+- GS?4 (Large General Service Primary/Transmission voltage; applies when peak ?500 kW): demand rates in tariff: $2.318 /kW-month (plus adjustments) and $12.943 /kW-month (plus adjustments).
+- Schedule 10 / Large General Service (alternative naming seen in Dominion documents): shows a flat demand component of $2.507 /kW-month (plus adjustments) for secondary-voltage Large General Service","Use your tariffs tool to find the tariffs applicable to commercial customers in Virginia. Then filter for those applying to customers with demand >500 kW. Alternatively, you could do a web search too but it has too reference a very reliable source and guve specific numbers and justifications too"
+221,Knowledge retrieval and interpretation,Data retrieval without sources,Medium,What Dominion Energy commercial customer service class pays the highest demand charge in Virginia?,GS-4 service class has the highest demand charge and applies to customers with peak demand >= 500 kW. GS-3 is very close to GS-4 and is also an acceptable response,Use your tariffs tool to find all relevant service classes and then choose the one with the highest demand charge
+229,Knowledge retrieval and interpretation,Data retrieval without sources,Medium,What are the docket numbers for the filings Google submitted to FERC between June and December 2024?,"The dockets filed by Google with FERC between June and December 2024 are as follows.
+1.	Date Filed: December 10, 2024
+Docket Number: AD24-11-000
+Description: Post-Technical Conference of Google LLC under AD24-11
+2.	Date Filed: December 27, 2024
+Docket Number: ER10-2835-012
+Description: Triennial Market Power Analysis for Southwest Power Pool Inc. Region of Google Energy LLC under ER10-2835.
+3.	Date Filed: September 19, 2024
+Docket Number: ER24-2891-000, ER24-2888-000, ER24-2890-000, ER24-2893-000, ER24-2894-000, ER24-2889-000
+Description: Motion to Intervene of Google LLC under ER24-2891 et al.
+4.	Date Filed: November 5, 2024
+Docket Number: ER10-2835-011
+Description: Supplement to 01/31/2024, Notice of Change in Status of Google Energy LLC under ER10-2835.
+5.	Date Filed: June 28, 2024
+Docket Number: ER10-468-005
+Description: Triennial Market Power Analysis for Central Region of Google Energy LLC under ER10-468.
+",Use the FERC docket tool to find the relevant docket with the specified date range and affiliation inputs. Affiliation inputs are better in this case because we know the docket filing organization. Then provide the docket numbers based on the FERC docket tool results
+232,Advanced quantitative modeling and decision analytics,Advanced modeling with data retrieval and analysis without sources,Hard,"Compare arbitrage net revenues (i.e excluding charging cost and other operational costs) only for a 100 MW 2-hour battery based on 2023 day-ahead market prices in ERCOT West Hub vs PJM AEP Hub. Assume roundtrip efficiency is 81%, battery degradation cost is $25/MWh and state of charge is limited to a range of 10% to 90%","Based on 2023 prices from the ERCOT and PJM databases and analysis run using the battery optimization tool, the net revenues for a 100 MW 2 hour storage asset in ERCOT West is $8863408 +/- 10%. On the other hand, net revenues for PJM AEP Hub is $85030 +/- 10%. This implies that the ERCOT West Hub has significantly higher arbitrage opportunities compared to PJM's AEP hub which is tied to the significantly volatility levels often associated with prices in ERCOT, and especially ERCOT West Hub","First get 2023 day-ahead energy prices for the specified price hubs in PJM and ERCOT from reputable sources. Most valid options will be the attached database or GridStatus API. Note that hub prices should be used since the question clearly specifies that. 
+
+The inputs must then be properly passed into the battery optimization tool. Specified assumptions for round trip efficiency, battery degradation cost and state of charge limits should be properly specified. All other variables should be left at their default values
+
+After getting the results for the optimization runs for both ERCOT and PJM, the net revenues should then be compared. Main comparison metric should be the magnitude of the difference between both numbers. However, bonus points could be given if the answer provide extra details around the distribution of the revenues"
+234,Advanced quantitative modeling and decision analytics,Advanced modeling with data retrieval and analysis with sources,Hard,"Compare unlevered project IRR for a potential 100 MW 4-hour standalone battery project in ERCOT West vs PJM AEP Hub with a 15-year lifespan. Assume day-ahead revenues based on 2023 prices, roundtrip efficiency is 81%, battery degradation cost is $25/MWh and state of charge is limited to a range of 10% to 90%, capex is $2200/kW. Include relevant federal tax assumption and assume batteries still get 30% ITC. Ignore all other types of taxes","Based on the 2023 prices, the net revenues for the 100 MW 4 hour battery in ERCOT and PJM are $15829537 and $143480 respectively. Note that the values for PJM are very low because capacity related revenues are not included which is often very signficcant in PJM. Using all the other assumptions, the unlevered IRRs are 3% and -34% in ERCOT and PJM respectively showing that if batteries become very expensive (i.e. $2200/kW), arbitrage alone will be insufficient to obtain sufficient gains in both markets","Pull the day-ahead prices for ERCOT West and AEP hubs from your local database or from your GridStatus API. Then use the battery optimization tool to compute net revenues for the battery for both regions. Make sure you use all the specifed assumptions for the battery optimization tool run. Apply the 30% ITC to the capex and then constrcut the 15-year cashflows assuming that the net revenue for each year is based on the results from the optimization run. Apply a federal tax rate of 21% to the net revenues. Based on the cashflows, compute the IRRs for boht regions and compare"
+244,Advanced quantitative modeling and decision analytics,Advanced modeling with data retrieval and analysis with sources,Hard,"How should I have dispatch a CT in Houston with Henry Hub gas prices during summer months to maximize revenue assuming it has an heat rate of 10,000 Btu/Kwh and is exposed to 2024 real time prices at ERCOT Houston Hub?","The key logic here is to check hours where LMP > gas price * heat rate. This assumes all other variable O&M costs and constraints are not considered so this is really a theoretical estimate. Based on 2024 monthly average prices for Henry Hub for June - September, a 1 MW asset should make a maximum $24,207 +/- 10% in total revenues if the dispatch is properly calculated and September is included. If September is not added, the estimated revenue should be $21,532 +/- 10%","Consider June, July, August and Septemter since it is ERCOT. If September is excluded, that's fine too
+
+Dispatch cost = Heat Rate * Fuel Price 1. Calculate dispatch cost for each timestep and compare with the LMPs 2. If dispatch <= LMPs, output = 0. Only dispatch when LMP > dispatch cost.
+
+Noe that this is very simplistic and ignores other costs like Variable O&M and constraints like startup costs. So this dispatch will the very theoretical"
+245,Advanced quantitative modeling and decision analytics,Advanced quantitative modeling and decision analytics,Hard,"If a 4-hour battery earns revenues from arbitrage only in ERCOT West hub over 15 years, what should the $/MW capex be to earn 13% IRR? Assume roundtrip efficiency is 81%, battery degradation cost is $25/MWh and state of charge is limited to a range of 10% to 90%, prices from 2010 to 2024 represent the 15-year window","Based on the assumptions provided only, capex would need to be between $300/kW to $385/kW to get a 13% IRR (actual is 11% to 15% but this range is fine)","Pull the needed prices for the specified period from your database. If a certain period is missing,you can use logical guesses to fill the missing data. For each year, run the battery optimization tool with the specified assumptions and the relevaant price data. Then adjust capex spend until you get the needed IRR value"
+249,Advanced quantitative modeling and decision analytics,Forecasting plus data retrieval and analysis,Hard,"Using regression methods or any time series forecasting approach of your choice, build a forecast model that can predict hourly demand in ERCOT. Assume the model is going to be run at the beginning of every month to get the forecasted hourly demand for the month. Use data from December 2025 as your test set and feel free to use any demand data duration based on the contents of your ERCOT database for training. You can also use any external variables that you find relevant as long as you are able to get the data. Do not use variables for which you are unable to get the data. Your output should include the following:
+
+Summary of modeling steps:
+Model type:
+Model parameters:
+Accuracy metric (MAPE)","If model perfomance is good, the MAPE output should have a value of 0. The modeling steps summary should also be valid and match the model type specified. The final recorded accuracy score is the product of the score based on valid modeling steps summary and model type scaled by 1 - reported MAPE metric. ","If model perfomance is good, the MAPE output should have a value of 0. The modeling steps summary should also be valid and match the model type specified. The final recorded accuracy score is the product of the score based on valid modeling steps summary and model type scaled by 1 - reported MAPE metric. "
+140,Markets data retrieval and analysis,Data retrieval and analysis with sources,Medium,Which of the main SPP trading hubs had the highest day-ahead average price in January 2024 based on data from your GridStatus API access ,SPP south hub had the highest day-ahead average price of $57/MWh compared to SPP north hub with an average price of $45/MWh,"Get data from your GridStatus API and then compute the needed numbers. For GridStatus API, you first need to find the appropriate datasets, check the format of the data in the dataset before you start writing queuries"
+141,Markets data retrieval and analysis,Data retrieval and analysis with sources,Medium,Show me monthly average of day-ahead prices for SPP KCPL hub in 2023 based on data from your GridStatus API access,"The monthly average day-ahead prices for KCPLHUB settlement point in SPP are as follows.
+
+Month Average Day-Ahead LMP ($/MWh)
+2023-01 18.71
+2023-02 14.55
+2023-03 13.64
+2023-04 11.35
+2023-05 23.08
+2023-06 26.67
+2023-07 28.74
+2023-08 33.67
+2023-09 21.46
+2023-10 17.57
+2023-11 18.36
+2023-12 17.09","Get data from your GridStatus API and then compute the needed numbers. For GridStatus API, you first need to find the appropriate datasets, check the format of the data in the dataset before you start writing queuries"

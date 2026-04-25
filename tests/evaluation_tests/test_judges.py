@@ -2,15 +2,15 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from energbench.agent.providers import BaseProvider
-from energbench.evaluation.config import JudgeConfig
-from energbench.evaluation.judges import (
+from energyevals.agent.providers import BaseProvider
+from energyevals.evaluation.config import JudgeConfig
+from energyevals.evaluation.judges import (
     _build_schema_instruction,
     _judge_call,
     create_judge_provider,
     judge_approach,
 )
-from energbench.evaluation.models import ApproachResult
+from energyevals.evaluation.models import ApproachResult
 
 
 class TestCreateJudgeProvider:

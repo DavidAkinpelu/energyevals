@@ -1,9 +1,9 @@
-# Ruff configuration for energBench
+# Ruff configuration for EnergyEvals
 # Extracted from pyproject.toml for standalone usage
 
 line-length = 100
-target-version = "py39"
-exclude = ["mcp-servers"]
+target-version = "py313"
+exclude = ["mcp-servers", "energyevals/evaluation/notebooks"]
 
 [lint]
 select = ["E", "F", "I", "N", "W", "UP"]

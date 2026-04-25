@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 import requests
 
-from energbench.tools.renewables_tool import RenewablesTool
+from energyevals.tools.renewables_tool import RenewablesTool
 
 
 class TestRenewablesToolUnit:
@@ -49,7 +49,7 @@ class TestRenewablesToolUnit:
             }
         }
 
-        mocker.patch("energbench.tools.renewables_tool.requests.get", return_value=mock_response)
+        mocker.patch("energyevals.tools.renewables_tool.requests.get", return_value=mock_response)
 
         tool = RenewablesTool(api_key="test_key")
         result = tool.get_solar_profile(
@@ -74,7 +74,7 @@ class TestRenewablesToolUnit:
             }
         }
 
-        mocker.patch("energbench.tools.renewables_tool.requests.get", return_value=mock_response)
+        mocker.patch("energyevals.tools.renewables_tool.requests.get", return_value=mock_response)
 
         tool = RenewablesTool(api_key="test_key")
         result = tool.get_wind_profile(
@@ -95,7 +95,7 @@ class TestRenewablesToolUnit:
         mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("400 Bad Request")
         mock_response.text = "Invalid parameters"
 
-        mocker.patch("energbench.tools.renewables_tool.requests.get", return_value=mock_response)
+        mocker.patch("energyevals.tools.renewables_tool.requests.get", return_value=mock_response)
 
         tool = RenewablesTool(api_key="test_key")
         result = tool.get_solar_profile(
@@ -112,7 +112,7 @@ class TestRenewablesToolUnit:
     def test_wind_profile_exception_handling(self, mocker):
         """Test exception handling in wind profile."""
         mocker.patch(
-            "energbench.tools.renewables_tool.requests.get",
+            "energyevals.tools.renewables_tool.requests.get",
             side_effect=requests.exceptions.ConnectionError("Network error"),
         )
 

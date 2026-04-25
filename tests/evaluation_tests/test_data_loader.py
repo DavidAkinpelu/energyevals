@@ -1,4 +1,4 @@
-from energbench.evaluation.data_loader import _parse_latency_breakdown
+from energyevals.evaluation.data_loader import _parse_latency_breakdown
 
 
 class TestLatencyBreakdown:

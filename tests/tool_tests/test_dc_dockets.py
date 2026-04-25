@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import pytest
 import requests
 
-from energbench.tools.dockets import DCDocketTool
+from energyevals.tools.dockets import DCDocketTool
 
 
 class TestDCDocketToolUnit:
@@ -51,7 +51,7 @@ class TestDCDocketToolUnit:
         }
 
         mocker.patch(
-            "energbench.tools.dockets.dc_tool.requests.get",
+            "energyevals.tools.dockets.dc_tool.requests.get",
             return_value=mock_response,
         )
         mocker.patch.object(DCDocketTool, "_save_csv", return_value=None)
@@ -77,7 +77,7 @@ class TestDCDocketToolUnit:
         mock_response.json.return_value = {"resultsSet": []}
 
         mocker.patch(
-            "energbench.tools.dockets.dc_tool.requests.get",
+            "energyevals.tools.dockets.dc_tool.requests.get",
             return_value=mock_response,
         )
         mocker.patch.object(DCDocketTool, "_save_csv", return_value=None)
@@ -99,7 +99,7 @@ class TestDCDocketToolUnit:
         )
 
         mocker.patch(
-            "energbench.tools.dockets.dc_tool.requests.get",
+            "energyevals.tools.dockets.dc_tool.requests.get",
             return_value=mock_response,
         )
 
@@ -113,7 +113,7 @@ class TestDCDocketToolUnit:
     def test_search_dc_exception_handling(self, mocker):
         """Test generic exception handling in DC PSC search."""
         mocker.patch(
-            "energbench.tools.dockets.dc_tool.requests.get",
+            "energyevals.tools.dockets.dc_tool.requests.get",
             side_effect=Exception("Connection refused"),
         )
 
@@ -146,7 +146,7 @@ class TestDCDocketToolUnit:
         }
 
         mocker.patch(
-            "energbench.tools.dockets.dc_tool.requests.get",
+            "energyevals.tools.dockets.dc_tool.requests.get",
             return_value=mock_response,
         )
         mocker.patch.object(DCDocketTool, "_save_csv", return_value=None)

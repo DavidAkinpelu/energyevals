@@ -3,15 +3,15 @@ import json
 import pandas as pd
 import pytest
 
-from energbench.utils.csv_utils import (
+from energyevals.utils.csv_utils import (
     generate_timestamp,
     save_to_csv,
 )
-from energbench.utils.formatting import (
+from energyevals.utils.formatting import (
     create_error_response,
     require_api_key,
 )
-from energbench.utils.http import HTTPClient
+from energyevals.utils.http import HTTPClient
 
 
 class TestRequireApiKey:

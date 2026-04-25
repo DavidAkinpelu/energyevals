@@ -1,0 +1,87 @@
+{
+  "trial": 1,
+  "approach": {
+    "score": 5.0,
+    "reasoning": "The agent correctly framed the task as a web search for SPP authoritative documentation (protocols, tariff/registration guidance, glossary). It targeted appropriate sources (spp.org, Integrated Marketplace Protocols, revision/clarification filings) and iteratively refined queries to locate Resource Type definitions (GEN, VGR, DRR, MSR, etc.). Tool usage was appropriate—search_documents/search_web to discover sources and get_page_contents to retrieve PDFs. The analytical flow (search → refine → fetch primary SPP documents) matches best practices for this question and demonstrates an expert-like approach.",
+    "judge_type": "approach"
+  },
+  "accuracy": {
+    "score": 1.0,
+    "reasoning": "The agent's answer explicitly lists VER (with DVER/NDVER), ESR, MSR, and a conventional dispatchable generation category labeled “Standard” Generation Resource, which maps to Dispatchable Resource. Each canonical attribute is present or represented by an equivalent term from SPP materials. Therefore all five expected attributes are matched.",
+    "judge_type": "attributes"
+  },
+  "sources": {
+    "score": 4.0,
+    "reasoning": "The agent cites authoritative primary sources (SPP Glossary and SPP Markets+ Protocols) which are appropriate and relevant for claims about valid resource/participation types in SPP. These sources directly cover terminology such as DRR/DDR/BDR, VER/DVER/NDVER, ESR/HSMR and other Markets+ participation types, so the authority and relevance are high. Minor issues prevent a top score: the agent conflates some labels (e.g., using both MSR and ESR without clarifying namespace differences), and the Markets+ PDF reference date/filename appears to contain a typographical date which should be verified. Also, the answer could more explicitly distinguish exact registration dropdown values per registration system (RMS vs Markets+) and provide exact section/page citations from the protocols for full verifiability. Overall the cited sources are appropriate and credible but the presentation omits a couple of precision details and exact citation pointers.",
+    "judge_type": "sources"
+  },
+  "raw_approach": {
+    "approach_correctness": 5,
+    "reasoning": "The agent correctly framed the task as a web search for SPP authoritative documentation (protocols, tariff/registration guidance, glossary). It targeted appropriate sources (spp.org, Integrated Marketplace Protocols, revision/clarification filings) and iteratively refined queries to locate Resource Type definitions (GEN, VGR, DRR, MSR, etc.). Tool usage was appropriate—search_documents/search_web to discover sources and get_page_contents to retrieve PDFs. The analytical flow (search → refine → fetch primary SPP documents) matches best practices for this question and demonstrates an expert-like approach."
+  },
+  "raw_accuracy": null,
+  "raw_attributes": {
+    "total_attributes": 5,
+    "matched_attributes": 5,
+    "alignment_score": 1.0,
+    "attribute_details": [
+      {
+        "name": "Dispatchable Resource",
+        "expected": "Fully dispatchable generation/injection asset (can be centrally dispatched by SPP)",
+        "found": true,
+        "agent_value": "“Standard” Generation Resource (conventional dispatchable generation; default/non-VER, non-DR, non-storage case)"
+      },
+      {
+        "name": "Dispatchable Variable Energy Resource (DVER)",
+        "expected": "Variable generator that can be controlled/curtailed by SPP dispatch (variable but dispatchable)",
+        "found": true,
+        "agent_value": "Dispatchable VER (DVER) listed as a VER sub-type"
+      },
+      {
+        "name": "Electric Storage Resource (ESR)",
+        "expected": "Energy storage asset (battery, pumped hydro, etc.) registered as storage",
+        "found": true,
+        "agent_value": "Electric Storage Resource (ESR) referenced under Markets+ participation types"
+      },
+      {
+        "name": "Market Storage Resource (MSR)",
+        "expected": "Storage variant with specific market/modeling rules distinct from ESR",
+        "found": true,
+        "agent_value": "Market Storage Resource (MSR) explicitly listed under storage resources"
+      },
+      {
+        "name": "Variable Energy Resource (VER)",
+        "expected": "Variable generation that is not centrally dispatchable (e.g., wind/solar without dispatch control)",
+        "found": true,
+        "agent_value": "Variable Energy Resource (VER) with sub-types Dispatchable VER (DVER) and Non‑Dispatchable VER (NDVER)"
+      }
+    ],
+    "reasoning": "The agent's answer explicitly lists VER (with DVER/NDVER), ESR, MSR, and a conventional dispatchable generation category labeled “Standard” Generation Resource, which maps to Dispatchable Resource. Each canonical attribute is present or represented by an equivalent term from SPP materials. Therefore all five expected attributes are matched."
+  },
+  "raw_sources": {
+    "source_validity": 4,
+    "reasoning": "The agent cites authoritative primary sources (SPP Glossary and SPP Markets+ Protocols) which are appropriate and relevant for claims about valid resource/participation types in SPP. These sources directly cover terminology such as DRR/DDR/BDR, VER/DVER/NDVER, ESR/HSMR and other Markets+ participation types, so the authority and relevance are high. Minor issues prevent a top score: the agent conflates some labels (e.g., using both MSR and ESR without clarifying namespace differences), and the Markets+ PDF reference date/filename appears to contain a typographical date which should be verified. Also, the answer could more explicitly distinguish exact registration dropdown values per registration system (RMS vs Markets+) and provide exact section/page citations from the protocols for full verifiability. Overall the cited sources are appropriate and credible but the presentation omits a couple of precision details and exact citation pointers."
+  },
+  "metrics": {
+    "tool_calls": 10,
+    "total_tokens": 218469,
+    "duration_seconds": 93.79249215126038,
+    "latency": {
+      "wall_clock_ms": 93692.33536720276,
+      "llm_thinking_ms": 45536.051750183105,
+      "tool_execution_ms": 48156.28361701965,
+      "per_tool_ms": {
+        "search_documents": 843.6014652252197,
+        "search_web": 45785.21704673767,
+        "get_page_contents": 1527.4651050567627
+      }
+    },
+    "cost": {
+      "input_tokens": 216197,
+      "output_tokens": 2272,
+      "cached_tokens": 151168,
+      "reasoning_tokens": 1016,
+      "estimated_cost_usd": 0.0
+    }
+  }
+}
